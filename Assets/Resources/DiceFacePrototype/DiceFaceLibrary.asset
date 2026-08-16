@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f87f2594c54594d4193c5718618dfa7f, type: 3}
+  m_Name: DiceFaceLibrary
+  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.DiceFaceLibrary
+  entries:
+  - {fileID: 11400000, guid: 270209a9c34adf64f8849993171755a1, type: 2}
+  - {fileID: 11400000, guid: 2abb79b21f6d5814a87de27afbe801cf, type: 2}
+  - {fileID: 11400000, guid: 3388ef90b89229443bb0a8967ecd9f74, type: 2}

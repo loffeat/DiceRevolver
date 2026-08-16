@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a25b8bde722780f47baf06889293db79, type: 3}
+  m_Name: BulletEventLibrary
+  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.BulletEventLibrary
+  effects:
+  - {fileID: 11400000, guid: a8f17d60e47187d4b99fcf61095fa59a, type: 2}
+  - {fileID: 11400000, guid: fc3f97bd5c123954ab0bf597304fb691, type: 2}
+  - {fileID: 11400000, guid: 0d8454fee0df2a24a9badf737b5bc168, type: 2}
