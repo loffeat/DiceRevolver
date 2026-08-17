@@ -1,0 +1,75 @@
+# DiceRevolver 项目地图
+
+## 项目目标
+
+DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标是把六发左轮建模为不放回抽取的六面骰池，并允许玩家为每个骰面装备数据驱动的弹丸词条和事件效果。
+
+## 当前玩法或业务循环
+
+1. 玩家用 `WASD` 移动，鼠标指向地面完成瞄准。
+2. 按住鼠标左键射击；左轮从剩余骰面中随机抽取一个面并移除。
+3. 抽中的骰面从装备中解析弹丸属性和开火、命中、开火结束效果。
+4. 六面耗尽后自动换弹并重置骰池；`R` 可以手动换弹。
+5. `E` 打开构筑页，先选词条再选骰面以修改装备。
+
+## 技术栈
+
+- Unity `6000.3.10f1`
+- Universal Render Pipeline `17.3.0`
+- Input System `1.18.0`
+- UGUI `2.0.0`
+- C#，EditMode 测试使用 Unity Test Framework `1.6.0`
+
+## 运行入口与操作
+
+- 构建入口场景：[TopDownShooterPrototype.unity](../../Assets/Scenes/TopDownShooterPrototype.unity)
+- Unity 版本：[ProjectVersion.txt](../../ProjectSettings/ProjectVersion.txt)
+- 构建场景配置：[EditorBuildSettings.asset](../../ProjectSettings/EditorBuildSettings.asset)
+- 操作：`WASD` 移动、鼠标瞄准、左键射击、`R` 换弹、`E` 打开或关闭构筑页。
+
+## 目录地图
+
+- [Assets/Scripts/Prototype](../../Assets/Scripts/Prototype)：运行时玩家、左轮、弹丸、事件与 UI。
+- [Assets/Scripts/Editor](../../Assets/Scripts/Editor)：原型场景和骰面资源生成工具。
+- [Assets/Tests/EditMode](../../Assets/Tests/EditMode)：弹巢、装备、弹丸、效果、UI 和瞄准测试。
+- [Assets/Resources/DiceFacePrototype](../../Assets/Resources/DiceFacePrototype)：三个示例词条及事件资源。
+- [docs/superpowers](../../docs/superpowers)：已批准的设计规格和实施计划。
+- [.superpowers/sdd](../../.superpowers/sdd)：既有骰面构筑任务的执行与复核证据。
+
+## 核心模块
+
+- [TopDownPlayerController.cs](../../Assets/Scripts/Prototype/TopDownPlayerController.cs)：读取移动与鼠标输入，发布瞄准方向和世界坐标。
+- [TopDownAimHandRig.cs](../../Assets/Scripts/Prototype/TopDownAimHandRig.cs)：处理手臂镜像、枪口姿态和近距离稳定瞄准。
+- [DiceChamber.cs](../../Assets/Scripts/Prototype/DiceChamber.cs)：维护剩余骰面、强制下次骰面和重置规则。
+- [DiceRevolverGun.cs](../../Assets/Scripts/Prototype/DiceRevolverGun.cs)：协调射速、抽面、弹丸生成、事件和换弹。
+- [DiceFaceLoadout.cs](../../Assets/Scripts/Prototype/DiceFaceLoadout.cs)：保存六个骰面的运行时装备。
+- [DiceFaceEntry.cs](../../Assets/Scripts/Prototype/DiceFaceEntry.cs)：ScriptableObject 词条，包含弹丸属性与事件列表。
+- [BulletEventEffect.cs](../../Assets/Scripts/Prototype/BulletEventEffect.cs)：开火、命中和开火结束效果的扩展基类。
+- [Projectile.cs](../../Assets/Scripts/Prototype/Projectile.cs)：应用运行时属性、移动、碰撞和生命周期。
+- [DiceBuildPageUI.cs](../../Assets/Scripts/Prototype/DiceBuildPageUI.cs)：编辑骰面装备。
+- [DiceBuildRuntimeView.cs](../../Assets/Scripts/Prototype/DiceBuildRuntimeView.cs)：场景加载后按需创建构筑 UI 和装备组件。
+
+## 关键数据流
+
+```text
+输入 -> TopDownPlayerController -> DiceRevolverGun
+DiceChamber 抽面 -> DiceFaceLoadout -> DiceFaceEntry
+DiceFaceEntry -> ProjectileRuntimeStats + 开火/命中/结束事件
+DiceBuildPageUI -> DiceFaceLoadout.Equip -> 后续射击读取新装备
+```
+
+额外射击通过事件上下文请求同属性弹丸，并禁止递归触发额外射击。命中事件由 `ProjectileHitReporter` 桥接回本次射击上下文。
+
+## 明确非目标
+
+- 当前没有完整敌人生命、伤害结算和穿透消费系统。
+- 当前不实现词条获取、商店、奖励、局内持久化或正式美术表现。
+- 上下文系统不修改 Unity 运行时代码、资源、Prefab、场景或项目设置。
+
+## 术语
+
+- 骰池：`DiceChamber` 中尚未被抽出的骰面集合。
+- 骰面词条：可装备到一个面的 `DiceFaceEntry` 资源。
+- 装备：`DiceFaceLoadout` 中六个面到词条的映射。
+- 弹丸事件：由 `BulletEventEffect` 在开火、命中或开火结束时执行的扩展行为。
+- 工作流：`.project-context/project/workstreams/` 下一个独立事项的状态和交接记录。
