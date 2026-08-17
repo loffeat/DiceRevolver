@@ -1,10 +1,13 @@
 ﻿param(
-    [string]$Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path,
+    [string]$Root,
     [ValidateRange(1, 3650)]
     [int]$StaleAfterDays = 14
 )
 
 $ErrorActionPreference = 'Stop'
+if ([string]::IsNullOrWhiteSpace($Root)) {
+    $Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
+}
 $Root = [System.IO.Path]::GetFullPath($Root).TrimEnd('\', '/')
 $script:Errors = [System.Collections.Generic.List[string]]::new()
 $script:Warnings = [System.Collections.Generic.List[string]]::new()

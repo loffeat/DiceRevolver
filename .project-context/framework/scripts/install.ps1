@@ -3,10 +3,13 @@
     [ValidateSet('NewProject', 'ExistingProject', 'Upgrade', 'Repair')]
     [string]$Mode,
     [switch]$Apply,
-    [string]$Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
+    [string]$Root
 )
 
 $ErrorActionPreference = 'Stop'
+if ([string]::IsNullOrWhiteSpace($Root)) {
+    $Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
+}
 $Root = [System.IO.Path]::GetFullPath($Root).TrimEnd('\', '/')
 $script:Operations = [System.Collections.Generic.List[object]]::new()
 $script:ContextRoot = Join-Path $Root '.project-context'
