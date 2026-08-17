@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.invalid/project-context.schema.json",
+  "title": "Portable Project Context Configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "instanceId",
+    "projectName",
+    "projectType",
+    "sourceRoots",
+    "entryFiles",
+    "testCommands",
+    "protectedPaths",
+    "additionalContextFiles",
+    "ignorePatterns",
+    "workstreamStaleDays"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "instanceId": { "type": "string", "format": "uuid" },
+    "projectName": { "type": "string", "minLength": 1 },
+    "projectType": { "enum": ["unity", "web", "library", "service", "mixed"] },
+    "sourceRoots": { "$ref": "#/$defs/pathArray" },
+    "entryFiles": { "$ref": "#/$defs/pathArray" },
+    "testCommands": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "protectedPaths": { "$ref": "#/$defs/pathArray" },
+    "additionalContextFiles": { "$ref": "#/$defs/pathArray" },
+    "ignorePatterns": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "workstreamStaleDays": { "type": "integer", "minimum": 1, "maximum": 3650 }
+  },
+  "$defs": {
+    "pathArray": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^(?![A-Za-z]:|/|\\\\).*"
+      },
+      "uniqueItems": true
+    }
+  }
+}

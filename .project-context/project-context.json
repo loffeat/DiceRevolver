@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0.0",
+  "instanceId": "dc7e71ab-741f-4cc8-9880-92b9c821a4fe",
+  "projectName": "DiceRevolver",
+  "projectType": "unity",
+  "sourceRoots": [
+    "Assets/Scripts",
+    "Assets/Tests"
+  ],
+  "entryFiles": [
+    "ProjectSettings/ProjectVersion.txt",
+    "Packages/manifest.json",
+    "ProjectSettings/EditorBuildSettings.asset"
+  ],
+  "testCommands": [
+    "powershell -NoProfile -ExecutionPolicy Bypass -File .project-context/framework/scripts/check.ps1"
+  ],
+  "protectedPaths": [
+    "Assets",
+    "Packages",
+    "ProjectSettings"
+  ],
+  "additionalContextFiles": [
+    "docs/superpowers/specs",
+    "docs/superpowers/plans",
+    ".superpowers/sdd"
+  ],
+  "ignorePatterns": [
+    "Library/**",
+    "Temp/**",
+    "Logs/**",
+    "obj/**",
+    ".git/**"
+  ],
+  "workstreamStaleDays": 14
+}
