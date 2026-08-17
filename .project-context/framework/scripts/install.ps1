@@ -38,10 +38,10 @@ function Read-Utf8Text {
 }
 
 function Add-WriteOperation {
-    param([string]$Path, [string]$Content)
+    param([string]$Path, [string]$Content, [switch]$Force)
 
     Assert-SafeTarget $Path
-    if (Test-Path -LiteralPath $Path -PathType Leaf) {
+    if (-not $Force -and (Test-Path -LiteralPath $Path -PathType Leaf)) {
         $existing = Read-Utf8Text $Path
         if ($existing -eq $Content) {
             return
@@ -176,6 +176,20 @@ function Get-ManagedAgentsContent {
     return ([regex]::Replace($ExistingContent, $pattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($match) $block }, 1)).TrimEnd() + "`n"
 }
 
+function Get-ManagedInstanceId {
+    $agentsPath = Join-Path $Root 'AGENTS.md'
+    if (-not (Test-Path -LiteralPath $agentsPath -PathType Leaf)) {
+        return $null
+    }
+
+    $text = Read-Utf8Text $agentsPath
+    $match = [regex]::Match($text, '<!-- project-context:instance (?<id>[0-9a-fA-F-]+) -->')
+    if (-not $match.Success) {
+        return $null
+    }
+    return $match.Groups['id'].Value
+}
+
 function Get-Configuration {
     if (-not (Test-Path -LiteralPath $script:ConfigurationPath -PathType Leaf)) {
         return $null
@@ -206,6 +220,14 @@ function Plan-MissingProjectDocuments {
         if (-not (Test-Path -LiteralPath $target -PathType Leaf)) {
             Add-WriteOperation $target (Render-ProjectTemplate $entry.Value ([string]$Configuration.projectName))
         }
+    }
+}
+
+function Plan-AllProjectDocuments {
+    param([object]$Configuration)
+
+    foreach ($name in @('PROJECT.md', 'STATUS.md', 'DECISIONS.md', 'ENVIRONMENT.md')) {
+        Add-WriteOperation (Join-Path $script:ProjectRoot $name) (Render-ProjectTemplate $name ([string]$Configuration.projectName)) -Force
     }
 }
 
@@ -240,6 +262,92 @@ function Plan-Repair {
     Plan-ManagedAgents $configuration
 }
 
+function New-BackupRoot {
+    param([string]$SourceInstanceId)
+
+    $parsed = [guid]::Empty
+    if (-not [guid]::TryParse($SourceInstanceId, [ref]$parsed)) {
+        throw 'Cannot create backup because source instanceId is not a UUID.'
+    }
+
+    $timestamp = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ')
+    $backupsRoot = Join-Path $script:ContextRoot 'backups'
+    $backupRoot = Join-Path $backupsRoot (Join-Path $parsed.ToString() $timestamp)
+    if (-not (Test-PathInside $backupRoot $backupsRoot)) {
+        throw 'Backup target resolved outside .project-context/backups.'
+    }
+    return $backupRoot
+}
+
+function Plan-NewProject {
+    $configuration = Get-Configuration
+    if ($null -eq $configuration) {
+        throw 'NewProject requires copied project-context.json. Use ExistingProject for a fresh framework.'
+    }
+
+    $managedInstance = Get-ManagedInstanceId
+    if ($managedInstance -eq [string]$configuration.instanceId) {
+        Plan-ManagedAgents $configuration
+        return
+    }
+
+    $backupRoot = New-BackupRoot ([string]$configuration.instanceId)
+    if (Test-Path -LiteralPath $script:ProjectRoot -PathType Container) {
+        Add-MoveOperation $script:ProjectRoot (Join-Path $backupRoot 'project')
+    }
+    Add-MoveOperation $script:ConfigurationPath (Join-Path $backupRoot 'project-context.json')
+
+    $newConfiguration = New-DefaultConfiguration
+    Add-WriteOperation $script:ConfigurationPath (Convert-ConfigurationToJson $newConfiguration)
+    Plan-AllProjectDocuments $newConfiguration
+    Plan-ManagedAgents $newConfiguration
+}
+
+function Get-LegacyArray {
+    param([object]$Configuration, [string]$Name)
+
+    $property = $Configuration.PSObject.Properties[$Name]
+    if ($null -eq $property -or $null -eq $property.Value) {
+        return @()
+    }
+    return @($property.Value)
+}
+
+function Plan-Upgrade {
+    if (-not (Test-Path -LiteralPath $script:ConfigurationPath -PathType Leaf)) {
+        throw 'Upgrade requires an existing project-context.json.'
+    }
+
+    $rawConfiguration = Read-Utf8Text $script:ConfigurationPath
+    $configuration = $rawConfiguration | ConvertFrom-Json
+    if ($configuration.schemaVersion -eq '1.0.0') {
+        Plan-ManagedAgents $configuration
+        return
+    }
+    if ($configuration.schemaVersion -ne '0.9.0') {
+        throw "Unsupported schemaVersion $($configuration.schemaVersion); supported upgrade source is 0.9.0 and current is 1.0.0."
+    }
+
+    $backupRoot = New-BackupRoot ([string]$configuration.instanceId)
+    Add-WriteOperation (Join-Path $backupRoot 'project-context.json') $rawConfiguration
+
+    $migrated = [ordered]@{
+        schemaVersion = '1.0.0'
+        instanceId = [string]$configuration.instanceId
+        projectName = [string]$configuration.projectName
+        projectType = [string]$configuration.projectType
+        sourceRoots = @(Get-LegacyArray $configuration 'sourceRoots')
+        entryFiles = @(Get-LegacyArray $configuration 'entryFiles')
+        testCommands = @(Get-LegacyArray $configuration 'testCommands')
+        protectedPaths = @(Get-LegacyArray $configuration 'protectedPaths')
+        additionalContextFiles = @(Get-LegacyArray $configuration 'additionalContextFiles')
+        ignorePatterns = @(Get-LegacyArray $configuration 'ignorePatterns')
+        workstreamStaleDays = 14
+    }
+    Add-WriteOperation $script:ConfigurationPath (Convert-ConfigurationToJson $migrated)
+    Plan-ManagedAgents $migrated
+}
+
 try {
     if (-not (Test-Path -LiteralPath $Root -PathType Container)) {
         throw "Repository root does not exist: $Root"
@@ -251,8 +359,8 @@ try {
     switch ($Mode) {
         'ExistingProject' { Plan-ExistingProject }
         'Repair' { Plan-Repair }
-        'NewProject' { throw 'NewProject is not implemented in this framework version yet.' }
-        'Upgrade' { throw 'Upgrade is not implemented in this framework version yet.' }
+        'NewProject' { Plan-NewProject }
+        'Upgrade' { Plan-Upgrade }
     }
 
     Invoke-Operations $script:Operations

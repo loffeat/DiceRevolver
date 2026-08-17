@@ -157,6 +157,136 @@ Invoke-IsolatedTest 'repair restores missing managed entry' {
     }
 }
 
+function Prepare-CopiedPackage {
+    param([string]$Root)
+
+    $install = Invoke-TestInstall $Root 'ExistingProject' -Apply
+    Assert-Equal $install.ExitCode 0 'Source install exit code'
+    $projectPath = Join-Path $Root '.project-context\project\PROJECT.md'
+    Add-Content -LiteralPath $projectPath -Value "`nSOURCE_PROJECT_SENTINEL" -Encoding UTF8
+    Remove-Item -LiteralPath (Join-Path $Root 'AGENTS.md') -Force
+    return Get-Content -LiteralPath (Join-Path $Root '.project-context\project-context.json') -Raw | ConvertFrom-Json
+}
+
+Invoke-IsolatedTest 'new-project preview makes no changes' {
+    param($root)
+    $null = Prepare-CopiedPackage $root
+    $before = Get-TreeDigest $root
+    $preview = Invoke-TestInstall $root 'NewProject'
+    Assert-Equal $preview.ExitCode 0 'NewProject preview exit code'
+    Assert-Equal (Get-TreeDigest $root) $before 'NewProject preview changed the fixture'
+}
+
+Invoke-IsolatedTest 'new-project backs up source and rebinds instance' {
+    param($root)
+    $oldConfiguration = Prepare-CopiedPackage $root
+    $result = Invoke-TestInstall $root 'NewProject' -Apply
+    Assert-Equal $result.ExitCode 0 'NewProject apply exit code'
+
+    $newConfiguration = Get-Content -LiteralPath (Join-Path $root '.project-context\project-context.json') -Raw | ConvertFrom-Json
+    if ($newConfiguration.instanceId -eq $oldConfiguration.instanceId) {
+        throw 'NewProject did not generate a different instance UUID.'
+    }
+    Assert-Equal $newConfiguration.projectName (Split-Path $root -Leaf) 'Rebound project name'
+
+    $sourceBackupRoot = Join-Path $root ('.project-context\backups\' + $oldConfiguration.instanceId)
+    $backup = Get-ChildItem -LiteralPath $sourceBackupRoot -Directory | Select-Object -First 1
+    if ($null -eq $backup) {
+        throw 'NewProject did not create a timestamped backup.'
+    }
+    foreach ($relative in @('project\PROJECT.md', 'project-context.json')) {
+        if (-not (Test-Path -LiteralPath (Join-Path $backup.FullName $relative))) {
+            throw "Backup is missing $relative"
+        }
+    }
+    $backedUpProject = [System.IO.File]::ReadAllText((Join-Path $backup.FullName 'project\PROJECT.md'))
+    if ($backedUpProject -notmatch 'SOURCE_PROJECT_SENTINEL') {
+        throw 'Backup did not preserve source project content.'
+    }
+
+    $agents = [System.IO.File]::ReadAllText((Join-Path $root 'AGENTS.md'))
+    if ($agents -notmatch [regex]::Escape("<!-- project-context:instance $($newConfiguration.instanceId) -->")) {
+        throw 'Managed AGENTS instance does not match rebound configuration.'
+    }
+}
+
+Invoke-IsolatedTest 'second new-project apply is idempotent after rebind' {
+    param($root)
+    $null = Prepare-CopiedPackage $root
+    $first = Invoke-TestInstall $root 'NewProject' -Apply
+    Assert-Equal $first.ExitCode 0 'First NewProject apply exit code'
+    $afterFirst = Get-TreeDigest $root
+    $second = Invoke-TestInstall $root 'NewProject' -Apply
+    Assert-Equal $second.ExitCode 0 'Second NewProject apply exit code'
+    Assert-Equal (Get-TreeDigest $root) $afterFirst 'Second NewProject apply changed the fixture'
+}
+
+function Convert-FixtureToLegacyConfiguration {
+    param([string]$Root)
+
+    $path = Join-Path $Root '.project-context\project-context.json'
+    $configuration = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
+    $legacy = [ordered]@{
+        schemaVersion = '0.9.0'
+        instanceId = $configuration.instanceId
+        projectName = $configuration.projectName
+        projectType = $configuration.projectType
+        sourceRoots = @($configuration.sourceRoots)
+        entryFiles = @($configuration.entryFiles)
+        testCommands = @($configuration.testCommands)
+        protectedPaths = @($configuration.protectedPaths)
+    }
+    Write-Utf8Text $path (($legacy | ConvertTo-Json -Depth 8) + "`n")
+    return $legacy
+}
+
+Invoke-IsolatedTest 'upgrade preview makes no changes' {
+    param($root)
+    $install = Invoke-TestInstall $root 'ExistingProject' -Apply
+    Assert-Equal $install.ExitCode 0 'Initial install exit code'
+    $null = Convert-FixtureToLegacyConfiguration $root
+    $before = Get-TreeDigest $root
+    $preview = Invoke-TestInstall $root 'Upgrade'
+    Assert-Equal $preview.ExitCode 0 'Upgrade preview exit code'
+    Assert-Equal (Get-TreeDigest $root) $before 'Upgrade preview changed the fixture'
+}
+
+Invoke-IsolatedTest 'upgrade migrates configuration and preserves project' {
+    param($root)
+    $install = Invoke-TestInstall $root 'ExistingProject' -Apply
+    Assert-Equal $install.ExitCode 0 'Initial install exit code'
+    $projectPath = Join-Path $root '.project-context\project\PROJECT.md'
+    $projectBefore = [System.IO.File]::ReadAllText($projectPath)
+    $legacy = Convert-FixtureToLegacyConfiguration $root
+
+    $upgrade = Invoke-TestInstall $root 'Upgrade' -Apply
+    Assert-Equal $upgrade.ExitCode 0 'Upgrade apply exit code'
+    $configuration = Get-Content -LiteralPath (Join-Path $root '.project-context\project-context.json') -Raw | ConvertFrom-Json
+    Assert-Equal $configuration.schemaVersion '1.0.0' 'Migrated schema version'
+    Assert-Equal $configuration.workstreamStaleDays 14 'Migrated stale-day default'
+    Assert-Equal ([System.IO.File]::ReadAllText($projectPath)) $projectBefore 'Upgrade changed PROJECT.md'
+
+    $sourceBackupRoot = Join-Path $root ('.project-context\backups\' + $legacy.instanceId)
+    $backupConfig = Get-ChildItem -LiteralPath $sourceBackupRoot -Recurse -File -Filter 'project-context.json' | Select-Object -First 1
+    if ($null -eq $backupConfig) {
+        throw 'Upgrade did not back up the old configuration.'
+    }
+}
+
+Invoke-IsolatedTest 'newer schema refuses downgrade' {
+    param($root)
+    $install = Invoke-TestInstall $root 'ExistingProject' -Apply
+    Assert-Equal $install.ExitCode 0 'Initial install exit code'
+    $path = Join-Path $root '.project-context\project-context.json'
+    $configuration = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json
+    $configuration.schemaVersion = '2.0.0'
+    Write-Utf8Text $path (($configuration | ConvertTo-Json -Depth 8) + "`n")
+    $before = Get-TreeDigest $root
+    $upgrade = Invoke-TestInstall $root 'Upgrade' -Apply
+    Assert-Equal $upgrade.ExitCode 1 'Newer-schema exit code'
+    Assert-Equal (Get-TreeDigest $root) $before 'Rejected downgrade changed the fixture'
+}
+
 if ($script:Failures.Count -gt 0) {
     $script:Failures | ForEach-Object { Write-Host "[test:error] $_" }
     exit 1
