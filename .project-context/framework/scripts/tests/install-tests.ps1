@@ -287,6 +287,15 @@ Invoke-IsolatedTest 'newer schema refuses downgrade' {
     Assert-Equal (Get-TreeDigest $root) $before 'Rejected downgrade changed the fixture'
 }
 
+Invoke-IsolatedTest 'installer resolves default root in preview' {
+    param($root)
+    $copiedInstaller = Join-Path $root '.project-context\framework\scripts\install.ps1'
+    $before = Get-TreeDigest $root
+    $output = & $script:Shell -NoProfile -ExecutionPolicy Bypass -File $copiedInstaller -Mode ExistingProject 2>&1 | Out-String
+    Assert-Equal $LASTEXITCODE 0 "Default-root preview exit code. Output: $output"
+    Assert-Equal (Get-TreeDigest $root) $before 'Default-root preview changed the fixture'
+}
+
 if ($script:Failures.Count -gt 0) {
     $script:Failures | ForEach-Object { Write-Host "[test:error] $_" }
     exit 1

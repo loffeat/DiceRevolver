@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-- 框架、检查器和四种安装模式已实现；正在建立 DiceRevolver 真实基线，尚未完成最终回归。
+- 框架、检查器、四种安装模式、DiceRevolver 基线和最终回归均已完成。
 
 ## 当前方案及原因
 
@@ -11,13 +11,23 @@
 
 ## 尚未完成
 
-- 最终运行检查器和安装器全量测试。
-- 验证无 `-Root` 调用、真实仓库预览零写入和冷启动恢复。
-- 将本工作流标记为 `completed`。
+- 无。本工作流已完成；新的产品或框架变更应创建新工作流。
 
 ## 下一步首个动作
 
-- 运行 `.project-context/framework/scripts/check.ps1`，修复任何真实仓库链接或结构错误。
+- 若要移植到其他仓库，复制整个 `.project-context/` 文件夹后，在目标项目根目录先运行预览：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .project-context/framework/scripts/install.ps1 -Mode NewProject
+```
+
+- 核对计划无误后显式应用：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .project-context/framework/scripts/install.ps1 -Mode NewProject -Apply
+```
+
+- 随后让 Codex 扫描目标项目并填充 `.project-context/project/` 中的新项目基线，再运行检查器。
 
 ## 首先读取
 
@@ -33,7 +43,10 @@
 
 ## 最近验证
 
-- [passed] `2026-08-17`：安装器 12 项生命周期测试通过。
+- [passed] `2026-08-17`：检查器 10 项验收测试通过。
+- [passed] `2026-08-17`：安装器 13 项生命周期测试通过。
+- [passed] `2026-08-17`：真实仓库默认根目录检查、Repair 零写入预览和冷启动恢复通过。
+- [not-run] `2026-08-17`：Unity 测试未运行；本工作流没有更改 Unity 受保护路径。
 
 ## 风险与不可假定事项
 

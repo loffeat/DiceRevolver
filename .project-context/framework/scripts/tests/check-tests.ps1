@@ -225,6 +225,23 @@ Assert-Check -Name 'actual placeholder' -Fixture 'unity' -ExpectedExit 1 -Mutate
 Assert-Check -Name 'completed work still active' -Fixture 'unity' -ExpectedExit 1 -Mutate $completeWithCurrentWork
 Assert-Check -Name 'high schema rejected' -Fixture 'unity' -ExpectedExit 1 -Mutate $setHighSchema
 
+$defaultRootFixture = New-CheckFixture -Fixture 'unity'
+try {
+    $copiedChecker = Join-Path $defaultRootFixture '.project-context\framework\scripts\check.ps1'
+    & $script:Shell -NoProfile -ExecutionPolicy Bypass -File $copiedChecker *> $null
+    if ($LASTEXITCODE -ne 0) {
+        $script:Failures.Add("checker default root expected exit 0 but received $LASTEXITCODE")
+    }
+    else {
+        Write-Host '[test:ok] checker resolves default root'
+    }
+}
+finally {
+    if (Test-Path -LiteralPath $defaultRootFixture) {
+        Remove-Item -LiteralPath $defaultRootFixture -Recurse -Force
+    }
+}
+
 if ($script:Failures.Count -gt 0) {
     $script:Failures | ForEach-Object { Write-Host "[test:error] $_" }
     exit 1

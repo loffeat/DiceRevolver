@@ -1,7 +1,7 @@
 # 可移植项目上下文系统
 
 - ID: `2026-08-17-portable-project-context-system`
-- Status: `active`
+- Status: `completed`
 - Branch: `codex/portable-context-system`
 - Created: `2026-08-17`
 - Updated: `2026-08-17`
@@ -27,16 +27,17 @@
 - Task 2：结构检查器及 Unity、Web、Library 三类夹具。
 - Task 3：预览、ExistingProject、Repair、幂等和安全入口合并。
 - Task 4：NewProject 备份/重新绑定，以及 `0.9.0` 到 `1.0.0` 升级。
+- Task 5：建立 DiceRevolver 项目地图、环境资料、状态索引和历史工作流。
+- Task 6：完成全量框架回归、真实仓库零写入预览、默认根目录调用和冷启动演练。
 
 ## 当前正在进行
 
-- Task 5：写入 DiceRevolver 项目基线和工作流记录。
+- 无
 
 ## 下一步
 
-1. 完成真实仓库结构检查。
-2. 执行 Task 6 的全量框架测试、预览零写入和冷启动演练。
-3. 将本工作流标记完成并更新交接。
+1. 后续事项创建新的工作流目录，不恢复本已完成工作流。
+2. 复制到其他项目时先运行 NewProject 预览，再显式应用并补全新项目基线。
 
 ## 阻塞
 
@@ -53,10 +54,12 @@
 
 ## 验证记录
 
-- [passed] `2026-08-17`：检查器九项验收用例通过。
-- [passed] `2026-08-17`：安装器 ExistingProject、Repair、NewProject 和 Upgrade 验收用例通过。
+- [passed] `2026-08-17`：检查器 10 项验收用例通过，包括无 `-Root` 调用。
+- [passed] `2026-08-17`：安装器 13 项 ExistingProject、Repair、NewProject 和 Upgrade 生命周期验收用例通过。
 - [passed] `2026-08-17`：真实仓库 `ExistingProject -Apply` 后的结构检查通过。
-- [not-run] `2026-08-17`：Task 6 最终全量回归和冷启动演练尚未运行。
+- [passed] `2026-08-17`：真实仓库 `Repair` 预览返回 `no changes`，路径限定 Git 状态执行前后一致。
+- [passed] `2026-08-17`：仅凭项目内入口、协议、项目资料和工作流完成冷启动恢复。
+- [not-run] `2026-08-17`：Unity 测试未运行；当前设备未发现可用 Unity Editor，且本工作流未修改 Unity 内容。
 
 ## 相关资料
 
