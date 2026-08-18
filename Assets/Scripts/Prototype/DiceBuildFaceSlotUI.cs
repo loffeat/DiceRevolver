@@ -8,17 +8,29 @@ namespace DiceRevolver.Prototype
     {
         [SerializeField] private Button button;
         [SerializeField] private Text faceLabel;
-        [SerializeField] private Text entryLabel;
+        [SerializeField] private Text baseLabel;
+        [SerializeField] private Text onFireLabel;
+        [SerializeField] private Text onHitLabel;
+        [SerializeField] private Text onFireEndLabel;
 
         private int face;
         private Action<int> clicked;
         private bool isWired;
 
-        public void Configure(Button configuredButton, Text configuredFaceLabel, Text configuredEntryLabel)
+        public void Configure(
+            Button configuredButton,
+            Text configuredFaceLabel,
+            Text configuredBaseLabel,
+            Text configuredOnFireLabel,
+            Text configuredOnHitLabel,
+            Text configuredOnFireEndLabel)
         {
             button = configuredButton;
             faceLabel = configuredFaceLabel;
-            entryLabel = configuredEntryLabel;
+            baseLabel = configuredBaseLabel;
+            onFireLabel = configuredOnFireLabel;
+            onHitLabel = configuredOnHitLabel;
+            onFireEndLabel = configuredOnFireEndLabel;
             isWired = false;
             EnsureButtonWired();
         }
@@ -46,7 +58,7 @@ namespace DiceRevolver.Prototype
             isWired = false;
         }
 
-        public void Bind(int face, DiceFaceEntry entry, Action<int> clicked)
+        public void Bind(int face, DiceFaceConfigurationSnapshot configuration, Action<int> clicked)
         {
             this.face = face;
             this.clicked = clicked;
@@ -57,15 +69,33 @@ namespace DiceRevolver.Prototype
                 faceLabel.text = face.ToString();
             }
 
-            SetEntry(entry);
+            SetConfiguration(configuration);
         }
 
-        public void SetEntry(DiceFaceEntry entry)
+        public void SetConfiguration(DiceFaceConfigurationSnapshot configuration)
         {
-            if (entryLabel != null)
+            SetSlotLabel(baseLabel, DiceFaceSlotType.Base, configuration);
+            SetSlotLabel(onFireLabel, DiceFaceSlotType.OnFire, configuration);
+            SetSlotLabel(onHitLabel, DiceFaceSlotType.OnHit, configuration);
+            SetSlotLabel(onFireEndLabel, DiceFaceSlotType.OnFireEnd, configuration);
+        }
+
+        private static void SetSlotLabel(
+            Text label,
+            DiceFaceSlotType slotType,
+            DiceFaceConfigurationSnapshot configuration)
+        {
+            if (label == null)
             {
-                entryLabel.text = entry != null ? entry.DisplayName : "Empty";
+                return;
             }
+
+            DiceFaceEntry entry = configuration.GetEntry(slotType);
+            BulletEventEffect effect = configuration.GetEffect(slotType);
+            string value = entry != null
+                ? entry.DisplayName
+                : effect != null ? effect.name : "空";
+            label.text = $"{slotType.ToChineseLabel()}: {value}";
         }
 
         private void HandleClicked()

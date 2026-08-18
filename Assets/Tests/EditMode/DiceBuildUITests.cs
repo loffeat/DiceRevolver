@@ -11,28 +11,51 @@ namespace DiceRevolver.Tests
     public sealed class DiceBuildUITests
     {
         [Test]
-        public void FaceSlotBindUpdatesLabelsAndInvokesClick()
+        public void FaceSlotBindShowsFourIndependentSlotLabelsAndInvokesClick()
         {
             GameObject slotOwner = new GameObject("FaceSlot");
             slotOwner.SetActive(false);
             Button button = slotOwner.AddComponent<Button>();
             Text faceLabel = CreateText("FaceLabel", slotOwner.transform);
-            Text entryLabel = CreateText("EntryLabel", slotOwner.transform);
+            Text baseLabel = CreateText("Base", slotOwner.transform);
+            Text onFireLabel = CreateText("OnFire", slotOwner.transform);
+            Text onHitLabel = CreateText("OnHit", slotOwner.transform);
+            Text onFireEndLabel = CreateText("OnFireEnd", slotOwner.transform);
             DiceBuildFaceSlotUI slot = slotOwner.AddComponent<DiceBuildFaceSlotUI>();
-            SetPrivate(slot, "button", button);
-            SetPrivate(slot, "faceLabel", faceLabel);
-            SetPrivate(slot, "entryLabel", entryLabel);
+            slot.Configure(
+                button,
+                faceLabel,
+                baseLabel,
+                onFireLabel,
+                onHitLabel,
+                onFireEndLabel);
             slotOwner.SetActive(true);
             int clickedFace = 0;
+            DiceFaceEntry baseEntry = CreateEntry("基础射击", DiceFaceSlotType.Base);
+            DiceFaceEntry onFireEntry = CreateEntry("双重射击", DiceFaceSlotType.OnFire);
+            DiceFaceEntry onHitEntry = CreateEntry("爆炸弹", DiceFaceSlotType.OnHit);
+            DiceFaceEntry onFireEndEntry = CreateEntry("强制四点", DiceFaceSlotType.OnFireEnd);
+            DiceFaceConfigurationSnapshot snapshot = new DiceFaceConfigurationSnapshot(
+                baseEntry,
+                onFireEntry,
+                onHitEntry,
+                onFireEndEntry);
 
-            slot.Bind(4, null, face => clickedFace = face);
+            slot.Bind(4, snapshot, face => clickedFace = face);
             button.onClick.Invoke();
 
             Assert.That(faceLabel.text, Is.EqualTo("4"));
-            Assert.That(entryLabel.text, Is.EqualTo("Empty"));
+            Assert.That(baseLabel.text, Does.Contain("基础射击"));
+            Assert.That(onFireLabel.text, Does.Contain("双重射击"));
+            Assert.That(onHitLabel.text, Does.Contain("爆炸弹"));
+            Assert.That(onFireEndLabel.text, Does.Contain("强制四点"));
             Assert.That(clickedFace, Is.EqualTo(4));
 
             Object.DestroyImmediate(slotOwner);
+            Object.DestroyImmediate(baseEntry);
+            Object.DestroyImmediate(onFireEntry);
+            Object.DestroyImmediate(onHitEntry);
+            Object.DestroyImmediate(onFireEndEntry);
         }
 
         [Test]
@@ -139,42 +162,57 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
-        public void RuntimePageBuildsLibraryAndEquipsSelectedEntryToFace()
+        public void RuntimePageEquipsFourIndependentEntriesToOneFace()
         {
             GameObject canvasOwner = new GameObject("DiceRevolverHUD");
             Canvas canvas = canvasOwner.AddComponent<Canvas>();
             GameObject playerOwner = new GameObject("Player");
             DiceFaceLoadout loadout = playerOwner.AddComponent<DiceFaceLoadout>();
-            DiceFaceEntry entry = ScriptableObject.CreateInstance<DiceFaceEntry>();
+            DiceFaceEntry baseEntry = CreateEntry("基础射击", DiceFaceSlotType.Base);
+            DiceFaceEntry onFireEntry = CreateEntry("双重射击", DiceFaceSlotType.OnFire);
+            DiceFaceEntry onHitEntry = CreateEntry("爆炸弹", DiceFaceSlotType.OnHit);
+            DiceFaceEntry onFireEndEntry = CreateEntry("强制四点", DiceFaceSlotType.OnFireEnd);
             DiceFaceLibrary library = ScriptableObject.CreateInstance<DiceFaceLibrary>();
-            SetPrivate(library, "entries", new[] { entry });
+            SetPrivate(library, "entries", new[] { baseEntry, onFireEntry, onHitEntry, onFireEndEntry });
 
             DiceBuildPageUI page = DiceBuildPageUI.EnsureRuntimePage(canvas, loadout, library);
             DiceBuildFaceSlotUI[] slots = page.GetComponentsInChildren<DiceBuildFaceSlotUI>(true);
             DiceBuildEntryButtonUI[] entries = page.GetComponentsInChildren<DiceBuildEntryButtonUI>(true);
 
             Assert.That(slots, Has.Length.EqualTo(6));
-            Assert.That(entries, Has.Length.EqualTo(1));
+            Assert.That(entries, Has.Length.EqualTo(4));
 
-            entries[0].GetComponent<Button>().onClick.Invoke();
-            slots[0].GetComponent<Button>().onClick.Invoke();
+            for (int i = 0; i < entries.Length; i++)
+            {
+                entries[i].GetComponent<Button>().onClick.Invoke();
+                slots[0].GetComponent<Button>().onClick.Invoke();
+            }
 
-            Assert.That(loadout.GetEntry(1), Is.SameAs(entry));
-            Assert.That(slots[0].transform.Find("Entry").GetComponent<Text>().text, Is.EqualTo(entry.DisplayName));
+            Assert.That(loadout.GetEntry(1, DiceFaceSlotType.Base), Is.SameAs(baseEntry));
+            Assert.That(loadout.GetEntry(1, DiceFaceSlotType.OnFire), Is.SameAs(onFireEntry));
+            Assert.That(loadout.GetEntry(1, DiceFaceSlotType.OnHit), Is.SameAs(onHitEntry));
+            Assert.That(loadout.GetEntry(1, DiceFaceSlotType.OnFireEnd), Is.SameAs(onFireEndEntry));
+            Assert.That(slots[0].transform.Find("Base").GetComponent<Text>().text, Does.Contain("基础射击"));
+            Assert.That(slots[0].transform.Find("OnFire").GetComponent<Text>().text, Does.Contain("双重射击"));
+            Assert.That(slots[0].transform.Find("OnHit").GetComponent<Text>().text, Does.Contain("爆炸弹"));
+            Assert.That(slots[0].transform.Find("OnFireEnd").GetComponent<Text>().text, Does.Contain("强制四点"));
 
             Object.DestroyImmediate(canvasOwner);
             Object.DestroyImmediate(playerOwner);
-            Object.DestroyImmediate(entry);
+            Object.DestroyImmediate(baseEntry);
+            Object.DestroyImmediate(onFireEntry);
+            Object.DestroyImmediate(onHitEntry);
+            Object.DestroyImmediate(onFireEndEntry);
             Object.DestroyImmediate(library);
         }
 
         [Test]
-        public void PrototypeResourceLibraryContainsThreeEntries()
+        public void PrototypeResourceLibraryContainsFourEntries()
         {
             DiceFaceLibrary library = Resources.Load<DiceFaceLibrary>("DiceFacePrototype/DiceFaceLibrary");
 
             Assert.That(library, Is.Not.Null);
-            Assert.That(library.Entries.Count, Is.EqualTo(3));
+            Assert.That(library.Entries.Count, Is.EqualTo(4));
         }
 
         private static Text CreateText(string name, Transform parent)
@@ -182,6 +220,14 @@ namespace DiceRevolver.Tests
             GameObject owner = new GameObject(name);
             owner.transform.SetParent(parent);
             return owner.AddComponent<Text>();
+        }
+
+        private static DiceFaceEntry CreateEntry(string displayName, DiceFaceSlotType slotType)
+        {
+            DiceFaceEntry entry = ScriptableObject.CreateInstance<DiceFaceEntry>();
+            SetPrivate(entry, "displayName", displayName);
+            SetPrivate(entry, "slotType", slotType);
+            return entry;
         }
 
         private static void SetPrivate<TTarget, TValue>(TTarget target, string fieldName, TValue value)

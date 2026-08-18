@@ -2,15 +2,22 @@
 
 ## 当前阶段
 
-- 可玩原型阶段；骰面构筑、测试靶、模块化弹丸事件管线和上下文系统均已完成当前计划范围。
+- 可玩原型阶段；测试机器人行为树事项已完成设计和首轮行为树代码，当前按用户要求暂停。
 
 ## 全局有效状态
 
-- `main` 的当前基线包含顶视角移动、骰子左轮、弹药 HUD、运行时构筑页和三个示例词条。
+- `main` 的当前工作树包含顶视角移动、骰子左轮、弹药 HUD、运行时构筑页和四个示例词条。
+- 每个骰面现拥有基础、开火时、命中时、开火后四个互不占用的单事件槽位；抽面时生成不可变配置快照供延迟和命中事件继续使用。
+- 构筑页会显示每面的四行槽位摘要；选择词条后点击骰面只替换该词条对应槽位。示例库包含基础射击、DoubleTap、BlastRound 和 LoadedFour 四类词条。
 - 构筑页可在场景加载后自动创建，按 `E` 打开或关闭；瞄准系统使用镜像虚拟枪口、近距离稳定解算和开火前同帧姿态刷新。
 - 子弹事件可通过 `BulletEventContext.Schedule` 使用轻量游戏时间调度；双重射击默认在第一发后 `0.25` 秒生成第二发。
 - 弹丸运行时属性已迁移到 `ProjectileDefinition`；每次骰面触发使用独立 `DiceFaceActivation`，并以默认 `32` 次事件预算限制连锁。
 - 六个骰面均绑定基础左轮子弹生成事件；基础子弹视觉通过独立包装引用 `fire_1.prefab`，附加弹默认不回触命中事件。
+- `fire_1.prefab` 原材质引用的 Shader 资源实际缺失；`ProjectileVisualWrapper` 现在只对错误 Shader 使用项目内透明粒子 Shader 兼容包装，不修改原始特效资源。
+- 玩家、测试靶、弹丸和 Ground 统一使用世界 `Y=0` 玩法平面；玩家移动不再依赖重力或地面 Collider。
+- Ground 已改为 `Background` Sorting Layer 的平铺 SpriteRenderer；基础弹丸粒子包装默认使用 `projectile` Sorting Layer。
+- AimRoot 运行时具有最低渲染平面保护，玩家根节点为 `Y=0` 时手臂不会落入 Ground 下方；基础左轮弹丸视觉缩放为 `0.4`。
+- 换弹视觉只对 `ArmVisual` 做明暗闪烁，不再写入其位置或旋转。
 - 核心战斗 Inspector 端口已提供中文名称，序列化字段名和既有数值保持不变。
 - 场景包含一个无限生命测试靶；弹丸通过通用受伤接口提交伤害，每次命中生成独立的世界空间飘字。
 - 可移植上下文系统已集成 `main`；原功能分支和隔离工作树已清理。
@@ -18,10 +25,14 @@
 
 ## 活跃工作流
 
-- 无
+- [2026-08-19 测试机器人行为树](workstreams/2026-08-19-test-robot-behavior-tree/STATE.md)（`active`，用户要求暂停）
 
 ## 完成历史
 
+- [2026-08-19 骰面四槽位配置](workstreams/2026-08-19-dice-face-four-slots/STATE.md)（`completed`）
+- [2026-08-19 手臂可见性与基础弹丸尺寸修复](workstreams/2026-08-19-arm-visibility-projectile-scale/STATE.md)（`completed`）
+- [2026-08-18 零高度与渲染层级契约](workstreams/2026-08-18-zero-height-render-layers/STATE.md)（`completed`）
+- [2026-08-18 基础射击可视与换弹手臂修复](workstreams/2026-08-18-base-shot-reload-visual-fix/STATE.md)（`completed`）
 - [2026-08-18 子弹定义与模块化骰面事件管线](workstreams/2026-08-18-projectile-definition-event-pipeline/STATE.md)（`completed`）
 - [2026-08-18 测试靶与伤害飘字](workstreams/2026-08-18-target-dummy-damage-numbers/STATE.md)（`completed`）
 - [2026-08-18 子弹事件时间系统](workstreams/2026-08-18-bullet-event-time-system/STATE.md)（`completed`）
@@ -39,6 +50,20 @@
 
 ## 最近项目级验证
 
+- [failed] `2026-08-19`：测试机器人行为树红灯按预期因缺少行为树生产类型而编译失败。
+- [blocked] `2026-08-19`：行为树最小实现绿灯在隔离 Unity 首次导入期间按用户要求终止，没有测试结果；共享控制器、机器人资源和完整回归尚未运行。
+- [passed] `2026-08-19`：四槽位数据、激活、枪械、UI 和资源均完成红绿循环；隔离 Unity 完整 EditMode 回归 `107/107`。
+- [passed] `2026-08-19`：Player Prefab SHA256 保持 `296F820634120FB2DCCC59FC268F8534E1C66D28DD3E0E9FE83383940B2ADBEB`，射速 `2`、换弹时间 `2`，未由本事项重存或改写。
+- [not-run] `2026-08-19`：四槽位构筑页在当前可见 Play Mode 中的最终排版和点击手感尚未人工验收。
+- [passed] `2026-08-19`：手臂地面高度和基础弹丸双倍尺寸聚焦测试 `2/2`，完整 EditMode 回归 `104/104`。
+- [passed] `2026-08-19`：Player Prefab 哈希在修复前后保持一致，未改写 AimRoot 子物体、sorting 或左轮调参。
+- [not-run] `2026-08-19`：当前可见 Play Mode 中手臂最终对齐和放大后弹丸观感尚未人工验收。
+- [passed] `2026-08-18`：零高度、Ground SpriteRenderer、角色/敌人非 Default 图层和基础弹丸 projectile 图层聚焦测试通过；完整 EditMode 回归 `102/102`。
+- [passed] `2026-08-18`：Player 与 TargetDummy Prefab 哈希在场景迁移前后保持一致，没有改写用户角色 Transform、sorting 或左轮调参。
+- [not-run] `2026-08-18`：当前可见 Play Mode 中 Ground 平铺与透明包装遮挡的最终观感尚未人工验收。
+- [passed] `2026-08-18`：模拟真实左键确认 Player Prefab 会消耗一发并生成基础弹丸；缺失 Shader 兼容和换弹仅闪烁聚焦测试 `16/16`，完整 EditMode 回归 `98/98` 通过。
+- [passed] `2026-08-18`：主 Unity 会话成功导入 `DiceRevolverGun.cs`、`ProjectileVisualWrapper.cs` 和新粒子 Shader，最新日志没有 C# 或 Shader 编译错误。
+- [not-run] `2026-08-18`：修复后的 `fire_1` 最终尺寸、颜色和运动观感尚未在当前可见 Play Mode 中人工验收。
 - [passed] `2026-08-18`：Unity 6000.3.10f1 许可证 IPC 恢复；修正测试框架数组计数断言后，完整 EditMode 回归 `94/94` 通过。
 - [passed] `2026-08-18`：事件管线、基础弹丸资源、六面绑定、命中策略、场景测试靶和碰撞契约的 27 项确定性冒烟测试通过，续作未修改受保护资产或配置。
 - [not-run] `2026-08-18`：`fire_1` 基础子弹、DoubleTap 和主弹/附加弹命中表现的 PlayMode 视觉与手感人工验证未运行。

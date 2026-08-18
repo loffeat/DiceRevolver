@@ -4,6 +4,8 @@ namespace DiceRevolver.Prototype
 {
     public sealed class TopDownAimHandRig : MonoBehaviour
     {
+        private const float MinimumRenderPlaneHeight = 0.01f;
+
         [Header("References")]
         [SerializeField] private TopDownPlayerController player;
         [SerializeField] private Transform aimRoot;
@@ -89,7 +91,8 @@ namespace DiceRevolver.Prototype
                 isFacingRight = aimDirection.x > 0f;
             }
 
-            aimRoot.localPosition = aimDirection * orbitRadius + Vector3.up * visualHeight;
+            aimRoot.localPosition = ResolveVisibleAimRootPosition(
+                aimDirection * orbitRadius + Vector3.up * visualHeight);
 
             if (bodyRenderer != null)
             {
@@ -114,6 +117,23 @@ namespace DiceRevolver.Prototype
                 aimDirection);
             ShotOrigin = aimRoot.TransformPoint(localShotPosition);
             ShotRotation = aimRoot.rotation * localShotRotation;
+        }
+
+        private Vector3 ResolveVisibleAimRootPosition(Vector3 desiredLocalPosition)
+        {
+            Transform parent = aimRoot.parent;
+            Vector3 desiredWorldPosition = parent != null
+                ? parent.TransformPoint(desiredLocalPosition)
+                : desiredLocalPosition;
+            if (desiredWorldPosition.y >= MinimumRenderPlaneHeight)
+            {
+                return desiredLocalPosition;
+            }
+
+            desiredWorldPosition.y = MinimumRenderPlaneHeight;
+            return parent != null
+                ? parent.InverseTransformPoint(desiredWorldPosition)
+                : desiredWorldPosition;
         }
 
         public bool TryGetShotPose(out Vector3 origin, out Quaternion rotation)

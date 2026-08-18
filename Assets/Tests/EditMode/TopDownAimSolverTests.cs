@@ -1,6 +1,7 @@
 using DiceRevolver.Prototype;
 using NUnit.Framework;
 using System.Reflection;
+using UnityEditor;
 using UnityEngine;
 
 namespace DiceRevolver.Tests
@@ -97,6 +98,36 @@ namespace DiceRevolver.Tests
             Object.DestroyImmediate(playerOwner);
         }
 
+        [Test]
+        public void PlayerPrefabAimRefreshKeepsArmAboveGameplayPlane()
+        {
+            GameObject playerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/Player.prefab");
+            GameObject playerInstance = Object.Instantiate(playerPrefab, Vector3.zero, Quaternion.identity);
+            TopDownPlayerController player = playerInstance.GetComponent<TopDownPlayerController>();
+            TopDownAimHandRig rig = playerInstance.GetComponentInChildren<TopDownAimHandRig>();
+            SpriteRenderer armRenderer = playerInstance.transform
+                .Find("VisualRoot/HandRig/AimRoot/ArmVisual")
+                .GetComponent<SpriteRenderer>();
+
+            try
+            {
+                InvokePrivate(rig, "Awake");
+                SetAutoProperty(player, "AimWorldPoint", new Vector3(8f, 0f, 3f));
+                SetAutoProperty(player, "AimDirection", new Vector3(8f, 0f, 3f).normalized);
+
+                rig.RefreshAimPose();
+
+                Assert.That(armRenderer.enabled, Is.True);
+                Assert.That(armRenderer.sprite, Is.Not.Null);
+                Assert.That(armRenderer.color.a, Is.GreaterThan(0f));
+                Assert.That(armRenderer.bounds.center.y, Is.GreaterThan(0f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(playerInstance);
+            }
+        }
+
         private static bool IsFinite(Quaternion rotation)
         {
             return float.IsFinite(rotation.x)
@@ -117,6 +148,15 @@ namespace DiceRevolver.Tests
                 $"<{propertyName}>k__BackingField",
                 BindingFlags.Instance | BindingFlags.NonPublic);
             field.SetValue(target, value);
+        }
+
+        private static void InvokePrivate(object owner, string methodName)
+        {
+            MethodInfo method = owner.GetType().GetMethod(
+                methodName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(method, Is.Not.Null);
+            method.Invoke(owner, null);
         }
 
     }

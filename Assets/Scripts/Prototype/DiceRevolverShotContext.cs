@@ -36,7 +36,7 @@ namespace DiceRevolver.Prototype
                 origin,
                 direction,
                 projectile,
-                diceFace,
+                DiceFaceConfigurationSnapshot.FromEntry(diceFace),
                 stats,
                 projectilePrefab,
                 null,
@@ -50,7 +50,7 @@ namespace DiceRevolver.Prototype
             Vector3 origin,
             Vector3 direction,
             Projectile projectile,
-            DiceFaceEntry diceFace,
+            DiceFaceConfigurationSnapshot configuration,
             ProjectileRuntimeStats stats,
             Projectile projectilePrefab,
             ProjectileDefinition projectileDefinition,
@@ -61,7 +61,7 @@ namespace DiceRevolver.Prototype
             Origin = origin;
             Direction = direction;
             Projectile = projectile;
-            Entry = diceFace;
+            Configuration = configuration;
             Stats = stats;
             ProjectilePrefab = projectilePrefab;
             ProjectileDefinition = projectileDefinition;
@@ -73,7 +73,8 @@ namespace DiceRevolver.Prototype
         public Vector3 Origin { get; }
         public Vector3 Direction { get; }
         public Projectile Projectile { get; }
-        public DiceFaceEntry Entry { get; }
+        public DiceFaceConfigurationSnapshot Configuration { get; }
+        public DiceFaceEntry Entry => Configuration.FirstEntry;
         public DiceFaceEntry DiceFace => Entry;
         public ProjectileRuntimeStats Stats { get; }
         public Projectile ProjectilePrefab { get; }

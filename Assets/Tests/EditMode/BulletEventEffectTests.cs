@@ -178,7 +178,7 @@ namespace DiceRevolver.Tests
         {
             return new DiceFaceActivation(
                 2,
-                null,
+                default,
                 Vector3.zero,
                 Vector3.forward,
                 null,

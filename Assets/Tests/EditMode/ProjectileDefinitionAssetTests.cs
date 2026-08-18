@@ -1,4 +1,4 @@
-using System.Linq;
+using System.Reflection;
 using DiceRevolver.Prototype;
 using NUnit.Framework;
 using UnityEditor;
@@ -58,6 +58,84 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void BasicRevolverPrefabUsesDoubleSizedVisualScale()
+        {
+            GameObject projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+            ProjectileVisualWrapper wrapper = projectilePrefab.GetComponent<ProjectileVisualWrapper>();
+            FieldInfo visualScale = typeof(ProjectileVisualWrapper).GetField(
+                "visualScale",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Assert.That(wrapper, Is.Not.Null);
+            Assert.That(visualScale, Is.Not.Null);
+            Assert.That((float)visualScale.GetValue(wrapper), Is.EqualTo(0.4f));
+        }
+
+        [Test]
+        public void BasicRevolverRuntimeVisualReplacesMissingSourceShader()
+        {
+            GameObject projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+            GameObject instance = Object.Instantiate(projectilePrefab);
+
+            try
+            {
+                ProjectileVisualWrapper wrapper = instance.GetComponent<ProjectileVisualWrapper>();
+                MethodInfo awake = typeof(ProjectileVisualWrapper).GetMethod(
+                    "Awake",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(awake, Is.Not.Null);
+                awake.Invoke(wrapper, null);
+
+                ParticleSystemRenderer[] renderers =
+                    instance.GetComponentsInChildren<ParticleSystemRenderer>(true);
+
+                Assert.That(renderers, Is.Not.Empty);
+                for (int i = 0; i < renderers.Length; i++)
+                {
+                    Assert.That(renderers[i].sharedMaterial, Is.Not.Null);
+                    Assert.That(
+                        renderers[i].sharedMaterial.shader.name,
+                        Is.EqualTo("DiceRevolver/Projectile Particle Unlit"));
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
+        public void BasicRevolverRuntimeVisualUsesProjectileSortingLayer()
+        {
+            GameObject projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+            GameObject instance = Object.Instantiate(projectilePrefab);
+
+            try
+            {
+                ProjectileVisualWrapper wrapper = instance.GetComponent<ProjectileVisualWrapper>();
+                MethodInfo awake = typeof(ProjectileVisualWrapper).GetMethod(
+                    "Awake",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(awake, Is.Not.Null);
+                awake.Invoke(wrapper, null);
+
+                ParticleSystemRenderer[] renderers =
+                    instance.GetComponentsInChildren<ParticleSystemRenderer>(true);
+
+                Assert.That(renderers, Is.Not.Empty);
+                for (int i = 0; i < renderers.Length; i++)
+                {
+                    Assert.That(renderers[i].sortingLayerName, Is.EqualTo("projectile"));
+                    Assert.That(renderers[i].sortingOrder, Is.Zero);
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(instance);
+            }
+        }
+
+        [Test]
         public void LibraryAndSpawnEffectReferenceTheBasicDefinition()
         {
             ProjectileDefinition definition =
@@ -92,8 +170,10 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
-        public void ExistingConstructionEntriesKeepTheirIndependentEventStages()
+        public void PrototypeConstructionEntriesMapToFourIndependentSlots()
         {
+            DiceFaceEntry basicShot = AssetDatabase.LoadAssetAtPath<DiceFaceEntry>(
+                "Assets/Resources/DiceFacePrototype/DiceFaces/BasicShot.asset");
             DiceFaceEntry doubleTap = AssetDatabase.LoadAssetAtPath<DiceFaceEntry>(
                 "Assets/Resources/DiceFacePrototype/DiceFaces/DoubleTap.asset");
             DiceFaceEntry blastRound = AssetDatabase.LoadAssetAtPath<DiceFaceEntry>(
@@ -101,17 +181,15 @@ namespace DiceRevolver.Tests
             DiceFaceEntry loadedFour = AssetDatabase.LoadAssetAtPath<DiceFaceEntry>(
                 "Assets/Resources/DiceFacePrototype/DiceFaces/LoadedFour.asset");
 
-            Assert.That(doubleTap.OnFireEffects.OfType<ExtraShotOnFireEffect>().Count(), Is.EqualTo(1));
-            Assert.That(doubleTap.OnHitEffects, Is.Empty);
-            Assert.That(doubleTap.OnFireEndEffects, Is.Empty);
-
-            Assert.That(blastRound.OnFireEffects, Is.Empty);
-            Assert.That(blastRound.OnHitEffects.OfType<ExplosionOnHitEffect>().Count(), Is.EqualTo(1));
-            Assert.That(blastRound.OnFireEndEffects, Is.Empty);
-
-            Assert.That(loadedFour.OnFireEffects, Is.Empty);
-            Assert.That(loadedFour.OnHitEffects, Is.Empty);
-            Assert.That(loadedFour.OnFireEndEffects.OfType<ForceFaceFourOnFireEndEffect>().Count(), Is.EqualTo(1));
+            Assert.That(basicShot, Is.Not.Null);
+            Assert.That(basicShot.SlotType, Is.EqualTo(DiceFaceSlotType.Base));
+            Assert.That(basicShot.Effect, Is.TypeOf<ProjectileSpawnEffect>());
+            Assert.That(doubleTap.SlotType, Is.EqualTo(DiceFaceSlotType.OnFire));
+            Assert.That(doubleTap.Effect, Is.TypeOf<ExtraShotOnFireEffect>());
+            Assert.That(blastRound.SlotType, Is.EqualTo(DiceFaceSlotType.OnHit));
+            Assert.That(blastRound.Effect, Is.TypeOf<ExplosionOnHitEffect>());
+            Assert.That(loadedFour.SlotType, Is.EqualTo(DiceFaceSlotType.OnFireEnd));
+            Assert.That(loadedFour.Effect, Is.TypeOf<ForceFaceFourOnFireEndEffect>());
         }
     }
 }

@@ -18,9 +18,8 @@ namespace DiceRevolver.Tests
             yield return Port<DiceRevolverGun>("reloadBlinkSpeed", "换弹闪烁速度");
 
             yield return Port<DiceFaceEntry>("displayName", "显示名称");
-            yield return Port<DiceFaceEntry>("onFireEffects", "开火时事件");
-            yield return Port<DiceFaceEntry>("onHitEffects", "击中时事件");
-            yield return Port<DiceFaceEntry>("onFireEndEffects", "结束开火时事件");
+            yield return Port<DiceFaceEntry>("slotType", "槽位类型");
+            yield return Port<DiceFaceEntry>("effect", "事件效果");
 
             yield return Port<ProjectileDefinition>("projectilePrefab", "弹丸 Prefab");
             yield return Port<ProjectileDefinition>("projectileType", "弹幕类型");
@@ -42,8 +41,7 @@ namespace DiceRevolver.Tests
             yield return Port<DiceFaceLibrary>("entries", "骰面词条库");
             yield return Port<BulletEventLibrary>("effects", "子弹事件库");
             yield return Port<ProjectileDefinitionLibrary>("definitions", "弹丸定义库");
-            yield return Port<DiceFaceLoadout>("entries", "六面装备");
-            yield return Port<DiceFaceLoadout>("baseEffects", "六面基础事件");
+            yield return Port<DiceFaceLoadout>("faceConfigurations", "六面四槽位配置");
         }
 
         [TestCaseSource(nameof(CoreCombatPorts))]

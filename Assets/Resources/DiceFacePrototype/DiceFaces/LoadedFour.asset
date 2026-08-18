@@ -16,6 +16,8 @@ MonoBehaviour:
   description: "\u7ED3\u675F\u5F00\u706B\u65F6\u586B\u56DE\u9AB0\u9762 4\uFF0C\u5E76\u4EE4\u4E0B\u4E00\u6B21\u5FC5\u5B9A\u63B7\u51FA
     4\u3002"
   displayColor: {r: 0.25, g: 0.7, b: 0.95, a: 1}
+  slotType: 3
+  effect: {fileID: 11400000, guid: 0d8454fee0df2a24a9badf737b5bc168, type: 2}
   projectilePrefabOverride: {fileID: 0}
   projectileType: Default
   projectileTag: Default

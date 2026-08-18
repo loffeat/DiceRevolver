@@ -7,6 +7,8 @@ namespace DiceRevolver.Editor
     public static class DiceFacePrototypeAssetBuilder
     {
         private const string RootFolder = "Assets/Resources/DiceFacePrototype";
+        private const string BasicProjectileEffectPath =
+            "Assets/Resources/DiceFacePrototype/BulletEvents/FireBasicRevolverProjectile.asset";
 
         [MenuItem("Dice Revolver/Setup Dice Face Build Prototype")]
         public static void SetupPrototypeAssets()
@@ -25,6 +27,26 @@ namespace DiceRevolver.Editor
             ForceFaceFourOnFireEndEffect forceFour = LoadOrCreate<ForceFaceFourOnFireEndEffect>(
                 $"{RootFolder}/BulletEvents/ForceFaceFourOnFireEndEffect.asset",
                 out _);
+            ProjectileSpawnEffect basicProjectile =
+                AssetDatabase.LoadAssetAtPath<ProjectileSpawnEffect>(BasicProjectileEffectPath);
+
+            DiceFaceEntry basicShot = LoadOrCreate<DiceFaceEntry>(
+                $"{RootFolder}/DiceFaces/BasicShot.asset",
+                out bool basicShotCreated);
+            if (basicShotCreated)
+            {
+                ConfigureEntry(
+                    basicShot,
+                    "基础射击",
+                    "发射一发基础左轮子弹。",
+                    new Color(0.82f, 0.86f, 0.90f, 1f),
+                    DiceFaceSlotType.Base,
+                    basicProjectile);
+            }
+            else
+            {
+                ConfigureMissingSlotMapping(basicShot, DiceFaceSlotType.Base, basicProjectile);
+            }
 
             DiceFaceEntry doubleTap = LoadOrCreate<DiceFaceEntry>(
                 $"{RootFolder}/DiceFaces/DoubleTap.asset",
@@ -36,9 +58,12 @@ namespace DiceRevolver.Editor
                     "双重射击",
                     "开火时额外发射一次当前骰面。",
                     new Color(0.95f, 0.78f, 0.25f, 1f),
-                    new BulletEventEffect[] { extraShot },
-                    null,
-                    null);
+                    DiceFaceSlotType.OnFire,
+                    extraShot);
+            }
+            else
+            {
+                ConfigureMissingSlotMapping(doubleTap, DiceFaceSlotType.OnFire, extraShot);
             }
 
             DiceFaceEntry blastRound = LoadOrCreate<DiceFaceEntry>(
@@ -51,9 +76,12 @@ namespace DiceRevolver.Editor
                     "爆炸弹",
                     "击中时生成已配置的爆炸弹幕。",
                     new Color(0.92f, 0.30f, 0.22f, 1f),
-                    null,
-                    new BulletEventEffect[] { explosion },
-                    null);
+                    DiceFaceSlotType.OnHit,
+                    explosion);
+            }
+            else
+            {
+                ConfigureMissingSlotMapping(blastRound, DiceFaceSlotType.OnHit, explosion);
             }
 
             DiceFaceEntry loadedFour = LoadOrCreate<DiceFaceEntry>(
@@ -66,9 +94,12 @@ namespace DiceRevolver.Editor
                     "强制四点",
                     "结束开火时填回骰面 4，并令下一次必定掷出 4。",
                     new Color(0.25f, 0.70f, 0.95f, 1f),
-                    null,
-                    null,
-                    new BulletEventEffect[] { forceFour });
+                    DiceFaceSlotType.OnFireEnd,
+                    forceFour);
+            }
+            else
+            {
+                ConfigureMissingSlotMapping(loadedFour, DiceFaceSlotType.OnFireEnd, forceFour);
             }
 
             DiceFaceLibrary faceLibrary = LoadOrCreate<DiceFaceLibrary>(
@@ -76,7 +107,11 @@ namespace DiceRevolver.Editor
                 out bool faceLibraryCreated);
             if (faceLibraryCreated)
             {
-                SetObjectArray(faceLibrary, "entries", doubleTap, blastRound, loadedFour);
+                SetObjectArray(faceLibrary, "entries", basicShot, doubleTap, blastRound, loadedFour);
+            }
+            else
+            {
+                AppendMissingObjects(faceLibrary, "entries", basicShot, doubleTap, blastRound, loadedFour);
             }
 
             BulletEventLibrary eventLibrary = LoadOrCreate<BulletEventLibrary>(
@@ -97,19 +132,68 @@ namespace DiceRevolver.Editor
             string displayName,
             string description,
             Color displayColor,
-            BulletEventEffect[] onFire,
-            BulletEventEffect[] onHit,
-            BulletEventEffect[] onFireEnd)
+            DiceFaceSlotType slotType,
+            BulletEventEffect effect)
         {
             SerializedObject serialized = new(entry);
             serialized.FindProperty("displayName").stringValue = displayName;
             serialized.FindProperty("description").stringValue = description;
             serialized.FindProperty("displayColor").colorValue = displayColor;
-            SetObjectArray(serialized, "onFireEffects", onFire);
-            SetObjectArray(serialized, "onHitEffects", onHit);
-            SetObjectArray(serialized, "onFireEndEffects", onFireEnd);
+            serialized.FindProperty("slotType").enumValueIndex = (int)slotType;
+            serialized.FindProperty("effect").objectReferenceValue = effect;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(entry);
+        }
+
+        private static void ConfigureMissingSlotMapping(
+            DiceFaceEntry entry,
+            DiceFaceSlotType slotType,
+            BulletEventEffect effect)
+        {
+            if (entry == null || entry.Effect != null || effect == null)
+            {
+                return;
+            }
+
+            SerializedObject serialized = new(entry);
+            serialized.FindProperty("slotType").enumValueIndex = (int)slotType;
+            serialized.FindProperty("effect").objectReferenceValue = effect;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(entry);
+        }
+
+        private static void AppendMissingObjects(Object target, string propertyName, params Object[] values)
+        {
+            SerializedObject serialized = new(target);
+            SerializedProperty property = serialized.FindProperty(propertyName);
+            for (int valueIndex = 0; valueIndex < values.Length; valueIndex++)
+            {
+                Object value = values[valueIndex];
+                if (value == null || Contains(property, value))
+                {
+                    continue;
+                }
+
+                int index = property.arraySize;
+                property.arraySize++;
+                property.GetArrayElementAtIndex(index).objectReferenceValue = value;
+            }
+
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(target);
+        }
+
+        private static bool Contains(SerializedProperty property, Object value)
+        {
+            for (int i = 0; i < property.arraySize; i++)
+            {
+                if (property.GetArrayElementAtIndex(i).objectReferenceValue == value)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void SetObjectArray(Object target, string propertyName, params Object[] values)

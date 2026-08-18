@@ -135,7 +135,10 @@ namespace DiceRevolver.Prototype
                 faceSlots[face] = slot;
                 PositionFaceSlot(face, slot);
                 slot.gameObject.SetActive(true);
-                slot.Bind(face, loadout != null ? loadout.GetEntry(face) : null, HandleFaceClicked);
+                DiceFaceConfigurationSnapshot configuration = loadout != null
+                    ? loadout.GetSnapshot(face)
+                    : default;
+                slot.Bind(face, configuration, HandleFaceClicked);
             }
         }
 
@@ -235,11 +238,11 @@ namespace DiceRevolver.Prototype
             loadout.Equip(face, selectedEntry);
         }
 
-        private void HandleEntryChanged(int face, DiceFaceEntry entry)
+        private void HandleSlotChanged(int face, DiceFaceSlotType slotType, DiceFaceEntry entry)
         {
             if (faceSlots.TryGetValue(face, out DiceBuildFaceSlotUI slot))
             {
-                slot.SetEntry(entry);
+                slot.SetConfiguration(loadout.GetSnapshot(face));
             }
         }
 
@@ -247,8 +250,8 @@ namespace DiceRevolver.Prototype
         {
             if (isActiveAndEnabled && loadout != null)
             {
-                loadout.EntryChanged -= HandleEntryChanged;
-                loadout.EntryChanged += HandleEntryChanged;
+                loadout.SlotChanged -= HandleSlotChanged;
+                loadout.SlotChanged += HandleSlotChanged;
             }
         }
 
@@ -256,7 +259,7 @@ namespace DiceRevolver.Prototype
         {
             if (loadout != null)
             {
-                loadout.EntryChanged -= HandleEntryChanged;
+                loadout.SlotChanged -= HandleSlotChanged;
             }
         }
     }

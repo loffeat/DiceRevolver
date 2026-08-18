@@ -132,16 +132,18 @@ namespace DiceRevolver.Prototype
             rect.anchorMin = new Vector2(0f, 1f);
             rect.anchorMax = new Vector2(0f, 1f);
             rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = new Vector2(112f, 112f);
+            rect.sizeDelta = new Vector2(144f, 144f);
 
             Button button = owner.AddComponent<Button>();
             button.targetGraphic = owner.GetComponent<Image>();
-            Text faceLabel = CreateText("Face", owner.transform, face.ToString(), 34, TextAnchor.UpperCenter,
-                new Vector2(0.05f, 0.48f), new Vector2(0.95f, 0.95f));
-            Text entryLabel = CreateText("Entry", owner.transform, "空", 16, TextAnchor.MiddleCenter,
-                new Vector2(0.05f, 0.05f), new Vector2(0.95f, 0.50f));
+            Text faceLabel = CreateText("Face", owner.transform, face.ToString(), 28, TextAnchor.UpperCenter,
+                new Vector2(0.05f, 0.72f), new Vector2(0.95f, 0.96f));
+            Text baseLabel = CreateSlotText("Base", owner.transform, new Vector2(0.05f, 0.54f), new Vector2(0.95f, 0.72f));
+            Text onFireLabel = CreateSlotText("OnFire", owner.transform, new Vector2(0.05f, 0.36f), new Vector2(0.95f, 0.54f));
+            Text onHitLabel = CreateSlotText("OnHit", owner.transform, new Vector2(0.05f, 0.18f), new Vector2(0.95f, 0.36f));
+            Text onFireEndLabel = CreateSlotText("OnFireEnd", owner.transform, new Vector2(0.05f, 0.02f), new Vector2(0.95f, 0.18f));
             DiceBuildFaceSlotUI slot = owner.AddComponent<DiceBuildFaceSlotUI>();
-            slot.Configure(button, faceLabel, entryLabel);
+            slot.Configure(button, faceLabel, baseLabel, onFireLabel, onHitLabel, onFireEndLabel);
         }
 
         private static Transform CreateEntryList(Transform parent)
@@ -179,17 +181,32 @@ namespace DiceRevolver.Prototype
         {
             GameObject owner = CreateImageObject($"Dice Entry {index}", parent, SlotColor);
             LayoutElement layout = owner.AddComponent<LayoutElement>();
-            layout.preferredHeight = 94f;
+            layout.preferredHeight = 108f;
             Button button = owner.AddComponent<Button>();
             Image image = owner.GetComponent<Image>();
             button.targetGraphic = image;
 
             Text nameLabel = CreateText("Name", owner.transform, string.Empty, 21, TextAnchor.MiddleLeft,
-                new Vector2(0.04f, 0.50f), new Vector2(0.96f, 0.92f));
+                new Vector2(0.04f, 0.62f), new Vector2(0.72f, 0.94f));
+            Text slotLabel = CreateText("Slot", owner.transform, string.Empty, 15, TextAnchor.MiddleRight,
+                new Vector2(0.72f, 0.62f), new Vector2(0.96f, 0.94f));
             Text descriptionLabel = CreateText("Description", owner.transform, string.Empty, 15, TextAnchor.UpperLeft,
-                new Vector2(0.04f, 0.08f), new Vector2(0.96f, 0.50f));
+                new Vector2(0.04f, 0.08f), new Vector2(0.96f, 0.60f));
             DiceBuildEntryButtonUI entryButton = owner.AddComponent<DiceBuildEntryButtonUI>();
-            entryButton.Configure(button, nameLabel, descriptionLabel, image);
+            entryButton.Configure(button, nameLabel, slotLabel, descriptionLabel, image);
+        }
+
+        private static Text CreateSlotText(
+            string name,
+            Transform parent,
+            Vector2 anchorMin,
+            Vector2 anchorMax)
+        {
+            Text label = CreateText(name, parent, string.Empty, 13, TextAnchor.MiddleLeft, anchorMin, anchorMax);
+            label.resizeTextForBestFit = true;
+            label.resizeTextMinSize = 8;
+            label.resizeTextMaxSize = 13;
+            return label;
         }
 
         private static GameObject CreateRectObject(string name, Transform parent)

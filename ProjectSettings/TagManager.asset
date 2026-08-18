@@ -56,6 +56,9 @@ TagManager:
   - name: projectile
     uniqueID: 1832066307
     locked: 0
+  - name: UFX
+    uniqueID: 581854723
+    locked: 0
   - name: Frontground
     uniqueID: 1747159265
     locked: 0

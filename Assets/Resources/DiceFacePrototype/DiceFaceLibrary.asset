@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: DiceFaceLibrary
   m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.DiceFaceLibrary
   entries:
+  - {fileID: 11400000, guid: e1c3a9bd8ffb4b7c8c34a73119fa8f47, type: 2}
   - {fileID: 11400000, guid: 270209a9c34adf64f8849993171755a1, type: 2}
   - {fileID: 11400000, guid: 2abb79b21f6d5814a87de27afbe801cf, type: 2}
   - {fileID: 11400000, guid: 3388ef90b89229443bb0a8967ecd9f74, type: 2}

@@ -35,8 +35,6 @@ namespace DiceRevolver.Prototype
         private float nextShotTime;
         private float reloadStartedAt;
         private bool isReloading;
-        private Vector3 visualRootDefaultLocalPosition;
-        private Quaternion visualRootDefaultLocalRotation;
         private SpriteRenderer reloadBlinkRenderer;
         private Color reloadBlinkDefaultColor = Color.white;
         private TopDownAimHandRig aimRig;
@@ -75,8 +73,6 @@ namespace DiceRevolver.Prototype
                 visualRoot = transform;
             }
 
-            visualRootDefaultLocalPosition = visualRoot.localPosition;
-            visualRootDefaultLocalRotation = visualRoot.localRotation;
             reloadBlinkRenderer = visualRoot.GetComponentInChildren<SpriteRenderer>();
             if (reloadBlinkRenderer != null)
             {
@@ -163,7 +159,9 @@ namespace DiceRevolver.Prototype
                 loadout = GetComponentInParent<DiceFaceLoadout>();
             }
 
-            DiceFaceEntry entry = loadout != null ? loadout.GetEntry(face) : null;
+            DiceFaceConfigurationSnapshot configuration = loadout != null
+                ? loadout.GetSnapshot(face)
+                : default;
 
             Vector3 shotOrigin = muzzle.position;
             Quaternion shotRotation = muzzle.rotation;
@@ -184,7 +182,7 @@ namespace DiceRevolver.Prototype
             DiceFaceActivation activation = null;
             activation = new DiceFaceActivation(
                 face,
-                entry,
+                configuration,
                 shotOrigin,
                 shotDirection,
                 this,
@@ -198,7 +196,7 @@ namespace DiceRevolver.Prototype
                 shotOrigin,
                 shotDirection,
                 null,
-                entry,
+                configuration,
                 default,
                 null,
                 null,
@@ -211,10 +209,10 @@ namespace DiceRevolver.Prototype
                 shotOrigin);
 
             FireStarted?.Invoke(faceTrigger);
-            TriggerEffect(loadout?.GetBaseEffect(face), eventContext);
-            TriggerEffects(entry?.OnFireEffects, eventContext);
+            TriggerEffect(configuration.GetEffect(DiceFaceSlotType.Base), eventContext);
+            TriggerEffect(configuration.GetEffect(DiceFaceSlotType.OnFire), eventContext);
             FireEnded?.Invoke(faceTrigger);
-            TriggerEffects(entry?.OnFireEndEffects, eventContext);
+            TriggerEffect(configuration.GetEffect(DiceFaceSlotType.OnFireEnd), eventContext);
 
             if (chamber.IsEmpty && automaticReloadWhenEmpty)
             {
@@ -231,7 +229,13 @@ namespace DiceRevolver.Prototype
 
             Projectile prefab = shot.ProjectilePrefab != null ? shot.ProjectilePrefab : projectilePrefab;
             Quaternion rotation = GetShotRotation(shot.Direction, transform.rotation);
-            Projectile spawned = SpawnProjectile(shot.Origin, shot.Direction, rotation, prefab, shot.Stats, shot.Entry != null);
+            Projectile spawned = SpawnProjectile(
+                shot.Origin,
+                shot.Direction,
+                rotation,
+                prefab,
+                shot.Stats,
+                shot.Configuration.HasAnyEntry);
             if (spawned != null)
             {
                 BridgeProjectileHit(spawned, shot, allowTriggeredEffects);
@@ -266,7 +270,7 @@ namespace DiceRevolver.Prototype
                 request.Origin,
                 request.Direction,
                 projectile,
-                activation.Entry,
+                activation.Configuration,
                 stats,
                 prefab,
                 definition,
@@ -289,6 +293,7 @@ namespace DiceRevolver.Prototype
                 return null;
             }
 
+            origin.y = 0f;
             Projectile projectile = Instantiate(prefab, origin, rotation);
             if (applyStats)
             {
@@ -319,8 +324,8 @@ namespace DiceRevolver.Prototype
                 ProjectileHit?.Invoke(hit);
                 if (allowTriggeredEffects)
                 {
-                    TriggerEffects(
-                        shot.Entry?.OnHitEffects,
+                    TriggerEffect(
+                        shot.Configuration.GetEffect(DiceFaceSlotType.OnHit),
                         CreateEventContext(shot.Activation, shot, hitCollider, hitPosition));
                 }
             };
@@ -348,19 +353,6 @@ namespace DiceRevolver.Prototype
                 shot,
                 hitCollider,
                 hitPosition);
-        }
-
-        private static void TriggerEffects(System.Collections.Generic.IReadOnlyList<BulletEventEffect> effects, BulletEventContext context)
-        {
-            if (effects == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < effects.Count; i++)
-            {
-                TriggerEffect(effects[i], context);
-            }
         }
 
         private static void TriggerEffect(BulletEventEffect effect, BulletEventContext context)
@@ -421,10 +413,7 @@ namespace DiceRevolver.Prototype
                 return;
             }
 
-            float drop = Mathf.Sin(progress * Mathf.PI) * reloadDropDistance;
             float blink = Mathf.PingPong(progress * reloadBlinkSpeed, 1f);
-            visualRoot.localPosition = visualRootDefaultLocalPosition + Vector3.down * drop;
-            visualRoot.localRotation = visualRootDefaultLocalRotation;
 
             if (reloadBlinkRenderer != null)
             {
@@ -438,9 +427,6 @@ namespace DiceRevolver.Prototype
             {
                 return;
             }
-
-            visualRoot.localPosition = visualRootDefaultLocalPosition;
-            visualRoot.localRotation = visualRootDefaultLocalRotation;
 
             if (reloadBlinkRenderer != null)
             {

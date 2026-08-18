@@ -32,6 +32,11 @@
 
 - 无
 
+## 后续修正
+
+- `2026-08-18` 的 Play Mode 故障排查发现，`fire_1.prefab` 虽有完整材质引用，但两个材质引用的 Shader GUID 在项目中不存在，运行时解析为 `Hidden/InternalErrorShader`。
+- 兼容修复与换弹视觉修复记录在 [基础射击可视与换弹手臂修复](../2026-08-18-base-shot-reload-visual-fix/STATE.md)；不要再假定原材质可直接渲染。
+
 ## 已完成
 
 - 检查 `fire_1.prefab` 结构、粒子系统和材质引用。
@@ -83,7 +88,7 @@
 
 ## 验证记录
 
-- [passed] `2026-08-18`：`fire_1.prefab` 包含两个 Particle System、完整材质引用，且不包含运行时弹丸组件，符合纯视觉子 Prefab 定位。
+- [passed] `2026-08-18`：后续复核修正早期判断：`fire_1.prefab` 包含两个 Particle System 且不含运行时弹丸组件，但其材质 Shader GUID 缺失；后续已由视觉包装器提供兼容 Shader。
 - [passed] `2026-08-18`：设计规格占位扫描无结果，主弹、附加弹、攻击特效和六面基础事件规则一致。
 - [passed] `2026-08-18`：用户已通过设计并授权直接实施，TDD 实施范围已锁定。
 - [passed] `2026-08-18`：使用 Unity 当前生成的三套 C# 响应文件分别编译运行时、Editor 和 EditMode 测试程序集，三个编译命令均返回 exit code `0`；仅有手工调用旧 Mono C# 编译器时的 Unity SourceGenerator 版本 warning。

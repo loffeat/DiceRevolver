@@ -8,6 +8,7 @@ namespace DiceRevolver.Prototype
     {
         [SerializeField] private Button button;
         [SerializeField] private Text nameLabel;
+        [SerializeField] private Text slotLabel;
         [SerializeField] private Text descriptionLabel;
         [SerializeField] private Image backgroundImage;
         [SerializeField] private Color selectedColor = new Color(0.95f, 0.86f, 0.3f, 1f);
@@ -20,11 +21,13 @@ namespace DiceRevolver.Prototype
         public void Configure(
             Button configuredButton,
             Text configuredNameLabel,
+            Text configuredSlotLabel,
             Text configuredDescriptionLabel,
             Image configuredBackgroundImage)
         {
             button = configuredButton;
             nameLabel = configuredNameLabel;
+            slotLabel = configuredSlotLabel;
             descriptionLabel = configuredDescriptionLabel;
             backgroundImage = configuredBackgroundImage;
             isWired = false;
@@ -73,6 +76,11 @@ namespace DiceRevolver.Prototype
             if (descriptionLabel != null)
             {
                 descriptionLabel.text = entry != null ? entry.Description : string.Empty;
+            }
+
+            if (slotLabel != null)
+            {
+                slotLabel.text = entry != null ? entry.SlotType.ToChineseLabel() : string.Empty;
             }
 
             SetSelected(false);

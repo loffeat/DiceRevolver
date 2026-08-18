@@ -89,13 +89,44 @@ namespace DiceRevolver.Tests
             Object.DestroyImmediate(definition);
         }
 
+        [Test]
+        public void ActivationRetainsTheCapturedFourSlotSnapshot()
+        {
+            DiceFaceEntry onHitEntry = ScriptableObject.CreateInstance<DiceFaceEntry>();
+            TestBulletEventEffect onHitEffect = ScriptableObject.CreateInstance<TestBulletEventEffect>();
+            SetPrivate(onHitEntry, "slotType", DiceFaceSlotType.OnHit);
+            SetPrivate(onHitEntry, "effect", onHitEffect);
+            DiceFaceConfigurationSnapshot snapshot = new DiceFaceConfigurationSnapshot(
+                null,
+                null,
+                onHitEntry,
+                null);
+
+            DiceFaceActivation activation = new DiceFaceActivation(
+                2,
+                snapshot,
+                Vector3.zero,
+                Vector3.forward,
+                null,
+                null,
+                (_, _) => { },
+                _ => { });
+
+            Assert.That(
+                activation.Configuration.GetEntry(DiceFaceSlotType.OnHit),
+                Is.SameAs(onHitEntry));
+
+            Object.DestroyImmediate(onHitEntry);
+            Object.DestroyImmediate(onHitEffect);
+        }
+
         private static DiceFaceActivation CreateActivation(
             ICollection<ProjectileSpawnRequest> requests,
             int eventBudget)
         {
             return new DiceFaceActivation(
                 2,
-                null,
+                default,
                 Vector3.zero,
                 Vector3.forward,
                 null,
@@ -113,6 +144,21 @@ namespace DiceRevolver.Tests
                 BindingFlags.Instance | BindingFlags.NonPublic);
             field.SetValue(definition, defaultAttackEffect);
             return definition;
+        }
+
+        private static void SetPrivate<TValue>(Object target, string fieldName, TValue value)
+        {
+            FieldInfo field = target.GetType().GetField(
+                fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            field.SetValue(target, value);
+        }
+
+        private sealed class TestBulletEventEffect : BulletEventEffect
+        {
+            public override void Trigger(BulletEventContext context)
+            {
+            }
         }
     }
 }

@@ -8,7 +8,7 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 
 1. 玩家用 `WASD` 移动，鼠标指向地面完成瞄准。
 2. 按住鼠标左键射击；左轮从剩余骰面中随机抽取一个面并移除。
-3. 抽中的骰面从装备中解析弹丸属性和开火、命中、开火结束效果。
+3. 抽中的骰面生成四槽位配置快照，依次解析基础、开火时、命中时和开火后效果。
 4. 六面耗尽后自动换弹并重置骰池；`R` 可以手动换弹。
 5. `E` 打开构筑页，先选词条再选骰面以修改装备。
 
@@ -42,8 +42,9 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 - [TopDownAimHandRig.cs](../../Assets/Scripts/Prototype/TopDownAimHandRig.cs)：处理手臂镜像、枪口姿态和近距离稳定瞄准。
 - [DiceChamber.cs](../../Assets/Scripts/Prototype/DiceChamber.cs)：维护剩余骰面、强制下次骰面和重置规则。
 - [DiceRevolverGun.cs](../../Assets/Scripts/Prototype/DiceRevolverGun.cs)：协调射速、抽面、弹丸生成、事件和换弹。
-- [DiceFaceLoadout.cs](../../Assets/Scripts/Prototype/DiceFaceLoadout.cs)：保存六个骰面的运行时装备。
-- [DiceFaceEntry.cs](../../Assets/Scripts/Prototype/DiceFaceEntry.cs)：ScriptableObject 构筑词条，保存开火时、命中时和开火结束时事件。
+- [DiceFaceLoadout.cs](../../Assets/Scripts/Prototype/DiceFaceLoadout.cs)：保存六个骰面的四槽位运行时装备，并兼容读取旧序列化数据。
+- [DiceFaceConfiguration.cs](../../Assets/Scripts/Prototype/DiceFaceConfiguration.cs)：保存单面四槽位配置并生成单次激活快照。
+- [DiceFaceEntry.cs](../../Assets/Scripts/Prototype/DiceFaceEntry.cs)：单槽位 ScriptableObject 构筑词条，绑定一个槽位类型和一个事件效果。
 - [ProjectileDefinition.cs](../../Assets/Scripts/Prototype/ProjectileDefinition.cs)：拥有弹丸 Prefab、运行时属性、默认攻击特效与扩展端口。
 - [DiceFaceActivation.cs](../../Assets/Scripts/Prototype/DiceFaceActivation.cs)：保存单次骰面激活快照、弹丸生成请求、命中关系和事件预算。
 - [ProjectileSpawnEffect.cs](../../Assets/Scripts/Prototype/ProjectileSpawnEffect.cs)：按弹丸定义、延迟、主弹身份和攻击特效覆盖策略请求生成弹丸。
@@ -56,14 +57,20 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 - [DiceBuildPageUI.cs](../../Assets/Scripts/Prototype/DiceBuildPageUI.cs)：编辑骰面装备。
 - [DiceBuildRuntimeView.cs](../../Assets/Scripts/Prototype/DiceBuildRuntimeView.cs)：场景加载后按需创建构筑 UI 和装备组件。
 
+## 进行中架构
+
+- [BehaviorTree.cs](../../Assets/Scripts/Prototype/BehaviorTree.cs)：为测试机器人提供不依赖场景的 Sequence、Selector、Parallel、Condition 和 Action 节点。
+- [TestRobotCombatBrain.cs](../../Assets/Scripts/Prototype/TestRobotCombatBrain.cs)：计划根据近/远距离输出接近、后退或横移决策，并持续输出瞄准与开火意图；当前最小实现尚未完成绿灯验证。
+- 测试机器人后续将通过共享角色控制接缝复用移动、动画、手臂瞄准和左轮执行；该接缝、Prefab 与资源尚未实现。
+
 ## 关键数据流
 
 ```text
 输入 -> TopDownPlayerController -> DiceRevolverGun
-DiceChamber 抽面 -> DiceFaceLoadout -> 基础事件 + DiceFaceEntry 三阶段构筑事件
+DiceChamber 抽面 -> DiceFaceLoadout -> DiceFaceConfigurationSnapshot 四槽位快照
 ProjectileSpawnEffect -> ProjectileDefinition -> ProjectileRuntimeStats + 弹丸 Prefab
 DiceFaceActivation -> 延迟生成、命中事件关系与连锁预算
-DiceBuildPageUI -> DiceFaceLoadout.Equip -> 后续射击读取新装备
+DiceBuildPageUI -> DiceFaceLoadout.Equip -> 只替换词条所属槽位 -> 后续射击读取新快照
 Projectile -> IDamageReceiver -> TargetDummy.DamageReceived -> WorldDamageNumberSpawner
 ```
 
@@ -79,7 +86,8 @@ Projectile -> IDamageReceiver -> TargetDummy.DamageReceived -> WorldDamageNumber
 ## 术语
 
 - 骰池：`DiceChamber` 中尚未被抽出的骰面集合。
-- 骰面词条：可装备到一个面的 `DiceFaceEntry` 资源。
-- 装备：`DiceFaceLoadout` 中六个面到词条的映射。
+- 骰面词条：绑定一个事件阶段、可装备到对应槽位的 `DiceFaceEntry` 资源。
+- 四槽位：每个骰面独立拥有基础、开火时、命中时、开火后四个单事件槽位。
+- 装备：`DiceFaceLoadout` 中六个面到四槽位配置的映射。
 - 弹丸事件：由 `BulletEventEffect` 在开火、命中或开火结束时执行的扩展行为。
 - 工作流：`.project-context/project/workstreams/` 下一个独立事项的状态和交接记录。

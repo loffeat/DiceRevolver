@@ -37,7 +37,7 @@ namespace DiceRevolver.Prototype
 
         public DiceFaceActivation(
             int face,
-            DiceFaceEntry entry,
+            DiceFaceConfigurationSnapshot configuration,
             Vector3 origin,
             Vector3 direction,
             DiceRevolverGun gun,
@@ -47,7 +47,7 @@ namespace DiceRevolver.Prototype
             int eventBudget = DefaultEventBudget)
         {
             Face = face;
-            Entry = entry;
+            Configuration = configuration;
             Origin = origin;
             Direction = NormalizeDirection(direction);
             Gun = gun;
@@ -58,7 +58,7 @@ namespace DiceRevolver.Prototype
         }
 
         public int Face { get; }
-        public DiceFaceEntry Entry { get; }
+        public DiceFaceConfigurationSnapshot Configuration { get; }
         public Vector3 Origin { get; }
         public Vector3 Direction { get; }
         public DiceRevolverGun Gun { get; }

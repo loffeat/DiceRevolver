@@ -124,4 +124,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.ProjectileVisualWrapper
   visualPrefab: {fileID: 8362183773316508633, guid: 10c29eb95236938498360efbab22c02e, type: 3}
   localEulerAngles: {x: 0, y: 90, z: 0}
-  visualScale: 0.2
+  visualScale: 0.4

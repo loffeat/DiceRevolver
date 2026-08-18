@@ -3,13 +3,14 @@
 ## 当前状态
 
 - 运行时代码、Prefab、SO 资源、六面绑定和测试代码均已完成；Unity EditMode 全量回归 `94/94` 通过，工作流已完成。
+- 后续排查确认 `fire_1` 原材质的 Shader GUID 缺失；最新修复与 `98/98` 回归见 [基础射击可视与换弹手臂修复](../2026-08-18-base-shot-reload-visual-fix/HANDOFF.md)。
 
 ## 当前方案及原因
 
 - 使用每次攻击独立的激活上下文关联基础事件、延迟弹丸与命中事件，避免全局事件总线和 Prefab 反向依赖左轮。
 - 弹丸定义拥有全部运行时属性；生成事件只选择定义、延迟、主弹身份和攻击特效覆盖策略。
 - 主弹始终允许分发本次激活的命中事件；非主弹使用 `UseProjectileDefault`、`ForceEnabled` 或 `ForceDisabled` 判定。
-- `fire_1.prefab` 由 `ProjectileVisualWrapper` 在运行时实例化，原始资源不带弹丸逻辑且未被修改。
+- `fire_1.prefab` 由 `ProjectileVisualWrapper` 在运行时实例化；包装器会替换解析为错误 Shader 的粒子材质，原始资源不带弹丸逻辑且未被修改。
 
 ## 尚未完成
 

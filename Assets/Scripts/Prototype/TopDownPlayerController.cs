@@ -21,6 +21,7 @@ namespace DiceRevolver.Prototype
 
         private void Awake()
         {
+            SnapToGameplayPlane();
             characterController = GetComponent<CharacterController>();
             mainCamera = Camera.main;
             groundPlane = new Plane(Vector3.up, Vector3.zero);
@@ -43,7 +44,15 @@ namespace DiceRevolver.Prototype
                 desiredMove.Normalize();
             }
 
-            characterController.SimpleMove(desiredMove * moveSpeed);
+            characterController.Move(desiredMove * moveSpeed * Time.deltaTime);
+            SnapToGameplayPlane();
+        }
+
+        private void SnapToGameplayPlane()
+        {
+            Vector3 position = transform.position;
+            position.y = 0f;
+            transform.position = position;
         }
 
         private static Vector2 ReadMoveInput()

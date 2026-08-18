@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace DiceRevolver.Prototype
@@ -11,16 +10,61 @@ namespace DiceRevolver.Prototype
         [SerializeField, InspectorName("描述")] private string description;
         [SerializeField, InspectorName("显示颜色")] private Color displayColor = Color.white;
 
-        [Header("弹丸事件")]
-        [SerializeField, InspectorName("开火时事件")] private BulletEventEffect[] onFireEffects = System.Array.Empty<BulletEventEffect>();
-        [SerializeField, InspectorName("击中时事件")] private BulletEventEffect[] onHitEffects = System.Array.Empty<BulletEventEffect>();
-        [SerializeField, InspectorName("结束开火时事件")] private BulletEventEffect[] onFireEndEffects = System.Array.Empty<BulletEventEffect>();
+        [Header("槽位事件")]
+        [SerializeField, InspectorName("槽位类型")] private DiceFaceSlotType slotType;
+        [SerializeField, InspectorName("事件效果")] private BulletEventEffect effect;
+
+        [SerializeField, HideInInspector] private BulletEventEffect[] onFireEffects = System.Array.Empty<BulletEventEffect>();
+        [SerializeField, HideInInspector] private BulletEventEffect[] onHitEffects = System.Array.Empty<BulletEventEffect>();
+        [SerializeField, HideInInspector] private BulletEventEffect[] onFireEndEffects = System.Array.Empty<BulletEventEffect>();
 
         public string DisplayName => displayName;
         public string Description => description;
         public Color DisplayColor => displayColor;
-        public IReadOnlyList<BulletEventEffect> OnFireEffects => onFireEffects ?? System.Array.Empty<BulletEventEffect>();
-        public IReadOnlyList<BulletEventEffect> OnHitEffects => onHitEffects ?? System.Array.Empty<BulletEventEffect>();
-        public IReadOnlyList<BulletEventEffect> OnFireEndEffects => onFireEndEffects ?? System.Array.Empty<BulletEventEffect>();
+        public DiceFaceSlotType SlotType => effect != null ? slotType : ResolveLegacySlotType();
+        public BulletEventEffect Effect => effect != null ? effect : ResolveLegacyEffect();
+
+        private DiceFaceSlotType ResolveLegacySlotType()
+        {
+            if (FirstEffect(onFireEffects) != null)
+            {
+                return DiceFaceSlotType.OnFire;
+            }
+
+            if (FirstEffect(onHitEffects) != null)
+            {
+                return DiceFaceSlotType.OnHit;
+            }
+
+            if (FirstEffect(onFireEndEffects) != null)
+            {
+                return DiceFaceSlotType.OnFireEnd;
+            }
+
+            return slotType;
+        }
+
+        private BulletEventEffect ResolveLegacyEffect()
+        {
+            return FirstEffect(onFireEffects) ?? FirstEffect(onHitEffects) ?? FirstEffect(onFireEndEffects);
+        }
+
+        private static BulletEventEffect FirstEffect(BulletEventEffect[] effects)
+        {
+            if (effects == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < effects.Length; i++)
+            {
+                if (effects[i] != null)
+                {
+                    return effects[i];
+                }
+            }
+
+            return null;
+        }
     }
 }
