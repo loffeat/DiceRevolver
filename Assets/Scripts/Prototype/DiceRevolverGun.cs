@@ -6,30 +6,30 @@ namespace DiceRevolver.Prototype
 {
     public sealed class DiceRevolverGun : MonoBehaviour
     {
-        [Header("References")]
-        [SerializeField] private TopDownPlayerController player;
-        [SerializeField] private Transform visualRoot;
-        [SerializeField] private Transform muzzle;
-        [SerializeField] private Projectile projectilePrefab;
-        [SerializeField] private Collider ownerCollider;
-        [SerializeField] private DiceFaceLoadout loadout;
+        [Header("引用")]
+        [SerializeField, InspectorName("玩家控制器")] private TopDownPlayerController player;
+        [SerializeField, InspectorName("武器视觉根节点")] private Transform visualRoot;
+        [SerializeField, InspectorName("枪口")] private Transform muzzle;
+        [SerializeField, InspectorName("默认弹丸 Prefab")] private Projectile projectilePrefab;
+        [SerializeField, InspectorName("持有者碰撞体")] private Collider ownerCollider;
+        [SerializeField, InspectorName("骰面装备")] private DiceFaceLoadout loadout;
 
-        [Header("Holding")]
-        [SerializeField] private float holdDistance = 0.85f;
-        [SerializeField] private float holdHeight = 0.72f;
-        [SerializeField] private bool driveWeaponPose = true;
+        [Header("持枪设置")]
+        [SerializeField, InspectorName("持枪距离")] private float holdDistance = 0.85f;
+        [SerializeField, InspectorName("持枪高度")] private float holdHeight = 0.72f;
+        [SerializeField, InspectorName("自动驱动武器姿态")] private bool driveWeaponPose = true;
 
-        [Header("Dice Revolver")]
-        [SerializeField] private int faceCount = 6;
-        [SerializeField] private float shotsPerSecond = 5f;
-        [SerializeField] private float reloadDuration = 1.8f;
-        [SerializeField] private bool automaticReloadWhenEmpty = true;
-        [SerializeField] private bool allowManualReload = true;
+        [Header("骰子左轮")]
+        [SerializeField, InspectorName("骰面数量")] private int faceCount = 6;
+        [SerializeField, InspectorName("每秒射击次数")] private float shotsPerSecond = 5f;
+        [SerializeField, InspectorName("换弹时间（秒）")] private float reloadDuration = 1.8f;
+        [SerializeField, InspectorName("弹巢耗尽时自动换弹")] private bool automaticReloadWhenEmpty = true;
+        [SerializeField, InspectorName("允许手动换弹")] private bool allowManualReload = true;
 
-        [Header("Prototype Reload Animation")]
-        [SerializeField] private float reloadDropDistance = 0.22f;
-        [SerializeField] private float reloadBlinkSpeed = 8f;
-        [SerializeField] private Color reloadDimColor = new Color(0.35f, 0.35f, 0.35f, 1f);
+        [Header("换弹视觉")]
+        [SerializeField, InspectorName("换弹下沉距离")] private float reloadDropDistance = 0.22f;
+        [SerializeField, InspectorName("换弹闪烁速度")] private float reloadBlinkSpeed = 8f;
+        [SerializeField, InspectorName("换弹暗色")] private Color reloadDimColor = new Color(0.35f, 0.35f, 0.35f, 1f);
 
         private DiceChamber chamber;
         private float nextShotTime;
@@ -40,6 +40,7 @@ namespace DiceRevolver.Prototype
         private SpriteRenderer reloadBlinkRenderer;
         private Color reloadBlinkDefaultColor = Color.white;
         private TopDownAimHandRig aimRig;
+        private readonly BulletEventTimeScheduler eventTimeScheduler = new BulletEventTimeScheduler();
 
         public event Action<DiceRevolverShotContext> FireStarted;
         public event Action<DiceRevolverHitContext> ProjectileHit;
@@ -97,13 +98,18 @@ namespace DiceRevolver.Prototype
 
         private void LateUpdate()
         {
-            if (player == null)
+            if (player != null)
             {
-                return;
+                aimRig?.RefreshAimPose();
+                TryFire();
             }
 
-            aimRig?.RefreshAimPose();
-            TryFire();
+            eventTimeScheduler.Tick(Time.time, Debug.LogException);
+        }
+
+        private void OnDestroy()
+        {
+            eventTimeScheduler.Clear();
         }
 
         private void UpdatePose()
@@ -135,7 +141,7 @@ namespace DiceRevolver.Prototype
         private void TryFire()
         {
             Mouse mouse = Mouse.current;
-            if (mouse == null || projectilePrefab == null || muzzle == null || chamber == null)
+            if (mouse == null || muzzle == null || chamber == null)
             {
                 return;
             }
@@ -158,8 +164,6 @@ namespace DiceRevolver.Prototype
             }
 
             DiceFaceEntry entry = loadout != null ? loadout.GetEntry(face) : null;
-            ProjectileRuntimeStats stats = BuildStats(entry);
-            Projectile selectedProjectilePrefab = ResolveProjectilePrefab(entry);
 
             Vector3 shotOrigin = muzzle.position;
             Quaternion shotRotation = muzzle.rotation;
@@ -177,28 +181,40 @@ namespace DiceRevolver.Prototype
             }
 
             shotDirection.Normalize();
-            Projectile projectile = SpawnProjectile(
+            DiceFaceActivation activation = null;
+            activation = new DiceFaceActivation(
+                face,
+                entry,
                 shotOrigin,
                 shotDirection,
-                shotRotation,
-                selectedProjectilePrefab,
-                stats,
-                entry != null);
+                this,
+                chamber,
+                (delaySeconds, callback) =>
+                    eventTimeScheduler.Schedule(Time.time, delaySeconds, callback),
+                request => SpawnActivationProjectile(activation, request));
 
-            DiceRevolverShotContext shot = new DiceRevolverShotContext(
+            DiceRevolverShotContext faceTrigger = new DiceRevolverShotContext(
                 face,
                 shotOrigin,
                 shotDirection,
-                projectile,
+                null,
                 entry,
-                stats,
-                selectedProjectilePrefab);
-            BridgeProjectileHit(projectile, shot, true);
+                default,
+                null,
+                null,
+                activation,
+                false);
+            BulletEventContext eventContext = CreateEventContext(
+                activation,
+                faceTrigger,
+                null,
+                shotOrigin);
 
-            FireStarted?.Invoke(shot);
-            TriggerEffects(entry?.OnFireEffects, CreateEventContext(shot, null, shotOrigin, true));
-            FireEnded?.Invoke(shot);
-            TriggerEffects(entry?.OnFireEndEffects, CreateEventContext(shot, null, shotOrigin, false));
+            FireStarted?.Invoke(faceTrigger);
+            TriggerEffect(loadout?.GetBaseEffect(face), eventContext);
+            TriggerEffects(entry?.OnFireEffects, eventContext);
+            FireEnded?.Invoke(faceTrigger);
+            TriggerEffects(entry?.OnFireEndEffects, eventContext);
 
             if (chamber.IsEmpty && automaticReloadWhenEmpty)
             {
@@ -222,6 +238,42 @@ namespace DiceRevolver.Prototype
             }
 
             return spawned;
+        }
+
+        private Projectile SpawnActivationProjectile(
+            DiceFaceActivation activation,
+            ProjectileSpawnRequest request)
+        {
+            ProjectileDefinition definition = request.Definition;
+            Projectile prefab = definition != null ? definition.ProjectilePrefab : null;
+            if (activation == null || prefab == null)
+            {
+                Debug.LogWarning("Projectile spawn skipped because its definition or runtime prefab is missing.", definition);
+                return null;
+            }
+
+            ProjectileRuntimeStats stats = definition.BuildRuntimeStats();
+            Quaternion rotation = GetShotRotation(request.Direction, transform.rotation);
+            Projectile projectile = SpawnProjectile(
+                request.Origin,
+                request.Direction,
+                rotation,
+                prefab,
+                stats,
+                true);
+            DiceRevolverShotContext shot = new DiceRevolverShotContext(
+                activation.Face,
+                request.Origin,
+                request.Direction,
+                projectile,
+                activation.Entry,
+                stats,
+                prefab,
+                definition,
+                activation,
+                request.CanTriggerHitEffects);
+            BridgeProjectileHit(projectile, shot, request.CanTriggerHitEffects);
+            return projectile;
         }
 
         private Projectile SpawnProjectile(
@@ -267,19 +319,11 @@ namespace DiceRevolver.Prototype
                 ProjectileHit?.Invoke(hit);
                 if (allowTriggeredEffects)
                 {
-                    TriggerEffects(shot.Entry?.OnHitEffects, CreateEventContext(shot, hitCollider, hitPosition, false));
+                    TriggerEffects(
+                        shot.Entry?.OnHitEffects,
+                        CreateEventContext(shot.Activation, shot, hitCollider, hitPosition));
                 }
             };
-        }
-
-        private Projectile ResolveProjectilePrefab(DiceFaceEntry entry)
-        {
-            if (entry != null && entry.ProjectilePrefabOverride != null)
-            {
-                return entry.ProjectilePrefabOverride;
-            }
-
-            return projectilePrefab;
         }
 
         private static Quaternion GetShotRotation(Vector3 direction, Quaternion fallback)
@@ -293,36 +337,17 @@ namespace DiceRevolver.Prototype
             return Quaternion.LookRotation(direction.normalized, Vector3.up);
         }
 
-        private static ProjectileRuntimeStats BuildStats(DiceFaceEntry entry)
-        {
-            if (entry == null)
-            {
-                return default;
-            }
-
-            return new ProjectileRuntimeStats(
-                entry.ProjectileType,
-                entry.ProjectileTag,
-                entry.Damage,
-                entry.FlightDistance,
-                entry.FlightSpeed,
-                entry.EnemyPierceCount);
-        }
-
         private BulletEventContext CreateEventContext(
+            DiceFaceActivation activation,
             DiceRevolverShotContext shot,
             Collider hitCollider,
-            Vector3 hitPosition,
-            bool canTriggerAdditionalShots)
+            Vector3 hitPosition)
         {
             return new BulletEventContext(
-                this,
-                chamber,
+                activation,
                 shot,
                 hitCollider,
-                hitPosition,
-                canTriggerAdditionalShots,
-                requestedShot => SpawnConfiguredProjectile(requestedShot, false));
+                hitPosition);
         }
 
         private static void TriggerEffects(System.Collections.Generic.IReadOnlyList<BulletEventEffect> effects, BulletEventContext context)
@@ -334,7 +359,24 @@ namespace DiceRevolver.Prototype
 
             for (int i = 0; i < effects.Count; i++)
             {
-                effects[i]?.Trigger(context);
+                TriggerEffect(effects[i], context);
+            }
+        }
+
+        private static void TriggerEffect(BulletEventEffect effect, BulletEventContext context)
+        {
+            if (effect == null || context.Activation == null || !context.Activation.TryConsumeEventBudget())
+            {
+                return;
+            }
+
+            try
+            {
+                effect.Trigger(context);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, effect);
             }
         }
 

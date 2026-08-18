@@ -46,9 +46,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .project-context/framework/s
 - [passed] `2026-08-17`：检查器 10 项验收测试通过。
 - [passed] `2026-08-17`：安装器 13 项生命周期测试通过。
 - [passed] `2026-08-17`：真实仓库默认根目录检查、Repair 零写入预览和冷启动恢复通过。
-- [not-run] `2026-08-17`：Unity 测试未运行；本工作流没有更改 Unity 受保护路径。
+- [not-run] `2026-08-17`：本工作流实施阶段没有运行 Unity 测试；本工作流没有更改 Unity 受保护路径。
+- [passed] `2026-08-17`：后续项目同步确认匹配版本 Unity 可用，游戏侧隔离 EditMode 回归 `29/29` 通过。
 
 ## 风险与不可假定事项
 
 - 全仓库 Git 检查可能被既有 Git LFS 权限问题打断。
-- Unity 测试尚未运行，不能声称游戏行为已在本次实施中回归。
+- 完整 PlayMode 战斗流程仍未运行，不能仅凭 EditMode 结果声称最终场景表现已人工确认。

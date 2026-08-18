@@ -4,8 +4,8 @@ namespace DiceRevolver.Prototype
 {
     public sealed class Projectile : MonoBehaviour
     {
-        [SerializeField] private float speed = 18f;
-        [SerializeField] private float lifetime = 1.6f;
+        [SerializeField, InspectorName("默认飞行速度")] private float speed = 18f;
+        [SerializeField, InspectorName("默认存在时间（秒）")] private float lifetime = 1.6f;
 
         private Vector3 direction = Vector3.forward;
         private float runtimeSpeed;
@@ -75,11 +75,13 @@ namespace DiceRevolver.Prototype
 
         private void OnTriggerEnter(Collider other)
         {
-            if (other.CompareTag("Player"))
+            if (other.GetComponentInParent<Projectile>() != null || other.CompareTag("Player"))
             {
                 return;
             }
 
+            IDamageReceiver receiver = other.GetComponentInParent<IDamageReceiver>();
+            receiver?.ReceiveDamage(new DamageInfo(damage, transform.position, gameObject));
             Destroy(gameObject);
         }
 

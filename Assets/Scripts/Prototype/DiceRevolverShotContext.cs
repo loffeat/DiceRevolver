@@ -31,6 +31,31 @@ namespace DiceRevolver.Prototype
             DiceFaceEntry diceFace,
             ProjectileRuntimeStats stats,
             Projectile projectilePrefab)
+            : this(
+                face,
+                origin,
+                direction,
+                projectile,
+                diceFace,
+                stats,
+                projectilePrefab,
+                null,
+                null,
+                false)
+        {
+        }
+
+        public DiceRevolverShotContext(
+            int face,
+            Vector3 origin,
+            Vector3 direction,
+            Projectile projectile,
+            DiceFaceEntry diceFace,
+            ProjectileRuntimeStats stats,
+            Projectile projectilePrefab,
+            ProjectileDefinition projectileDefinition,
+            DiceFaceActivation activation,
+            bool canTriggerHitEffects)
         {
             Face = face;
             Origin = origin;
@@ -39,6 +64,9 @@ namespace DiceRevolver.Prototype
             Entry = diceFace;
             Stats = stats;
             ProjectilePrefab = projectilePrefab;
+            ProjectileDefinition = projectileDefinition;
+            Activation = activation;
+            CanTriggerHitEffects = canTriggerHitEffects;
         }
 
         public int Face { get; }
@@ -49,5 +77,8 @@ namespace DiceRevolver.Prototype
         public DiceFaceEntry DiceFace => Entry;
         public ProjectileRuntimeStats Stats { get; }
         public Projectile ProjectilePrefab { get; }
+        public ProjectileDefinition ProjectileDefinition { get; }
+        public DiceFaceActivation Activation { get; }
+        public bool CanTriggerHitEffects { get; }
     }
 }

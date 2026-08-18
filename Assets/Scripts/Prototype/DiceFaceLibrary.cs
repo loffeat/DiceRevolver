@@ -7,7 +7,7 @@ namespace DiceRevolver.Prototype
     [CreateAssetMenu(menuName = "Dice Revolver/Dice Face Library")]
     public sealed class DiceFaceLibrary : ScriptableObject
     {
-        [SerializeField] private DiceFaceEntry[] entries = Array.Empty<DiceFaceEntry>();
+        [SerializeField, InspectorName("骰面词条库")] private DiceFaceEntry[] entries = Array.Empty<DiceFaceEntry>();
 
         public IReadOnlyList<DiceFaceEntry> Entries => entries ?? Array.Empty<DiceFaceEntry>();
     }

@@ -5,19 +5,26 @@ namespace DiceRevolver.Prototype
     [CreateAssetMenu(menuName = "Dice Revolver/Bullet Events/Explosion On Hit")]
     public sealed class ExplosionOnHitEffect : BulletEventEffect
     {
-        [SerializeField] private Projectile explosionProjectilePrefab;
+        [SerializeField, InspectorName("爆炸弹丸定义")] private ProjectileDefinition explosionProjectileDefinition;
 
-        public Projectile ExplosionProjectilePrefab => explosionProjectilePrefab;
+        public ProjectileDefinition ExplosionProjectileDefinition => explosionProjectileDefinition;
 
         public override void Trigger(BulletEventContext context)
         {
-            if (explosionProjectilePrefab == null)
+            if (explosionProjectileDefinition == null)
             {
-                Debug.LogWarning($"{nameof(ExplosionOnHitEffect)} skipped because no explosion projectile prefab is assigned.", this);
+                Debug.LogWarning($"{nameof(ExplosionOnHitEffect)} skipped because no explosion projectile definition is assigned.", this);
                 return;
             }
 
-            Object.Instantiate(explosionProjectilePrefab, context.HitPosition, Quaternion.identity);
+            Vector3 direction = context.Shot != null
+                ? context.Shot.Direction
+                : context.Activation?.Direction ?? Vector3.forward;
+            context.RequestProjectileAt(
+                explosionProjectileDefinition,
+                context.HitPosition,
+                direction,
+                AttackEffectOverride.UseProjectileDefault);
         }
     }
 }

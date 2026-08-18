@@ -12,3 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e9c302e3e0b24b299a1f4d8b8f0ad9c3, type: 3}
   m_Name: ExtraShotOnFireEffect
   m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.ExtraShotOnFireEffect
+  delaySeconds: 0.25
+  attackEffectOverride: 2

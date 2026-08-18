@@ -7,7 +7,7 @@ namespace DiceRevolver.Prototype
     [CreateAssetMenu(menuName = "Dice Revolver/Bullet Event Library")]
     public sealed class BulletEventLibrary : ScriptableObject
     {
-        [SerializeField] private BulletEventEffect[] effects = Array.Empty<BulletEventEffect>();
+        [SerializeField, InspectorName("子弹事件库")] private BulletEventEffect[] effects = Array.Empty<BulletEventEffect>();
 
         public IReadOnlyList<BulletEventEffect> Effects => effects ?? Array.Empty<BulletEventEffect>();
     }

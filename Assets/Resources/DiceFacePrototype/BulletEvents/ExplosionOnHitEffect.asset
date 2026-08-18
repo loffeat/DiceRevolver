@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2d78fd40bb44cd1889e2fb9c4b84f8f, type: 3}
   m_Name: ExplosionOnHitEffect
   m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.ExplosionOnHitEffect
-  explosionProjectilePrefab: {fileID: 0}
+  explosionProjectileDefinition: {fileID: 0}

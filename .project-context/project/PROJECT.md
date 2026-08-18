@@ -45,7 +45,11 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 - [DiceFaceLoadout.cs](../../Assets/Scripts/Prototype/DiceFaceLoadout.cs)：保存六个骰面的运行时装备。
 - [DiceFaceEntry.cs](../../Assets/Scripts/Prototype/DiceFaceEntry.cs)：ScriptableObject 词条，包含弹丸属性与事件列表。
 - [BulletEventEffect.cs](../../Assets/Scripts/Prototype/BulletEventEffect.cs)：开火、命中和开火结束效果的扩展基类。
+- [BulletEventTimeScheduler.cs](../../Assets/Scripts/Prototype/BulletEventTimeScheduler.cs)：为子弹事件提供确定顺序、异常隔离的游戏时间延迟队列。
 - [Projectile.cs](../../Assets/Scripts/Prototype/Projectile.cs)：应用运行时属性、移动、碰撞和生命周期。
+- [DamageInfo.cs](../../Assets/Scripts/Prototype/DamageInfo.cs)：跨伤害来源传递数值、命中点和来源的只读数据。
+- [TargetDummy.cs](../../Assets/Scripts/Prototype/TargetDummy.cs)：无限生命测试靶，接收伤害并广播表现事件。
+- [WorldDamageNumberSpawner.cs](../../Assets/Scripts/Prototype/WorldDamageNumberSpawner.cs)：把测试靶受击事件转换为独立世界空间飘字。
 - [DiceBuildPageUI.cs](../../Assets/Scripts/Prototype/DiceBuildPageUI.cs)：编辑骰面装备。
 - [DiceBuildRuntimeView.cs](../../Assets/Scripts/Prototype/DiceBuildRuntimeView.cs)：场景加载后按需创建构筑 UI 和装备组件。
 
@@ -56,13 +60,15 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 DiceChamber 抽面 -> DiceFaceLoadout -> DiceFaceEntry
 DiceFaceEntry -> ProjectileRuntimeStats + 开火/命中/结束事件
 DiceBuildPageUI -> DiceFaceLoadout.Equip -> 后续射击读取新装备
+Projectile -> IDamageReceiver -> TargetDummy.DamageReceived -> WorldDamageNumberSpawner
 ```
 
 额外射击通过事件上下文请求同属性弹丸，并禁止递归触发额外射击。命中事件由 `ProjectileHitReporter` 桥接回本次射击上下文。
+需要延迟的事件通过 `BulletEventContext.Schedule` 登记回调，由所属左轮使用 `Time.time` 驱动；暂停游戏时延迟计时同步暂停。
 
 ## 明确非目标
 
-- 当前没有完整敌人生命、伤害结算和穿透消费系统。
+- 当前只有通用伤害投递和无限生命测试靶，没有正式敌人的有限生命、死亡和穿透消费系统。
 - 当前不实现词条获取、商店、奖励、局内持久化或正式美术表现。
 - 上下文系统不修改 Unity 运行时代码、资源、Prefab、场景或项目设置。
 

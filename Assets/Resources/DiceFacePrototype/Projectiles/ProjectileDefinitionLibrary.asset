@@ -1,0 +1,16 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9cd5126c3d6aedbf91c4860d3a57eb30, type: 3}
+  m_Name: ProjectileDefinitionLibrary
+  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.ProjectileDefinitionLibrary
+  definitions:
+  - {fileID: 11400000, guid: 256eab95c6f376482a5d1f96b3e074c9, type: 2}

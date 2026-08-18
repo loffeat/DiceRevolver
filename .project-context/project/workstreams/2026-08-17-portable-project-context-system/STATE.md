@@ -41,7 +41,7 @@
 
 ## 阻塞
 
-- Unity 测试受当前设备缺少已知 Unity Editor 路径限制，但不阻塞纯文档与 PowerShell 系统验证。
+- 无。工作流实施时未运行 Unity 测试；后续项目同步已确认当前设备存在匹配版本的 Unity Editor。
 
 ## 涉及文件
 
@@ -59,7 +59,8 @@
 - [passed] `2026-08-17`：真实仓库 `ExistingProject -Apply` 后的结构检查通过。
 - [passed] `2026-08-17`：真实仓库 `Repair` 预览返回 `no changes`，路径限定 Git 状态执行前后一致。
 - [passed] `2026-08-17`：仅凭项目内入口、协议、项目资料和工作流完成冷启动恢复。
-- [not-run] `2026-08-17`：Unity 测试未运行；当前设备未发现可用 Unity Editor，且本工作流未修改 Unity 内容。
+- [not-run] `2026-08-17`：本工作流实施阶段没有运行 Unity 测试，且没有修改 Unity 内容。
+- [passed] `2026-08-17`：后续项目同步确认 Unity `6000.3.10f1` 可用，游戏侧隔离 EditMode 回归 `29/29` 通过。
 
 ## 相关资料
 

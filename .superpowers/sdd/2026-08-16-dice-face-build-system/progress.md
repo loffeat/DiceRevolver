@@ -20,3 +20,4 @@ Task 7: complete (runtime dice-build page bootstrap, E toggle, six face slots, e
 Task 8: complete (analytic mirrored muzzle aim, close-target stabilization, same-frame fire pose refresh and actual shot-direction Gizmo; scoped re-review found no critical/important issues).
 Protection check: Assets/Prefab/Player.prefab SHA256 remained 9059503056ED5AC9913B359630769E0E107380E49B5E09A0039DD4935D6BF0C9; protected Transform, sorting and revolver prefab values were not rewritten.
 Residual manual check: enter Play Mode in the active scene once to visually verify the runtime bootstrap and final sprite-specific alignment.
+Context sync 2026-08-17: current main/HEAD Player.prefab SHA256 is 513D7C823EF4619BA90DFDC232302592602C879CB3742E4B5A40C11B69FB65B9; use this checked-in value as the next-session comparison baseline. The earlier hash remains the Task 8 execution-time check.

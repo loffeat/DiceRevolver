@@ -5,42 +5,71 @@ namespace DiceRevolver.Prototype
 {
     public readonly struct BulletEventContext
     {
-        private readonly Action<DiceRevolverShotContext> additionalShotRequested;
-
         public BulletEventContext(
-            DiceRevolverGun gun,
-            DiceChamber chamber,
+            DiceFaceActivation activation,
             DiceRevolverShotContext shot,
             Collider hitCollider,
-            Vector3 hitPosition,
-            bool canTriggerAdditionalShots,
-            Action<DiceRevolverShotContext> additionalShotRequested = null)
+            Vector3 hitPosition)
         {
-            Gun = gun;
-            Chamber = chamber;
+            Activation = activation;
             Shot = shot;
             HitCollider = hitCollider;
             HitPosition = hitPosition;
-            CanTriggerAdditionalShots = canTriggerAdditionalShots;
-            this.additionalShotRequested = additionalShotRequested;
         }
 
-        public DiceRevolverGun Gun { get; }
-        public DiceChamber Chamber { get; }
+        public DiceFaceActivation Activation { get; }
+        public DiceRevolverGun Gun => Activation?.Gun;
+        public DiceChamber Chamber => Activation?.Chamber;
         public DiceRevolverShotContext Shot { get; }
         public Collider HitCollider { get; }
         public Vector3 HitPosition { get; }
-        public bool CanTriggerAdditionalShots { get; }
 
-        public bool RequestAdditionalShot()
+        public bool RequestProjectile(
+            ProjectileDefinition definition,
+            AttackEffectOverride attackEffectOverride,
+            bool isPrimary)
         {
-            if (!CanTriggerAdditionalShots || Shot == null || additionalShotRequested == null)
+            if (Activation == null)
             {
                 return false;
             }
 
-            additionalShotRequested.Invoke(Shot);
-            return true;
+            Vector3 origin = Shot != null ? Shot.Origin : Activation.Origin;
+            Vector3 direction = Shot != null ? Shot.Direction : Activation.Direction;
+            return Activation.RequestProjectile(
+                definition,
+                attackEffectOverride,
+                isPrimary,
+                origin,
+                direction);
+        }
+
+        public bool RequestProjectileAt(
+            ProjectileDefinition definition,
+            Vector3 origin,
+            Vector3 direction,
+            AttackEffectOverride attackEffectOverride,
+            bool isPrimary = false)
+        {
+            return Activation != null && Activation.RequestProjectile(
+                definition,
+                attackEffectOverride,
+                isPrimary,
+                origin,
+                direction);
+        }
+
+        public bool Schedule(float delaySeconds, Action<BulletEventContext> callback)
+        {
+            if (Activation == null || callback == null)
+            {
+                return false;
+            }
+
+            BulletEventContext scheduledContext = this;
+            return Activation.Schedule(
+                delaySeconds,
+                () => callback.Invoke(scheduledContext));
         }
     }
 }

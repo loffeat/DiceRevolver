@@ -69,13 +69,11 @@ namespace DiceRevolver.Tests
             DiceFaceLibrary faceLibrary = ScriptableObject.CreateInstance<DiceFaceLibrary>();
             BulletEventLibrary eventLibrary = ScriptableObject.CreateInstance<BulletEventLibrary>();
 
-            Assert.That(entry.ExtensionPorts, Is.Not.Null);
             Assert.That(entry.OnFireEffects, Is.Not.Null);
             Assert.That(entry.OnHitEffects, Is.Not.Null);
             Assert.That(entry.OnFireEndEffects, Is.Not.Null);
             Assert.That(faceLibrary.Entries, Is.Not.Null);
             Assert.That(eventLibrary.Effects, Is.Not.Null);
-            Assert.That(entry.ExtensionPorts.Count, Is.EqualTo(0));
             Assert.That(faceLibrary.Entries.Count, Is.EqualTo(0));
             Assert.That(eventLibrary.Effects.Count, Is.EqualTo(0));
 
@@ -99,6 +97,52 @@ namespace DiceRevolver.Tests
 
             Object.DestroyImmediate(owner);
             Object.DestroyImmediate(entry);
+        }
+
+        [Test]
+        public void BaseEffectSlotsAreIndependentForEveryFace()
+        {
+            GameObject owner = new GameObject("LoadoutOwner");
+            DiceFaceLoadout loadout = owner.AddComponent<DiceFaceLoadout>();
+            TestBulletEventEffect faceTwoEffect = ScriptableObject.CreateInstance<TestBulletEventEffect>();
+            TestBulletEventEffect faceSixEffect = ScriptableObject.CreateInstance<TestBulletEventEffect>();
+
+            loadout.SetBaseEffect(2, faceTwoEffect);
+            loadout.SetBaseEffect(6, faceSixEffect);
+
+            Assert.That(loadout.GetBaseEffect(1), Is.Null);
+            Assert.That(loadout.GetBaseEffect(2), Is.SameAs(faceTwoEffect));
+            Assert.That(loadout.GetBaseEffect(6), Is.SameAs(faceSixEffect));
+
+            Object.DestroyImmediate(owner);
+            Object.DestroyImmediate(faceTwoEffect);
+            Object.DestroyImmediate(faceSixEffect);
+        }
+
+        [Test]
+        public void BaseEffectSlotsRepairMalformedSerializedArray()
+        {
+            GameObject owner = new GameObject("LoadoutOwner");
+            DiceFaceLoadout loadout = owner.AddComponent<DiceFaceLoadout>();
+            TestBulletEventEffect effect = ScriptableObject.CreateInstance<TestBulletEventEffect>();
+            FieldInfo field = typeof(DiceFaceLoadout).GetField(
+                "baseEffects",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            field.SetValue(loadout, new BulletEventEffect[1]);
+
+            loadout.SetBaseEffect(6, effect);
+
+            Assert.That(loadout.GetBaseEffect(6), Is.SameAs(effect));
+
+            Object.DestroyImmediate(owner);
+            Object.DestroyImmediate(effect);
+        }
+
+        private sealed class TestBulletEventEffect : BulletEventEffect
+        {
+            public override void Trigger(BulletEventContext context)
+            {
+            }
         }
     }
 }

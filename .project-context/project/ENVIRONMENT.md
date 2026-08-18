@@ -47,10 +47,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .project-context/framework/s
 Unity Editor 路径由每台设备自行发现并放入 `$UnityEditor`，然后运行：
 
 ```powershell
-& $UnityEditor -batchmode -quit -projectPath (Get-Location) -runTests -testPlatform EditMode -testResults .\Logs\editmode-results.xml -logFile .\Logs\editmode-tests.log
+& $UnityEditor -batchmode -projectPath (Get-Location) -runTests -testPlatform EditMode -testResults .\Logs\editmode-results.xml -logFile .\Logs\editmode-tests.log
 ```
 
-只有命令实际返回成功且结果文件无失败时，才记录为 `passed`。
+Unity Test Runner 完成后会自行退出，不要添加可能在测试开始前退出的 `-quit`。只有命令实际返回成功且结果文件无失败时，才记录为 `passed`。
 
 ## Git LFS
 
@@ -68,4 +68,5 @@ Unity Editor 路径由每台设备自行发现并放入 `$UnityEditor`，然后�
 ## 已知环境问题
 
 - 当前设备执行部分全仓库 Git 检查时，Git LFS clean filter 对 `.git/lfs/tmp` 返回访问被拒绝。源代码和上下文文本读写不受影响，但不能据此声称整个工作区干净。
-- 当前设备未在预期位置发现 Unity Editor，因此本次上下文系统实施不运行 Unity 测试。
+- 当前设备已确认可调用匹配项目版本的 Unity Editor `6000.3.10f1`；绝对安装路径属于设备本地信息，不写入共享资料。
+- `2026-08-18` 最近一次 EditMode 完整回归 `63/63` 通过；完整 PlayMode 战斗流程仍未运行。
