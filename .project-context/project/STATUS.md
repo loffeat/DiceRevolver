@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-- 可玩原型阶段；骰面构筑、测试靶和上下文系统已完成当前计划范围，模块化弹丸事件管线已实现但等待 Unity 最终验证。
+- 可玩原型阶段；骰面构筑、测试靶、模块化弹丸事件管线和上下文系统均已完成当前计划范围。
 
 ## 全局有效状态
 
@@ -18,10 +18,11 @@
 
 ## 活跃工作流
 
-- [2026-08-18 子弹定义与模块化骰面事件管线](workstreams/2026-08-18-projectile-definition-event-pipeline/STATE.md)（`blocked`，实现完成，等待 Unity 许可证 IPC 恢复后验证）
+- 无
 
 ## 完成历史
 
+- [2026-08-18 子弹定义与模块化骰面事件管线](workstreams/2026-08-18-projectile-definition-event-pipeline/STATE.md)（`completed`）
 - [2026-08-18 测试靶与伤害飘字](workstreams/2026-08-18-target-dummy-damage-numbers/STATE.md)（`completed`）
 - [2026-08-18 子弹事件时间系统](workstreams/2026-08-18-bullet-event-time-system/STATE.md)（`completed`）
 - [2026-08-17 额外弹丸互相碰撞修复](workstreams/2026-08-17-extra-shot-projectile-collision/STATE.md)（`completed`）
@@ -35,14 +36,14 @@
 - 骰面构筑仅存在于当前运行期，没有存档。
 - 尚未执行完整 PlayMode 战斗流程验证。
 - 当前设备的 Git LFS clean filter 无法写入 `.git/lfs/tmp`，导致部分全仓库 Git 状态或 diff 检查失败。
-- 当前主 Unity 编辑器打开时，隔离 Unity 进程无法连接 `LicenseClient-dslia`，导致本轮 EditMode/PlayMode 最终验证被阻塞。
 
 ## 最近项目级验证
 
+- [passed] `2026-08-18`：Unity 6000.3.10f1 许可证 IPC 恢复；修正测试框架数组计数断言后，完整 EditMode 回归 `94/94` 通过。
+- [passed] `2026-08-18`：事件管线、基础弹丸资源、六面绑定、命中策略、场景测试靶和碰撞契约的 27 项确定性冒烟测试通过，续作未修改受保护资产或配置。
+- [not-run] `2026-08-18`：`fire_1` 基础子弹、DoubleTap 和主弹/附加弹命中表现的 PlayMode 视觉与手感人工验证未运行。
 - [passed] `2026-08-18`：本地 `main` 无独有提交或工作区改动，已快进到 `origin/main` 的 `6a33cf0`；上下文结构检查通过。
 - [passed] `2026-08-18`：弹丸定义与模块化事件管线的运行时、Editor、EditMode 测试程序集通过 C# 编译；基础弹丸资源契约和 Player Prefab 限定差异检查通过。
-- [blocked] `2026-08-18`：隔离 Unity Test Runner 因许可证 IPC channel refused/超时未启动，尚无完整测试计数。
-- [not-run] `2026-08-18`：`fire_1` 基础子弹、DoubleTap 和主弹命中事件的 PlayMode 手感与视觉验证未运行。
 - [passed] `2026-08-18`：测试靶、弹丸伤害、世界空间飘字和资产契约加入后，Unity EditMode 完整回归 `69/69` 通过。
 - [passed] `2026-08-18`：场景静态渲染确认测试靶和伤害数字可见，且 Player Prefab、左轮参数、sorting 与项目设置保持不变。
 - [not-run] `2026-08-18`：当前可见 Unity 会话中的测试靶连续受击 Play Mode 手感验证未运行。

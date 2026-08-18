@@ -1,8 +1,8 @@
 # 子弹定义与模块化骰面事件管线
 
 - ID: `2026-08-18-projectile-definition-event-pipeline`
-- Status: `blocked`
-- Branch: `main`
+- Status: `completed`
+- Branch: `codex/finish-projectile-event-pipeline`
 - Created: `2026-08-18`
 - Updated: `2026-08-18`
 
@@ -30,7 +30,7 @@
 
 ## 当前正在进行
 
-- 实现和资源写入已完成；等待 Unity 许可证 IPC 恢复后执行 EditMode 与 PlayMode 最终验证。
+- 无
 
 ## 已完成
 
@@ -48,19 +48,18 @@
 - 新增基础左轮子弹 Prefab、定义 SO、定义库与基础生成事件；运行时视觉包装组件引用 `fire_1.prefab`，未修改原始粒子 Prefab。
 - Player Prefab 新增一个 `DiceFaceLoadout` 和六个基础事件引用；Git 差异确认没有修改角色 Transform、AimRoot、sorting 或左轮调参。
 - 新增/更新数据契约、事件策略、命中分发和资源引用测试。
+- Unity 许可证 IPC 已恢复，完整 EditMode 回归 `94/94` 通过。
+- 修正 `ProjectileDefinitionAssetTests` 对数组使用 NUnit `Has.Count` 导致的测试框架反射错误；聚焦用例 `1/1` 及随后全量回归均通过。
+- 关键管线与场景冒烟范围共 27 项测试通过，覆盖基础弹丸资源、六面绑定、事件预算、主弹/附加弹命中策略、场景测试靶和碰撞契约。
 
 ## 下一步
 
-1. 在当前 Unity 主编辑器执行一次 `Assets > Refresh` 或 `Ctrl+R`，确认最终新增测试和手写序列化资源均完成导入。
-2. 在 Test Runner 执行完整 EditMode 测试，重点核对 `ProjectileDefinitionAssetTests`、`DiceFaceActivationTests`、`BulletEventEffectTests` 和 `DiceRevolverGunIntegrationTests`。
-3. 进入 Play Mode 验证六面均发射 `fire_1` 基础子弹、DoubleTap 间隔约 `0.25` 秒、附加弹不触发 BlastRound、主弹可以触发 BlastRound。
-4. 验证 `fire_1` 在 `0.2` 视觉缩放和 Y 轴 `90` 度包装旋转下的尺寸与朝向；如需调整，只修改 `BasicRevolverBullet.prefab` 的 `ProjectileVisualWrapper` 端口。
+1. 后续如需调校视觉或手感，创建新工作流并进入 Play Mode 验证六面基础子弹、DoubleTap 间隔和主弹/附加弹命中表现。
+2. 验证 `fire_1` 在 `0.2` 视觉缩放和 Y 轴 `90` 度包装旋转下的尺寸与朝向；如需调整，只修改 `BasicRevolverBullet.prefab` 的 `ProjectileVisualWrapper` 端口。
 
 ## 阻塞
 
-- 已多次尝试在隔离临时工程启动 Unity EditMode 测试和资源生成器，但第二个 Unity 进程无法连接当前用户的 `LicenseClient-dslia` IPC：日志出现 channel refused、60 秒超时、重连失败和缺少 `com.unity.editor.headless`。脚本编译前后的许可证阶段阻止了 Test Runner 启动。
-- 当前主 Unity 编辑器保持打开，未擅自关闭用户会话；因此没有通过关闭主编辑器来规避许可证争用。
-- 这不是弹丸代码编译错误，也不是普通资源下载失败；恢复条件是主编辑器刷新并直接运行测试，或在主编辑器关闭后重新运行隔离批处理。
+- 无。先前许可证 IPC 阻塞在当前会话中已无法复现，Unity 6000.3.10f1 成功连接 `LicenseClient-Administrator` 并完成测试。
 
 ## 涉及文件
 
@@ -90,8 +89,10 @@
 - [passed] `2026-08-18`：使用 Unity 当前生成的三套 C# 响应文件分别编译运行时、Editor 和 EditMode 测试程序集，三个编译命令均返回 exit code `0`；仅有手工调用旧 Mono C# 编译器时的 Unity SourceGenerator 版本 warning。
 - [passed] `2026-08-18`：静态资源契约检查通过，确认基础定义属性、Prefab 组件、`fire_1` 引用、六面基础事件绑定和临时目录清理均符合预期。
 - [passed] `2026-08-18`：Player Prefab Git 差异只有新增 `DiceFaceLoadout` 组件与六个基础事件引用，受保护的 Transform、sorting 和左轮序列化数据没有变化。
-- [blocked] `2026-08-18`：隔离 Unity EditMode 测试在许可证 IPC 初始化阶段被阻塞，未产生测试结果 XML。
-- [not-run] `2026-08-18`：最终 PlayMode 射击、命中连锁和 `fire_1` 视觉尺寸/朝向验证尚未执行。
+- [failed] `2026-08-18`：许可证恢复后的首次完整 EditMode 回归为 `93/94`；唯一错误是测试对数组使用 NUnit `Has.Count`，并非运行时行为失败。
+- [passed] `2026-08-18`：最小修正后失败用例聚焦回归 `1/1` 通过，完整 Unity EditMode 回归 `94/94` 通过。
+- [passed] `2026-08-18`：27 项关键事件管线与确定性场景冒烟测试全部通过；本次续作没有修改受保护资产或配置。
+- [not-run] `2026-08-18`：最终 PlayMode 射击手感和 `fire_1` 视觉尺寸/朝向人工验证未执行，不阻塞本计划的确定性验证完成。
 
 ## 相关资料
 

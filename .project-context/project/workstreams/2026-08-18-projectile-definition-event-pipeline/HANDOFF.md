@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-- 运行时代码、Prefab、SO 资源、六面绑定和测试代码均已写入；最终 Unity Test Runner 与 PlayMode 验证被许可证 IPC 阻塞。
+- 运行时代码、Prefab、SO 资源、六面绑定和测试代码均已完成；Unity EditMode 全量回归 `94/94` 通过，工作流已完成。
 
 ## 当前方案及原因
 
@@ -13,13 +13,12 @@
 
 ## 尚未完成
 
-- Unity Test Runner 尚未实际执行；隔离批处理在许可证 IPC 阶段超时。
-- 尚未在 Play Mode 确认 `fire_1` 的包装尺寸、朝向和运动观感。
+- 尚未人工确认 Play Mode 中 `fire_1` 的包装尺寸、朝向、运动观感和 DoubleTap 节奏；这是后续视觉/手感调校，不影响本工作流完成。
 - `ExplosionOnHitEffect.asset` 仍没有爆炸弹丸定义，因此 BlastRound 只会 warning，不会生成正式爆炸。
 
 ## 下一步首个动作
 
-- 在已打开的 Unity 主编辑器按 `Ctrl+R` 刷新资源，然后直接运行完整 EditMode 测试；不要先重写或重新生成任何 Prefab/SO。
+- 若继续视觉调校，先创建新工作流，再打开 `TopDownShooterPrototype` 场景进入 Play Mode；不要重新生成 Prefab/SO 或运行完整场景重建器。
 
 ## 首先读取
 
@@ -39,12 +38,14 @@
 - [passed] `2026-08-18`：设计规格自审未发现占位内容或规则冲突。
 - [passed] `2026-08-18`：运行时、Editor、测试程序集通过 Unity C# 响应文件编译，exit code 均为 `0`。
 - [passed] `2026-08-18`：静态资源契约与 Player Prefab 限定差异检查通过。
-- [blocked] `2026-08-18`：隔离 Unity Test Runner 因 `LicenseClient-dslia` channel refused 和连续超时未启动。
-- [not-run] `2026-08-18`：PlayMode 射击与视觉验证未运行。
+- [passed] `2026-08-18`：Unity 许可证 IPC 恢复，测试进程成功连接 `LicenseClient-Administrator`。
+- [passed] `2026-08-18`：修正一处 NUnit 数组计数断言后，聚焦测试 `1/1`、完整 EditMode 回归 `94/94` 通过。
+- [passed] `2026-08-18`：27 项关键管线/场景冒烟测试通过，续作期间受保护路径变更数为 `0`。
+- [not-run] `2026-08-18`：PlayMode 射击手感与视觉验证未人工运行。
 
 ## 风险与不可假定事项
 
 - `fire_1` 只经静态结构确认可作为视觉子 Prefab，最终尺寸和粒子滞留仍需 Play Mode 验证。
-- 事件管线已迁移，编译和静态契约通过，但在 Test Runner 恢复前不能声称完整回归通过。
+- 事件管线已迁移且 EditMode 全量回归通过；这不等同于最终视觉与手感已经人工验收。
 - 当前爆炸 Prefab 尚未配置，本轮不应假定 `BlastRound` 已有最终爆炸表现。
 - 不要运行完整 `TopDownPrototypeSceneBuilder`；它可能重建并覆盖用户维护的角色和场景数据。

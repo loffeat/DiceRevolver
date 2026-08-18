@@ -68,7 +68,7 @@ namespace DiceRevolver.Tests
                 AssetDatabase.LoadAssetAtPath<ProjectileSpawnEffect>(SpawnEffectPath);
 
             Assert.That(library, Is.Not.Null);
-            Assert.That(library.Definitions, Has.Count.EqualTo(1));
+            Assert.That(library.Definitions.Count, Is.EqualTo(1));
             Assert.That(library.Definitions[0], Is.SameAs(definition));
             Assert.That(spawnEffect, Is.Not.Null);
             Assert.That(spawnEffect.ProjectileDefinition, Is.SameAs(definition));
