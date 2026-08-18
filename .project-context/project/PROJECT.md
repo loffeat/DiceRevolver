@@ -2,7 +2,7 @@
 
 ## 项目目标
 
-DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标是把六发左轮建模为不放回抽取的六面骰池，并允许玩家为每个骰面装备数据驱动的弹丸词条和事件效果。
+DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标是把六发左轮建模为不放回抽取的六面骰池，由骰面组合基础事件与构筑事件，并通过独立弹丸定义驱动生成、属性、命中和后续连锁。
 
 ## 当前玩法或业务循环
 
@@ -43,7 +43,10 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 - [DiceChamber.cs](../../Assets/Scripts/Prototype/DiceChamber.cs)：维护剩余骰面、强制下次骰面和重置规则。
 - [DiceRevolverGun.cs](../../Assets/Scripts/Prototype/DiceRevolverGun.cs)：协调射速、抽面、弹丸生成、事件和换弹。
 - [DiceFaceLoadout.cs](../../Assets/Scripts/Prototype/DiceFaceLoadout.cs)：保存六个骰面的运行时装备。
-- [DiceFaceEntry.cs](../../Assets/Scripts/Prototype/DiceFaceEntry.cs)：ScriptableObject 词条，包含弹丸属性与事件列表。
+- [DiceFaceEntry.cs](../../Assets/Scripts/Prototype/DiceFaceEntry.cs)：ScriptableObject 构筑词条，保存开火时、命中时和开火结束时事件。
+- [ProjectileDefinition.cs](../../Assets/Scripts/Prototype/ProjectileDefinition.cs)：拥有弹丸 Prefab、运行时属性、默认攻击特效与扩展端口。
+- [DiceFaceActivation.cs](../../Assets/Scripts/Prototype/DiceFaceActivation.cs)：保存单次骰面激活快照、弹丸生成请求、命中关系和事件预算。
+- [ProjectileSpawnEffect.cs](../../Assets/Scripts/Prototype/ProjectileSpawnEffect.cs)：按弹丸定义、延迟、主弹身份和攻击特效覆盖策略请求生成弹丸。
 - [BulletEventEffect.cs](../../Assets/Scripts/Prototype/BulletEventEffect.cs)：开火、命中和开火结束效果的扩展基类。
 - [BulletEventTimeScheduler.cs](../../Assets/Scripts/Prototype/BulletEventTimeScheduler.cs)：为子弹事件提供确定顺序、异常隔离的游戏时间延迟队列。
 - [Projectile.cs](../../Assets/Scripts/Prototype/Projectile.cs)：应用运行时属性、移动、碰撞和生命周期。
@@ -57,8 +60,9 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 
 ```text
 输入 -> TopDownPlayerController -> DiceRevolverGun
-DiceChamber 抽面 -> DiceFaceLoadout -> DiceFaceEntry
-DiceFaceEntry -> ProjectileRuntimeStats + 开火/命中/结束事件
+DiceChamber 抽面 -> DiceFaceLoadout -> 基础事件 + DiceFaceEntry 三阶段构筑事件
+ProjectileSpawnEffect -> ProjectileDefinition -> ProjectileRuntimeStats + 弹丸 Prefab
+DiceFaceActivation -> 延迟生成、命中事件关系与连锁预算
 DiceBuildPageUI -> DiceFaceLoadout.Equip -> 后续射击读取新装备
 Projectile -> IDamageReceiver -> TargetDummy.DamageReceived -> WorldDamageNumberSpawner
 ```
