@@ -112,17 +112,19 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
-        public void CombatBrainSwitchesStrafeDirectionAfterConfiguredInterval()
+        public void CombatBrainSwitchesStrafeDirectionForTheNextMovementBurst()
         {
-            TestRobotCombatBrain brain = new TestRobotCombatBrain(4f, 8f, 1f);
+            TestRobotCombatBrain brain = new TestRobotCombatBrain(4f, 8f, 1f, 0.7f, 1f);
             Vector3 target = new Vector3(0f, 0f, 6f);
 
             TestRobotDecision first = brain.Tick(Vector3.zero, target, 0f);
-            TestRobotDecision beforeInterval = brain.Tick(Vector3.zero, target, 0.9f);
-            TestRobotDecision afterInterval = brain.Tick(Vector3.zero, target, 1.1f);
+            TestRobotDecision holding = brain.Tick(Vector3.zero, target, 0.71f);
+            TestRobotDecision nextBurst = brain.Tick(Vector3.zero, target, 1.72f);
 
-            Assert.That(beforeInterval.MoveInput, Is.EqualTo(first.MoveInput).Using(Vector2ComparerWithEqualsOperator.Instance));
-            Assert.That(afterInterval.MoveInput, Is.EqualTo(-first.MoveInput).Using(Vector2ComparerWithEqualsOperator.Instance));
+            Assert.That(holding.MoveInput, Is.EqualTo(Vector2.zero)
+                .Using(Vector2ComparerWithEqualsOperator.Instance));
+            Assert.That(nextBurst.MoveInput, Is.EqualTo(-first.MoveInput)
+                .Using(Vector2ComparerWithEqualsOperator.Instance));
         }
 
         [Test]
@@ -135,6 +137,39 @@ namespace DiceRevolver.Tests
 
             Assert.That(decision.AimWorldPoint, Is.EqualTo(target));
             Assert.That(decision.FireHeld, Is.True);
+        }
+
+        [Test]
+        public void CombatBrainMovesThenHoldsFireAndReevaluatesAfterThePause()
+        {
+            TestRobotCombatBrain brain = new TestRobotCombatBrain(4f, 8f, 1f, 0.7f, 1f);
+            Vector3 farTarget = new Vector3(0f, 0f, 10f);
+            Vector3 nearTarget = new Vector3(0f, 0f, 2f);
+
+            TestRobotDecision moving = brain.Tick(Vector3.zero, farTarget, 0f);
+            TestRobotDecision stillMoving = brain.Tick(Vector3.zero, farTarget, 0.69f);
+            TestRobotDecision holding = brain.Tick(Vector3.zero, nearTarget, 0.71f);
+            TestRobotDecision stillHolding = brain.Tick(Vector3.zero, nearTarget, 1.70f);
+            TestRobotDecision movingAgain = brain.Tick(Vector3.zero, nearTarget, 1.72f);
+
+            Assert.That(moving.LocomotionPhase, Is.EqualTo(TestRobotLocomotionPhase.Moving));
+            Assert.That(moving.MoveInput, Is.EqualTo(Vector2.up)
+                .Using(Vector2ComparerWithEqualsOperator.Instance));
+            Assert.That(stillMoving.LocomotionPhase, Is.EqualTo(TestRobotLocomotionPhase.Moving));
+
+            Assert.That(holding.LocomotionPhase, Is.EqualTo(TestRobotLocomotionPhase.Holding));
+            Assert.That(holding.MoveInput, Is.EqualTo(Vector2.zero)
+                .Using(Vector2ComparerWithEqualsOperator.Instance));
+            Assert.That(holding.AimWorldPoint, Is.EqualTo(nearTarget));
+            Assert.That(holding.FireHeld, Is.True);
+            Assert.That(stillHolding.LocomotionPhase, Is.EqualTo(TestRobotLocomotionPhase.Holding));
+            Assert.That(stillHolding.MoveInput, Is.EqualTo(Vector2.zero)
+                .Using(Vector2ComparerWithEqualsOperator.Instance));
+
+            Assert.That(movingAgain.LocomotionPhase, Is.EqualTo(TestRobotLocomotionPhase.Moving));
+            Assert.That(movingAgain.MovementMode, Is.EqualTo(TestRobotMovementMode.Retreat));
+            Assert.That(movingAgain.MoveInput, Is.EqualTo(Vector2.down)
+                .Using(Vector2ComparerWithEqualsOperator.Instance));
         }
 
         private static BehaviorAction<List<string>> CreateRecordingAction(string marker)

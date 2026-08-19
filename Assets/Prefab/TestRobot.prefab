@@ -478,11 +478,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.TestRobotController
   moveSpeed: 7
   turnSpeed: 24
-  rotateBodyTowardAim: 1
+  rotateBodyTowardAim: 0
   target: {fileID: 0}
   minimumCombatDistance: 4
   maximumCombatDistance: 8
   strafeDirectionInterval: 1
+  movementDuration: 0.7
+  holdingDuration: 1
 --- !u!114 &4203279668017952615
 MonoBehaviour:
   m_ObjectHideFlags: 0

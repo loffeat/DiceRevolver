@@ -20,7 +20,8 @@
 - 换弹视觉只对 `ArmVisual` 做明暗闪烁，不再写入其位置或旋转。
 - 核心战斗 Inspector 端口已提供中文名称，序列化字段名和既有数值保持不变。
 - 场景包含一个无限生命测试靶；弹丸通过通用受伤接口提交伤害，每次命中生成独立的世界空间飘字。
-- 场景另包含一个 `TestRobot.prefab` 实例；机器人按距离接近、后退或横移，持续瞄准玩家，并通过共享左轮路径发射六面均为 0 伤害的基础视觉弹丸。
+- 场景另包含一个 `TestRobot.prefab` 实例；机器人按距离接近、后退或横移，以移动 `0.7` 秒、站定攻击 `1.0` 秒的节奏循环，始终瞄准玩家，并通过共享左轮路径发射六面均为 0 伤害的基础视觉弹丸。
+- 测试机器人禁用角色根节点朝瞄准方向旋转，保持与玩家一致的站立立绘，只由 Sprite 翻面和手臂瞄准表达方向。
 - `TopDownCharacterController` 统一拥有移动、玩法平面约束和转向；玩家与机器人分别通过 `TopDownPlayerController` 和 `TestRobotController` 提供控制意图。
 - 可移植上下文系统已集成 `main`；原功能分支和隔离工作树已清理。
 - 项目上下文框架位于 `.project-context/framework/`，项目实例资料位于 `.project-context/project/`。
@@ -31,6 +32,7 @@
 
 ## 完成历史
 
+- [2026-08-19 测试机器人战斗节奏与站立姿态](workstreams/2026-08-19-test-robot-combat-rhythm/STATE.md)（`completed`）
 - [2026-08-19 测试机器人行为树](workstreams/2026-08-19-test-robot-behavior-tree/STATE.md)（`completed`）
 - [2026-08-19 骰面四槽位配置](workstreams/2026-08-19-dice-face-four-slots/STATE.md)（`completed`）
 - [2026-08-19 手臂可见性与基础弹丸尺寸修复](workstreams/2026-08-19-arm-visibility-projectile-scale/STATE.md)（`completed`）
@@ -54,6 +56,8 @@
 
 ## 最近项目级验证
 
+- [passed] `2026-08-19`：机器人移动/站定节奏、持续瞄准射击和站立姿态联合聚焦测试 `16/16`；完整 EditMode 回归 `123/123`，0 失败、0 跳过。
+- [passed] `2026-08-19`：本次调整后 Player 与 TargetDummy Prefab SHA256 继续与任务前一致。
 - [passed] `2026-08-19`：测试机器人行为树 `8/8`、共享控制器 `2/2`、原有瞄准与枪械 `19/19`、机器人资源 `4/4`、场景资源 `7/7` 均通过。
 - [passed] `2026-08-19`：Unity EditMode 完整回归 `121/121`，0 失败、0 跳过。
 - [passed] `2026-08-19`：Player Prefab SHA256 `296F820634120FB2DCCC59FC268F8534E1C66D28DD3E0E9FE83383940B2ADBEB`、TargetDummy Prefab SHA256 `08BDFC2413576022A057C3E4A239DD490D3E6555D4E1D784DC3F481D5452FE33` 与任务前一致；Player 射速 `2`、换弹时间 `2`、持枪距离 `0.85`、持枪高度 `0.72` 未变化。

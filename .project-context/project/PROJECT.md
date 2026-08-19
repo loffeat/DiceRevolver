@@ -42,7 +42,7 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 - [TopDownCharacterController.cs](../../Assets/Scripts/Prototype/TopDownCharacterController.cs)：共享角色运动模块，消费移动、瞄准、开火和换弹意图并负责平面约束与转向。
 - [TestRobotController.cs](../../Assets/Scripts/Prototype/TestRobotController.cs)：把测试机器人战斗决策适配到共享角色控制接口。
 - [BehaviorTree.cs](../../Assets/Scripts/Prototype/BehaviorTree.cs)：不依赖场景的 Sequence、Selector、Parallel、Condition 和 Action 行为树节点。
-- [TestRobotCombatBrain.cs](../../Assets/Scripts/Prototype/TestRobotCombatBrain.cs)：按近/远阈值输出接近、后退或横移，并持续提供瞄准与开火意图。
+- [TestRobotCombatBrain.cs](../../Assets/Scripts/Prototype/TestRobotCombatBrain.cs)：按近/远阈值输出接近、后退或横移，在移动爆发与站定攻击间循环，并持续提供瞄准与开火意图。
 - [TopDownAimHandRig.cs](../../Assets/Scripts/Prototype/TopDownAimHandRig.cs)：处理手臂镜像、枪口姿态和近距离稳定瞄准。
 - [DiceChamber.cs](../../Assets/Scripts/Prototype/DiceChamber.cs)：维护剩余骰面、强制下次骰面和重置规则。
 - [DiceRevolverGun.cs](../../Assets/Scripts/Prototype/DiceRevolverGun.cs)：协调射速、抽面、弹丸生成、事件和换弹。
@@ -92,3 +92,4 @@ Projectile -> IDamageReceiver -> TargetDummy.DamageReceived -> WorldDamageNumber
 - 弹丸事件：由 `BulletEventEffect` 在开火、命中或开火结束时执行的扩展行为。
 - 工作流：`.project-context/project/workstreams/` 下一个独立事项的状态和交接记录。
 - 控制意图：共享角色控制器暴露的移动、瞄准、开火和换弹状态；来源可以是玩家输入或机器人 AI。
+- 行动节奏：测试机器人默认移动 `0.7` 秒、站定攻击 `1.0` 秒，站定结束后重新判断战术移动方向。

@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Reflection;
 using DiceRevolver.Prototype;
 using NUnit.Framework;
 using UnityEditor;
@@ -108,6 +109,38 @@ namespace DiceRevolver.Tests
             finally
             {
                 EditorSceneManager.CloseScene(scene, true);
+            }
+        }
+
+        [Test]
+        public void PrefabKeepsItsUprightRootRotationWhileAimingSideways()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+            GameObject instance = Object.Instantiate(prefab);
+
+            try
+            {
+                TestRobotController robot = instance.GetComponent<TestRobotController>();
+                Quaternion uprightRotation = instance.transform.rotation;
+                PropertyInfo aimDirection = typeof(TestRobotController).GetProperty(
+                    nameof(TestRobotController.AimDirection));
+                MethodInfo faceAimDirection = typeof(TopDownCharacterController).GetMethod(
+                    "FaceAimDirection",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+
+                Assert.That(aimDirection, Is.Not.Null);
+                Assert.That(faceAimDirection, Is.Not.Null);
+                aimDirection.SetValue(robot, Vector3.right);
+
+                faceAimDirection.Invoke(robot, new object[] { 1f });
+
+                Assert.That(
+                    Quaternion.Angle(instance.transform.rotation, uprightRotation),
+                    Is.LessThan(0.001f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(instance);
             }
         }
 

@@ -8,6 +8,8 @@ namespace DiceRevolver.Prototype
         [SerializeField, InspectorName("最小战斗距离")] private float minimumCombatDistance = 4f;
         [SerializeField, InspectorName("最大战斗距离")] private float maximumCombatDistance = 8f;
         [SerializeField, InspectorName("横移换向间隔（秒）")] private float strafeDirectionInterval = 1f;
+        [SerializeField, InspectorName("单次移动时长（秒）")] private float movementDuration = 0.7f;
+        [SerializeField, InspectorName("站定攻击时长（秒）")] private float holdingDuration = 1f;
 
         private TestRobotCombatBrain brain;
 
@@ -68,7 +70,9 @@ namespace DiceRevolver.Prototype
             brain = new TestRobotCombatBrain(
                 minimumCombatDistance,
                 maximumCombatDistance,
-                strafeDirectionInterval);
+                strafeDirectionInterval,
+                movementDuration,
+                holdingDuration);
         }
     }
 }

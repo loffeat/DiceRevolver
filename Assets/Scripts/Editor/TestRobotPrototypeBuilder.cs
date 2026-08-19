@@ -120,7 +120,19 @@ namespace DiceRevolver.Editor
             GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(RobotPrefabPath);
             if (existing != null)
             {
-                return existing;
+                GameObject existingRoot = PrefabUtility.LoadPrefabContents(RobotPrefabPath);
+                try
+                {
+                    ConfigureRobotPresentationAndRhythm(
+                        existingRoot.GetComponent<TestRobotController>());
+                    PrefabUtility.SaveAsPrefabAsset(existingRoot, RobotPrefabPath);
+                }
+                finally
+                {
+                    PrefabUtility.UnloadPrefabContents(existingRoot);
+                }
+
+                return AssetDatabase.LoadAssetAtPath<GameObject>(RobotPrefabPath);
             }
 
             GameObject root = (GameObject)PrefabUtility.InstantiatePrefab(targetPrefab);
@@ -144,6 +156,7 @@ namespace DiceRevolver.Editor
                 characterController.center = Vector3.zero;
 
                 TestRobotController robot = root.AddComponent<TestRobotController>();
+                ConfigureRobotPresentationAndRhythm(robot);
                 DiceFaceLoadout loadout = root.AddComponent<DiceFaceLoadout>();
                 for (int face = 1; face <= 6; face++)
                 {
@@ -184,6 +197,20 @@ namespace DiceRevolver.Editor
             {
                 UnityEngine.Object.DestroyImmediate(root);
             }
+        }
+
+        private static void ConfigureRobotPresentationAndRhythm(TestRobotController robot)
+        {
+            if (robot == null)
+            {
+                throw new InvalidOperationException("TestRobot prefab is missing TestRobotController.");
+            }
+
+            SerializedObject serialized = new SerializedObject(robot);
+            serialized.FindProperty("rotateBodyTowardAim").boolValue = false;
+            serialized.FindProperty("movementDuration").floatValue = 0.7f;
+            serialized.FindProperty("holdingDuration").floatValue = 1f;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static void AppendToDefinitionLibrary(ProjectileDefinition definition)

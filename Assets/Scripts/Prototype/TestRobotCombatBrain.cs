@@ -9,24 +9,33 @@ namespace DiceRevolver.Prototype
         Strafe
     }
 
+    public enum TestRobotLocomotionPhase
+    {
+        Moving,
+        Holding
+    }
+
     public readonly struct TestRobotDecision
     {
         public TestRobotDecision(
             Vector2 moveInput,
             Vector3 aimWorldPoint,
             bool fireHeld,
-            TestRobotMovementMode movementMode)
+            TestRobotMovementMode movementMode,
+            TestRobotLocomotionPhase locomotionPhase)
         {
             MoveInput = moveInput;
             AimWorldPoint = aimWorldPoint;
             FireHeld = fireHeld;
             MovementMode = movementMode;
+            LocomotionPhase = locomotionPhase;
         }
 
         public Vector2 MoveInput { get; }
         public Vector3 AimWorldPoint { get; }
         public bool FireHeld { get; }
         public TestRobotMovementMode MovementMode { get; }
+        public TestRobotLocomotionPhase LocomotionPhase { get; }
     }
 
     public sealed class TestRobotCombatBrain
@@ -40,6 +49,7 @@ namespace DiceRevolver.Prototype
             public Vector3 AimWorldPoint;
             public bool FireHeld;
             public TestRobotMovementMode MovementMode;
+            public TestRobotLocomotionPhase LocomotionPhase;
 
             public Vector2 ToTarget
             {
@@ -54,21 +64,43 @@ namespace DiceRevolver.Prototype
         private readonly float minimumCombatDistance;
         private readonly float maximumCombatDistance;
         private readonly float strafeDirectionInterval;
+        private readonly float movementDuration;
+        private readonly float holdingDuration;
         private readonly Context context = new Context();
         private readonly IBehaviorNode<Context> root;
 
         private float nextStrafeDirectionTime;
         private float strafeDirection = 1f;
         private bool hasStrafeDirectionDeadline;
+        private float nextLocomotionPhaseTime;
+        private bool hasLocomotionPhaseDeadline;
+        private TestRobotLocomotionPhase locomotionPhase = TestRobotLocomotionPhase.Moving;
 
         public TestRobotCombatBrain(
             float minimumCombatDistance,
             float maximumCombatDistance,
             float strafeDirectionInterval)
+            : this(
+                minimumCombatDistance,
+                maximumCombatDistance,
+                strafeDirectionInterval,
+                0.7f,
+                1f)
+        {
+        }
+
+        public TestRobotCombatBrain(
+            float minimumCombatDistance,
+            float maximumCombatDistance,
+            float strafeDirectionInterval,
+            float movementDuration,
+            float holdingDuration)
         {
             this.minimumCombatDistance = Mathf.Max(0f, minimumCombatDistance);
             this.maximumCombatDistance = Mathf.Max(this.minimumCombatDistance, maximumCombatDistance);
             this.strafeDirectionInterval = Mathf.Max(0.05f, strafeDirectionInterval);
+            this.movementDuration = Mathf.Max(0.05f, movementDuration);
+            this.holdingDuration = Mathf.Max(0.05f, holdingDuration);
 
             IBehaviorNode<Context> movement = new BehaviorSelector<Context>(
                 new BehaviorSequence<Context>(
@@ -79,20 +111,28 @@ namespace DiceRevolver.Prototype
                     new BehaviorAction<Context>(Retreat)),
                 new BehaviorAction<Context>(Strafe));
 
+            IBehaviorNode<Context> locomotion = new BehaviorSelector<Context>(
+                new BehaviorSequence<Context>(
+                    new BehaviorCondition<Context>(IsHolding),
+                    new BehaviorAction<Context>(HoldPosition)),
+                movement);
+
             root = new BehaviorParallel<Context>(
                 new BehaviorAction<Context>(Aim),
                 new BehaviorAction<Context>(Fire),
-                movement);
+                locomotion);
         }
 
         public TestRobotDecision Tick(Vector3 selfPosition, Vector3 targetPosition, float time)
         {
+            UpdateLocomotionPhase(time);
             context.SelfPosition = selfPosition;
             context.TargetPosition = targetPosition;
             context.Time = time;
             context.MoveInput = Vector2.zero;
             context.AimWorldPoint = targetPosition;
             context.FireHeld = false;
+            context.LocomotionPhase = locomotionPhase;
 
             root.Tick(context);
 
@@ -100,7 +140,44 @@ namespace DiceRevolver.Prototype
                 context.MoveInput,
                 context.AimWorldPoint,
                 context.FireHeld,
-                context.MovementMode);
+                context.MovementMode,
+                context.LocomotionPhase);
+        }
+
+        private void UpdateLocomotionPhase(float time)
+        {
+            if (!hasLocomotionPhaseDeadline)
+            {
+                nextLocomotionPhaseTime = time + movementDuration;
+                hasLocomotionPhaseDeadline = true;
+                return;
+            }
+
+            if (time < nextLocomotionPhaseTime)
+            {
+                return;
+            }
+
+            if (locomotionPhase == TestRobotLocomotionPhase.Moving)
+            {
+                locomotionPhase = TestRobotLocomotionPhase.Holding;
+                nextLocomotionPhaseTime = time + holdingDuration;
+                return;
+            }
+
+            locomotionPhase = TestRobotLocomotionPhase.Moving;
+            nextLocomotionPhaseTime = time + movementDuration;
+        }
+
+        private bool IsHolding(Context current)
+        {
+            return current.LocomotionPhase == TestRobotLocomotionPhase.Holding;
+        }
+
+        private static BehaviorStatus HoldPosition(Context current)
+        {
+            current.MoveInput = Vector2.zero;
+            return BehaviorStatus.Success;
         }
 
         private bool IsTooFar(Context current)
