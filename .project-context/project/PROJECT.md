@@ -54,7 +54,7 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 - [ProjectileSpawnEffect.cs](../../Assets/Scripts/Prototype/ProjectileSpawnEffect.cs)：按弹丸定义、延迟、主弹身份和攻击特效覆盖策略请求生成弹丸。
 - [BulletEventEffect.cs](../../Assets/Scripts/Prototype/BulletEventEffect.cs)：开火、命中和开火结束效果的扩展基类。
 - [BulletEventTimeScheduler.cs](../../Assets/Scripts/Prototype/BulletEventTimeScheduler.cs)：为子弹事件提供确定顺序、异常隔离的游戏时间延迟队列。
-- [Projectile.cs](../../Assets/Scripts/Prototype/Projectile.cs)：应用运行时属性、移动、碰撞和生命周期。
+- [Projectile.cs](../../Assets/Scripts/Prototype/Projectile.cs)：应用运行时属性、移动、统一碰撞过滤和生命周期。
 - [DamageInfo.cs](../../Assets/Scripts/Prototype/DamageInfo.cs)：跨伤害来源传递数值、命中点和来源的只读数据。
 - [TargetDummy.cs](../../Assets/Scripts/Prototype/TargetDummy.cs)：无限生命测试靶，接收伤害并广播表现事件。
 - [WorldDamageNumberSpawner.cs](../../Assets/Scripts/Prototype/WorldDamageNumberSpawner.cs)：把测试靶受击事件转换为独立世界空间飘字。

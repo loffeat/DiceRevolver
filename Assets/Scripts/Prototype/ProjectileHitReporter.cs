@@ -9,7 +9,7 @@ namespace DiceRevolver.Prototype
 
         private void OnTriggerEnter(Collider other)
         {
-            if (other.GetComponentInParent<Projectile>() != null || other.CompareTag("Player"))
+            if (Projectile.ShouldIgnoreCollision(other))
             {
                 return;
             }

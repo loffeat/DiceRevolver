@@ -75,7 +75,7 @@ namespace DiceRevolver.Prototype
 
         private void OnTriggerEnter(Collider other)
         {
-            if (other.GetComponentInParent<Projectile>() != null || other.CompareTag("Player"))
+            if (ShouldIgnoreCollision(other))
             {
                 return;
             }
@@ -83,6 +83,12 @@ namespace DiceRevolver.Prototype
             IDamageReceiver receiver = other.GetComponentInParent<IDamageReceiver>();
             receiver?.ReceiveDamage(new DamageInfo(damage, transform.position, gameObject));
             Destroy(gameObject);
+        }
+
+        public static bool ShouldIgnoreCollision(Collider other)
+        {
+            return other != null &&
+                (other.GetComponentInParent<Projectile>() != null || other.CompareTag("Player"));
         }
 
         private void ResetRuntimeDefaults()
