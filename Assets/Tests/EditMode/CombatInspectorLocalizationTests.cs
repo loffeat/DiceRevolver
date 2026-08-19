@@ -38,6 +38,11 @@ namespace DiceRevolver.Tests
             yield return Port<ProjectileSpawnEffect>("projectileDefinition", "弹丸定义");
             yield return Port<ProjectileSpawnEffect>("delaySeconds", "生成延迟（秒）");
             yield return Port<ExplosionOnHitEffect>("explosionProjectileDefinition", "爆炸弹丸定义");
+            yield return Port<AreaExplosionProjectile>("radius", "爆炸半径");
+            yield return Port<AreaExplosionProjectile>("visualDuration", "视觉持续时间（秒）");
+            yield return Port<AreaExplosionProjectile>("ringColor", "圆环颜色");
+            yield return Port<AreaExplosionProjectile>("ringWidth", "圆环宽度");
+            yield return Port<AreaExplosionProjectile>("targetLayers", "受击图层");
             yield return Port<DiceFaceLibrary>("entries", "骰面词条库");
             yield return Port<BulletEventLibrary>("effects", "子弹事件库");
             yield return Port<ProjectileDefinitionLibrary>("definitions", "弹丸定义库");

@@ -55,6 +55,7 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 - [BulletEventEffect.cs](../../Assets/Scripts/Prototype/BulletEventEffect.cs)：开火、命中和开火结束效果的扩展基类。
 - [BulletEventTimeScheduler.cs](../../Assets/Scripts/Prototype/BulletEventTimeScheduler.cs)：为子弹事件提供确定顺序、异常隔离的游戏时间延迟队列。
 - [Projectile.cs](../../Assets/Scripts/Prototype/Projectile.cs)：应用运行时属性、移动、统一碰撞过滤和生命周期。
+- [AreaExplosionProjectile.cs](../../Assets/Scripts/Prototype/AreaExplosionProjectile.cs)：在爆炸点对范围内受伤对象去重结算一次伤害，并驱动扩张淡出的圆环表现。
 - [DamageInfo.cs](../../Assets/Scripts/Prototype/DamageInfo.cs)：跨伤害来源传递数值、命中点和来源的只读数据。
 - [TargetDummy.cs](../../Assets/Scripts/Prototype/TargetDummy.cs)：无限生命测试靶，接收伤害并广播表现事件。
 - [WorldDamageNumberSpawner.cs](../../Assets/Scripts/Prototype/WorldDamageNumberSpawner.cs)：把测试靶受击事件转换为独立世界空间飘字。
@@ -72,6 +73,7 @@ ProjectileSpawnEffect -> ProjectileDefinition -> ProjectileRuntimeStats + 弹丸
 DiceFaceActivation -> 延迟生成、命中事件关系与连锁预算
 DiceBuildPageUI -> DiceFaceLoadout.Equip -> 只替换词条所属槽位 -> 后续射击读取新快照
 Projectile -> IDamageReceiver -> TargetDummy.DamageReceived -> WorldDamageNumberSpawner
+ExplosionOnHitEffect -> BlastExplosion ProjectileDefinition -> AreaExplosionProjectile -> 范围 IDamageReceiver
 ```
 
 额外射击通过事件上下文请求同属性弹丸，并禁止递归触发额外射击。命中事件由 `ProjectileHitReporter` 桥接回本次射击上下文。
@@ -93,3 +95,4 @@ Projectile -> IDamageReceiver -> TargetDummy.DamageReceived -> WorldDamageNumber
 - 工作流：`.project-context/project/workstreams/` 下一个独立事项的状态和交接记录。
 - 控制意图：共享角色控制器暴露的移动、瞄准、开火和换弹状态；来源可以是玩家输入或机器人 AI。
 - 行动节奏：测试机器人默认移动 `0.7` 秒、站定攻击 `1.0` 秒，站定结束后重新判断战术移动方向。
+- 范围爆炸：由命中事件在命中点生成的独立爆炸弹丸；伤害取自弹丸定义，半径和圆环表现取自爆炸 Prefab。

@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-- 可玩原型阶段；测试机器人行为树、共享角色控制接缝和零伤害射击资源已经完成。
+- 可玩原型阶段；命中范围爆炸、测试机器人、四槽位骰面构筑和模块化弹丸事件管线均已完成当前自动化范围。
 
 ## 全局有效状态
 
@@ -24,15 +24,17 @@
 - 测试机器人禁用角色根节点朝瞄准方向旋转，保持与玩家一致的站立立绘，只由 Sprite 翻面和手臂瞄准表达方向。
 - `TopDownCharacterController` 统一拥有移动、玩法平面约束和转向；玩家与机器人分别通过 `TopDownPlayerController` 和 `TestRobotController` 提供控制意图。
 - 弹丸与命中转发器统一复用 `Projectile.ShouldIgnoreCollision`；零引用的旧 `GunController` 和 `RevolverGun` 已删除。
+- BlastRound 命中事件已绑定独立爆炸弹丸：默认半径 `2.5`、伤害 `3`、视觉持续 `0.35` 秒；直击目标会同时承受直击和爆炸伤害，发射者自身层级免疫爆炸，共享场景父节点下的兄弟角色仍可受伤。
 - 可移植上下文系统已集成 `main`；原功能分支和隔离工作树已清理。
 - 项目上下文框架位于 `.project-context/framework/`，项目实例资料位于 `.project-context/project/`。
 
 ## 活跃工作流
 
-- 无。
+- [雷电构筑与左轮底层重构待办](workstreams/2026-08-20-lightning-build-backlog/STATE.md)（`planned`；下次同步时提醒用户）
 
 ## 完成历史
 
+- [2026-08-20 命中范围爆炸](workstreams/2026-08-20-area-explosion-on-hit/STATE.md)（`completed`）
 - [2026-08-19 死代码清理与碰撞过滤收敛](workstreams/2026-08-19-dead-code-cleanup/STATE.md)（`completed`）
 - [2026-08-19 测试机器人战斗节奏与站立姿态](workstreams/2026-08-19-test-robot-combat-rhythm/STATE.md)（`completed`）
 - [2026-08-19 测试机器人行为树](workstreams/2026-08-19-test-robot-behavior-tree/STATE.md)（`completed`）
@@ -49,15 +51,18 @@
 
 ## 已知缺口
 
-- `ExplosionOnHitEffect.asset` 尚未配置爆炸弹丸 Prefab，触发时只输出 warning。
 - 已有通用受伤接口和无限生命测试靶，但没有正式敌人的有限生命、死亡与穿透消费逻辑。
 - 骰面构筑仅存在于当前运行期，没有存档。
 - 尚未执行完整 PlayMode 战斗流程验证。
 - 测试机器人距离阈值、横移换向周期和视觉手感尚未在可见 Play Mode 中人工验收。
+- 范围爆炸的圆环颜色、半径和持续时间尚未在可见 Play Mode 中人工验收。
 - 当前设备的 Git LFS clean filter 无法写入 `.git/lfs/tmp`，导致部分全仓库 Git 状态或 diff 检查失败。
 
 ## 最近项目级验证
 
+- [passed] `2026-08-20`：范围爆炸运行时 `4/4`、资源绑定 `3/3`；完整 EditMode 回归 `139/139`，0 失败、0 跳过。
+- [passed] `2026-08-20`：Player、TargetDummy、TestRobot Prefab SHA256 与任务前一致；玩家射速、换弹时间、持枪距离、持枪高度保持 `2`、`2`、`0.85`、`0.72`。
+- [not-run] `2026-08-20`：可见 Play Mode 中的爆炸圆环视觉和战斗手感尚未人工验收。
 - [passed] `2026-08-19`：死代码清理前基线 `123/123`，碰撞策略聚焦测试 `3/3`，清理后完整 EditMode 回归 `126/126`。
 - [passed] `2026-08-19`：被删 `GunController` 与 `RevolverGun` 的脚本 GUID 资源引用数均为 0；四个现有 DiceFaceEntry 均仍被词条库引用。
 - [passed] `2026-08-19`：机器人移动/站定节奏、持续瞄准射击和站立姿态联合聚焦测试 `16/16`；完整 EditMode 回归 `123/123`，0 失败、0 跳过。

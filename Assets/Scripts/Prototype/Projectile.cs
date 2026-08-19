@@ -21,6 +21,7 @@ namespace DiceRevolver.Prototype
         public string ProjectileTag => projectileTag;
         public float Damage => damage;
         public int EnemyPierceCount => enemyPierceCount;
+        public Transform OwnerTransform { get; private set; }
 
         private void Awake()
         {
@@ -41,6 +42,7 @@ namespace DiceRevolver.Prototype
         public void Launch(Vector3 launchDirection, Collider ownerCollider = null)
         {
             EnsureRuntimeDefaults();
+            OwnerTransform = ownerCollider != null ? ownerCollider.transform : null;
             launchDirection.y = 0f;
             if (launchDirection.sqrMagnitude > 0.0001f)
             {

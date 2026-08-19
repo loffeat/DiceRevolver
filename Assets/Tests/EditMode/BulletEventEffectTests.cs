@@ -132,6 +132,38 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void ExplosionRequestsConfiguredProjectileAtHitPosition()
+        {
+            ExplosionOnHitEffect effect = ScriptableObject.CreateInstance<ExplosionOnHitEffect>();
+            ProjectileDefinition definition = ScriptableObject.CreateInstance<ProjectileDefinition>();
+            typeof(ExplosionOnHitEffect).GetField(
+                "explosionProjectileDefinition",
+                BindingFlags.Instance | BindingFlags.NonPublic).SetValue(effect, definition);
+            ProjectileSpawnRequest request = default;
+            int requestCount = 0;
+            DiceFaceActivation activation = CreateActivation(
+                null,
+                null,
+                requested =>
+                {
+                    requestCount++;
+                    request = requested;
+                });
+            Vector3 hitPosition = new Vector3(4f, 0f, -2f);
+
+            effect.Trigger(new BulletEventContext(activation, null, null, hitPosition));
+
+            Assert.That(requestCount, Is.EqualTo(1));
+            Assert.That(request.Definition, Is.SameAs(definition));
+            Assert.That(request.Origin, Is.EqualTo(hitPosition));
+            Assert.That(request.IsPrimary, Is.False);
+            Assert.That(request.CanTriggerHitEffects, Is.False);
+
+            Object.DestroyImmediate(definition);
+            Object.DestroyImmediate(effect);
+        }
+
+        [Test]
         public void ProjectileSpawnEffectSchedulesPrimaryProjectileInCurrentFrame()
         {
             ProjectileDefinition definition = ScriptableObject.CreateInstance<ProjectileDefinition>();
