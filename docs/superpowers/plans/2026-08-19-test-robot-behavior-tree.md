@@ -30,10 +30,10 @@
 **Interfaces:**
 - Produces: `IBehaviorNode<TContext>.Tick(TContext)`, standard composite/leaf nodes, `TestRobotCombatBrain.Tick(Vector3, Vector3, float)`, and `TestRobotDecision`.
 
-- [ ] Write tests for sequence/selector/parallel semantics and robot approach, retreat, strafe, strafe switching, aim, and fire.
-- [ ] Run focused tests and verify failure is caused by missing production types.
-- [ ] Implement the minimal behavior-tree nodes and combat brain.
-- [ ] Run focused tests and require zero failures.
+- [x] Write tests for sequence/selector/parallel semantics and robot approach, retreat, strafe, strafe switching, aim, and fire.
+- [x] Run focused tests and verify failure is caused by missing production types.
+- [x] Implement the minimal behavior-tree nodes and combat brain.
+- [x] Run focused tests and require zero failures.
 
 ### Task 2: Shared Character Intent Seam
 
@@ -50,12 +50,12 @@
 - Produces: shared `AimWorldPoint`, `AimDirection`, `MoveInput`, `IsMoving`, `FireHeld`, and `ReloadPressedThisFrame` interface.
 - Consumes: `TestRobotCombatBrain` decisions from Task 1.
 
-- [ ] Write tests proving player/controller references work through the shared type and robot intent drives the common motor state.
-- [ ] Run focused tests and verify the shared types/ports are absent.
-- [ ] Extract existing motor behavior into the shared base while retaining serialized field names.
-- [ ] Make player and robot adapters supply their respective control intent.
-- [ ] Change aim, animator, and gun consumers to the shared type without resaving Player Prefab.
-- [ ] Run focused and existing aim/gun tests.
+- [x] Write tests proving player/controller references work through the shared type and robot intent drives the common motor state.
+- [x] Run focused tests and verify the shared types/ports are absent.
+- [x] Extract existing motor behavior into the shared base while retaining serialized field names.
+- [x] Make player and robot adapters supply their respective control intent.
+- [x] Change aim, animator, and gun consumers to the shared type without resaving Player Prefab.
+- [x] Run focused and existing aim/gun tests.
 
 ### Task 3: Robot Projectile And Prefab Packaging
 
@@ -72,11 +72,11 @@
 **Interfaces:**
 - Produces: a packaged `TestRobot.prefab`, zero-damage projectile definition/spawn effect, and one prototype-scene instance.
 
-- [ ] Write asset tests for prefab wiring, infinite-health target behavior, six base effects, zero damage, shared projectile prefab, and scene instance.
-- [ ] Run focused tests and verify the missing assets fail.
-- [ ] Implement a targeted append-only builder that clones TargetDummy and wires robot-only modules.
-- [ ] Run the builder in an isolated Unity project and copy only generated/targeted assets back.
-- [ ] Run focused asset tests and require zero failures.
+- [x] Write asset tests for prefab wiring, infinite-health target behavior, six base effects, zero damage, shared projectile prefab, and scene instance.
+- [x] Run focused tests and verify the missing assets fail.
+- [x] Implement a targeted append-only builder that clones TargetDummy and wires robot-only modules.
+- [x] Run the builder in an isolated Unity project and copy only generated/targeted assets back.
+- [x] Run focused asset tests and require zero failures.
 
 ### Task 4: Regression And Context Closure
 
@@ -90,9 +90,9 @@
 - Consumes: all prior tasks.
 - Produces: verified repository state and reproducible handoff.
 
-- [ ] Run focused AI, shared-controller, and robot-asset tests.
-- [ ] Run the complete EditMode suite and require zero failures/errors.
-- [ ] Verify protected Player/TargetDummy Prefab hashes and player gun tuning match pre-task values.
-- [ ] Update project context with behavior-tree terminology, ports, generated assets, and exact verification counts.
-- [ ] Run `.project-context/framework/scripts/check.ps1` and require `[context:ok]`.
+- [x] Run focused AI, shared-controller, and robot-asset tests.
+- [x] Run the complete EditMode suite and require zero failures/errors.
+- [x] Verify protected Player/TargetDummy Prefab hashes and player gun tuning match pre-task values.
+- [x] Update project context with behavior-tree terminology, ports, generated assets, and exact verification counts.
+- [x] Run `.project-context/framework/scripts/check.ps1` and require `[context:ok]`.
 

@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-- 可玩原型阶段；测试机器人行为树事项已完成设计和首轮行为树代码，当前按用户要求暂停。
+- 可玩原型阶段；测试机器人行为树、共享角色控制接缝和零伤害射击资源已经完成。
 
 ## 全局有效状态
 
@@ -20,15 +20,18 @@
 - 换弹视觉只对 `ArmVisual` 做明暗闪烁，不再写入其位置或旋转。
 - 核心战斗 Inspector 端口已提供中文名称，序列化字段名和既有数值保持不变。
 - 场景包含一个无限生命测试靶；弹丸通过通用受伤接口提交伤害，每次命中生成独立的世界空间飘字。
+- 场景另包含一个 `TestRobot.prefab` 实例；机器人按距离接近、后退或横移，持续瞄准玩家，并通过共享左轮路径发射六面均为 0 伤害的基础视觉弹丸。
+- `TopDownCharacterController` 统一拥有移动、玩法平面约束和转向；玩家与机器人分别通过 `TopDownPlayerController` 和 `TestRobotController` 提供控制意图。
 - 可移植上下文系统已集成 `main`；原功能分支和隔离工作树已清理。
 - 项目上下文框架位于 `.project-context/framework/`，项目实例资料位于 `.project-context/project/`。
 
 ## 活跃工作流
 
-- [2026-08-19 测试机器人行为树](workstreams/2026-08-19-test-robot-behavior-tree/STATE.md)（`active`，用户要求暂停）
+- 无。
 
 ## 完成历史
 
+- [2026-08-19 测试机器人行为树](workstreams/2026-08-19-test-robot-behavior-tree/STATE.md)（`completed`）
 - [2026-08-19 骰面四槽位配置](workstreams/2026-08-19-dice-face-four-slots/STATE.md)（`completed`）
 - [2026-08-19 手臂可见性与基础弹丸尺寸修复](workstreams/2026-08-19-arm-visibility-projectile-scale/STATE.md)（`completed`）
 - [2026-08-18 零高度与渲染层级契约](workstreams/2026-08-18-zero-height-render-layers/STATE.md)（`completed`）
@@ -46,10 +49,16 @@
 - 已有通用受伤接口和无限生命测试靶，但没有正式敌人的有限生命、死亡与穿透消费逻辑。
 - 骰面构筑仅存在于当前运行期，没有存档。
 - 尚未执行完整 PlayMode 战斗流程验证。
+- 测试机器人距离阈值、横移换向周期和视觉手感尚未在可见 Play Mode 中人工验收。
 - 当前设备的 Git LFS clean filter 无法写入 `.git/lfs/tmp`，导致部分全仓库 Git 状态或 diff 检查失败。
 
 ## 最近项目级验证
 
+- [passed] `2026-08-19`：测试机器人行为树 `8/8`、共享控制器 `2/2`、原有瞄准与枪械 `19/19`、机器人资源 `4/4`、场景资源 `7/7` 均通过。
+- [passed] `2026-08-19`：Unity EditMode 完整回归 `121/121`，0 失败、0 跳过。
+- [passed] `2026-08-19`：Player Prefab SHA256 `296F820634120FB2DCCC59FC268F8534E1C66D28DD3E0E9FE83383940B2ADBEB`、TargetDummy Prefab SHA256 `08BDFC2413576022A057C3E4A239DD490D3E6555D4E1D784DC3F481D5452FE33` 与任务前一致；Player 射速 `2`、换弹时间 `2`、持枪距离 `0.85`、持枪高度 `0.72` 未变化。
+- [passed] `2026-08-19`：可移植上下文结构检查返回 `[context:ok]`。
+- [not-run] `2026-08-19`：测试机器人在可见 Play Mode 中的距离维持、横移和连续射击手感尚未人工验收。
 - [failed] `2026-08-19`：测试机器人行为树红灯按预期因缺少行为树生产类型而编译失败。
 - [blocked] `2026-08-19`：行为树最小实现绿灯在隔离 Unity 首次导入期间按用户要求终止，没有测试结果；共享控制器、机器人资源和完整回归尚未运行。
 - [passed] `2026-08-19`：四槽位数据、激活、枪械、UI 和资源均完成红绿循环；隔离 Unity 完整 EditMode 回归 `107/107`。

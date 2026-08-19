@@ -4,7 +4,7 @@ namespace DiceRevolver.Prototype
 {
     public sealed class PlayerMovementAnimatorBridge : MonoBehaviour
     {
-        [SerializeField] private TopDownPlayerController player;
+        [SerializeField] private TopDownCharacterController player;
         [SerializeField] private Animator animator;
         [SerializeField] private string walkingParameter = "isWalking";
 

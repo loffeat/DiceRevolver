@@ -1,13 +1,12 @@
 using System;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace DiceRevolver.Prototype
 {
     public sealed class DiceRevolverGun : MonoBehaviour
     {
         [Header("引用")]
-        [SerializeField, InspectorName("玩家控制器")] private TopDownPlayerController player;
+        [SerializeField, InspectorName("玩家控制器")] private TopDownCharacterController player;
         [SerializeField, InspectorName("武器视觉根节点")] private Transform visualRoot;
         [SerializeField, InspectorName("枪口")] private Transform muzzle;
         [SerializeField, InspectorName("默认弹丸 Prefab")] private Projectile projectilePrefab;
@@ -127,8 +126,7 @@ namespace DiceRevolver.Prototype
                 return;
             }
 
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null && keyboard.rKey.wasPressedThisFrame && chamber.RemainingCount < faceCount)
+            if (player.ReloadPressedThisFrame && chamber.RemainingCount < faceCount)
             {
                 BeginReload();
             }
@@ -136,13 +134,12 @@ namespace DiceRevolver.Prototype
 
         private void TryFire()
         {
-            Mouse mouse = Mouse.current;
-            if (mouse == null || muzzle == null || chamber == null)
+            if (muzzle == null || chamber == null)
             {
                 return;
             }
 
-            if (!mouse.leftButton.isPressed || isReloading || Time.time < nextShotTime)
+            if (!player.FireHeld || isReloading || Time.time < nextShotTime)
             {
                 return;
             }

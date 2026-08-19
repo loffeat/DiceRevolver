@@ -7,7 +7,7 @@ namespace DiceRevolver.Prototype
         private const float MinimumRenderPlaneHeight = 0.01f;
 
         [Header("References")]
-        [SerializeField] private TopDownPlayerController player;
+        [SerializeField] private TopDownCharacterController player;
         [SerializeField] private Transform aimRoot;
         [SerializeField] private Transform armVisual;
         [SerializeField] private Transform muzzle;

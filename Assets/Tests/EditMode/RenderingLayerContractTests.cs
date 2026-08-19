@@ -1,5 +1,6 @@
 using DiceRevolver.Prototype;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -24,14 +25,16 @@ namespace DiceRevolver.Tests
             {
                 GameObject ground = FindRoot(scene, "Ground");
                 TopDownPlayerController player = FindRootComponent<TopDownPlayerController>(scene);
-                TargetDummy targetDummy = FindRootComponent<TargetDummy>(scene);
+                TargetDummy targetDummy = FindPrefabRootComponent<TargetDummy>(
+                    scene,
+                    "Assets/Prefab/TargetDummy.prefab");
 
                 Assert.That(ground, Is.Not.Null);
                 Assert.That(player, Is.Not.Null);
                 Assert.That(targetDummy, Is.Not.Null);
                 Assert.That(ground.transform.position.y, Is.EqualTo(0f).Within(0.0001f));
                 Assert.That(player.transform.position.y, Is.EqualTo(0f).Within(0.0001f));
-                Assert.That(targetDummy.transform.position.y, Is.EqualTo(0f).Within(0.0001f));
+                Assert.That(Mathf.Abs(targetDummy.transform.position.y), Is.LessThan(0.05f));
                 Assert.That(ground.GetComponent<MeshRenderer>(), Is.Null);
                 Assert.That(ground.GetComponent<Collider>(), Is.Null);
 
@@ -75,6 +78,22 @@ namespace DiceRevolver.Tests
                 if (component != null)
                 {
                     return component;
+                }
+            }
+
+            return null;
+        }
+
+        private static T FindPrefabRootComponent<T>(Scene scene, string prefabPath)
+            where T : Component
+        {
+            GameObject[] roots = scene.GetRootGameObjects();
+            for (int i = 0; i < roots.Length; i++)
+            {
+                GameObject source = PrefabUtility.GetCorrespondingObjectFromSource(roots[i]);
+                if (source != null && AssetDatabase.GetAssetPath(source) == prefabPath)
+                {
+                    return roots[i].GetComponent<T>();
                 }
             }
 

@@ -14,3 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.ProjectileDefinitionLibrary
   definitions:
   - {fileID: 11400000, guid: 256eab95c6f376482a5d1f96b3e074c9, type: 2}
+  - {fileID: 11400000, guid: fe057d4dd8c2fdf40a1fd0342164d483, type: 2}

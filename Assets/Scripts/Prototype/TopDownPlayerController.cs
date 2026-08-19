@@ -3,56 +3,36 @@ using UnityEngine.InputSystem;
 
 namespace DiceRevolver.Prototype
 {
-    [RequireComponent(typeof(CharacterController))]
-    public sealed class TopDownPlayerController : MonoBehaviour
+    public sealed class TopDownPlayerController : TopDownCharacterController
     {
-        [SerializeField] private float moveSpeed = 7f;
-        [SerializeField] private float turnSpeed = 24f;
-        [SerializeField] private bool rotateBodyTowardAim = true;
-
-        private CharacterController characterController;
         private Camera mainCamera;
         private Plane groundPlane;
 
-        public Vector3 AimWorldPoint { get; private set; }
-        public Vector3 AimDirection { get; private set; } = Vector3.forward;
-        public Vector2 MoveInput { get; private set; }
-        public bool IsMoving => MoveInput.sqrMagnitude > 0.01f;
-
-        private void Awake()
+        public override Vector3 AimWorldPoint { get; protected set; }
+        public override Vector3 AimDirection { get; protected set; } = Vector3.forward;
+        public override Vector2 MoveInput { get; protected set; }
+        public override bool FireHeld
         {
-            SnapToGameplayPlane();
-            characterController = GetComponent<CharacterController>();
+            get => Mouse.current != null && Mouse.current.leftButton.isPressed;
+            protected set { }
+        }
+        public override bool ReloadPressedThisFrame
+        {
+            get => Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame;
+            protected set { }
+        }
+
+        protected override void Awake()
+        {
+            base.Awake();
             mainCamera = Camera.main;
             groundPlane = new Plane(Vector3.up, Vector3.zero);
         }
 
-        private void Update()
+        public override void RefreshControlIntent(float time)
         {
             UpdateAim();
-            Move();
-            FaceAimDirection();
-        }
-
-        private void Move()
-        {
             MoveInput = ReadMoveInput();
-            Vector3 desiredMove = new Vector3(MoveInput.x, 0f, MoveInput.y);
-
-            if (desiredMove.sqrMagnitude > 1f)
-            {
-                desiredMove.Normalize();
-            }
-
-            characterController.Move(desiredMove * moveSpeed * Time.deltaTime);
-            SnapToGameplayPlane();
-        }
-
-        private void SnapToGameplayPlane()
-        {
-            Vector3 position = transform.position;
-            position.y = 0f;
-            transform.position = position;
         }
 
         private static Vector2 ReadMoveInput()
@@ -95,20 +75,5 @@ namespace DiceRevolver.Prototype
             }
         }
 
-        private void FaceAimDirection()
-        {
-            if (!rotateBodyTowardAim)
-            {
-                return;
-            }
-
-            if (AimDirection.sqrMagnitude <= 0.0001f)
-            {
-                return;
-            }
-
-            Quaternion targetRotation = Quaternion.LookRotation(AimDirection, Vector3.up);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, turnSpeed * Time.deltaTime);
-        }
     }
 }

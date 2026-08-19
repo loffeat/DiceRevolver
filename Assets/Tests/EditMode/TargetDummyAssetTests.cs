@@ -47,7 +47,7 @@ namespace DiceRevolver.Tests
             try
             {
                 GameObject[] targets = scene.GetRootGameObjects()
-                    .Where(root => root.GetComponent<TargetDummy>() != null)
+                    .Where(root => IsPrefabInstanceOf(root, PrefabPath))
                     .ToArray();
 
                 Assert.That(targets, Has.Length.EqualTo(1));
@@ -57,6 +57,12 @@ namespace DiceRevolver.Tests
             {
                 EditorSceneManager.CloseScene(scene, true);
             }
+        }
+
+        private static bool IsPrefabInstanceOf(GameObject instance, string prefabPath)
+        {
+            GameObject source = PrefabUtility.GetCorrespondingObjectFromSource(instance);
+            return source != null && AssetDatabase.GetAssetPath(source) == prefabPath;
         }
     }
 }

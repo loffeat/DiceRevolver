@@ -39,6 +39,10 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 ## 核心模块
 
 - [TopDownPlayerController.cs](../../Assets/Scripts/Prototype/TopDownPlayerController.cs)：读取移动与鼠标输入，发布瞄准方向和世界坐标。
+- [TopDownCharacterController.cs](../../Assets/Scripts/Prototype/TopDownCharacterController.cs)：共享角色运动模块，消费移动、瞄准、开火和换弹意图并负责平面约束与转向。
+- [TestRobotController.cs](../../Assets/Scripts/Prototype/TestRobotController.cs)：把测试机器人战斗决策适配到共享角色控制接口。
+- [BehaviorTree.cs](../../Assets/Scripts/Prototype/BehaviorTree.cs)：不依赖场景的 Sequence、Selector、Parallel、Condition 和 Action 行为树节点。
+- [TestRobotCombatBrain.cs](../../Assets/Scripts/Prototype/TestRobotCombatBrain.cs)：按近/远阈值输出接近、后退或横移，并持续提供瞄准与开火意图。
 - [TopDownAimHandRig.cs](../../Assets/Scripts/Prototype/TopDownAimHandRig.cs)：处理手臂镜像、枪口姿态和近距离稳定瞄准。
 - [DiceChamber.cs](../../Assets/Scripts/Prototype/DiceChamber.cs)：维护剩余骰面、强制下次骰面和重置规则。
 - [DiceRevolverGun.cs](../../Assets/Scripts/Prototype/DiceRevolverGun.cs)：协调射速、抽面、弹丸生成、事件和换弹。
@@ -57,16 +61,12 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 - [DiceBuildPageUI.cs](../../Assets/Scripts/Prototype/DiceBuildPageUI.cs)：编辑骰面装备。
 - [DiceBuildRuntimeView.cs](../../Assets/Scripts/Prototype/DiceBuildRuntimeView.cs)：场景加载后按需创建构筑 UI 和装备组件。
 
-## 进行中架构
-
-- [BehaviorTree.cs](../../Assets/Scripts/Prototype/BehaviorTree.cs)：为测试机器人提供不依赖场景的 Sequence、Selector、Parallel、Condition 和 Action 节点。
-- [TestRobotCombatBrain.cs](../../Assets/Scripts/Prototype/TestRobotCombatBrain.cs)：计划根据近/远距离输出接近、后退或横移决策，并持续输出瞄准与开火意图；当前最小实现尚未完成绿灯验证。
-- 测试机器人后续将通过共享角色控制接缝复用移动、动画、手臂瞄准和左轮执行；该接缝、Prefab 与资源尚未实现。
-
 ## 关键数据流
 
 ```text
-输入 -> TopDownPlayerController -> DiceRevolverGun
+玩家输入 -> TopDownPlayerController -> TopDownCharacterController
+目标位置 -> TestRobotCombatBrain -> TestRobotController -> TopDownCharacterController
+TopDownCharacterController -> 移动/瞄准/动画/DiceRevolverGun
 DiceChamber 抽面 -> DiceFaceLoadout -> DiceFaceConfigurationSnapshot 四槽位快照
 ProjectileSpawnEffect -> ProjectileDefinition -> ProjectileRuntimeStats + 弹丸 Prefab
 DiceFaceActivation -> 延迟生成、命中事件关系与连锁预算
@@ -91,3 +91,4 @@ Projectile -> IDamageReceiver -> TargetDummy.DamageReceived -> WorldDamageNumber
 - 装备：`DiceFaceLoadout` 中六个面到四槽位配置的映射。
 - 弹丸事件：由 `BulletEventEffect` 在开火、命中或开火结束时执行的扩展行为。
 - 工作流：`.project-context/project/workstreams/` 下一个独立事项的状态和交接记录。
+- 控制意图：共享角色控制器暴露的移动、瞄准、开火和换弹状态；来源可以是玩家输入或机器人 AI。
