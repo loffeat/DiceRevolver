@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using DiceRevolver.Prototype;
 using NUnit.Framework;
@@ -137,6 +138,23 @@ namespace DiceRevolver.Tests
 
         private sealed class EmptyPassiveRuntime : IDicePassiveEffectRuntime
         {
+            public bool AllowsDraw(int face, IReadOnlyList<int> remainingFaces)
+            {
+                return true;
+            }
+
+            public void OnReloadStarted()
+            {
+            }
+
+            public void OnReloadCompleted()
+            {
+            }
+
+            public void OnFaceConsumed(int face)
+            {
+            }
+
             public void Dispose()
             {
             }

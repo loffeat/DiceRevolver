@@ -33,6 +33,7 @@ namespace DiceRevolver.Prototype
 
         private DiceRevolverRuntime runtime;
         private DiceShotPipeline shotPipeline;
+        private DicePassiveRuntime passiveRuntime;
         private SpriteRenderer reloadBlinkRenderer;
         private Color reloadBlinkDefaultColor = Color.white;
         private TopDownAimHandRig aimRig;
@@ -77,6 +78,22 @@ namespace DiceRevolver.Prototype
                 loadout = GetComponentInParent<DiceFaceLoadout>();
             }
 
+            passiveRuntime?.Dispose();
+            passiveRuntime = new DicePassiveRuntime(
+                message => Debug.LogWarning(message, this),
+                exception => Debug.LogException(exception, this));
+            if (loadout != null)
+            {
+                loadout.SlotChanged -= HandleLoadoutSlotChanged;
+                loadout.SlotChanged += HandleLoadoutSlotChanged;
+                for (int face = 1; face <= DiceRevolverRules.FaceCount; face++)
+                {
+                    passiveRuntime.RebuildFace(
+                        face,
+                        loadout.GetSnapshot(face).GetPassiveEffect());
+                }
+            }
+
             if (player != null)
             {
                 aimRig = player.GetComponentInChildren<TopDownAimHandRig>();
@@ -116,6 +133,7 @@ namespace DiceRevolver.Prototype
 
             if (update.ReloadCompleted)
             {
+                passiveRuntime?.NotifyReloadCompleted();
                 ResetVisualRoot();
                 ReloadCompleted?.Invoke();
             }
@@ -143,6 +161,12 @@ namespace DiceRevolver.Prototype
 
         private void OnDestroy()
         {
+            if (loadout != null)
+            {
+                loadout.SlotChanged -= HandleLoadoutSlotChanged;
+            }
+
+            passiveRuntime?.Dispose();
             shotPipeline?.Clear();
         }
 
@@ -168,7 +192,9 @@ namespace DiceRevolver.Prototype
                 return;
             }
 
-            DiceRevolverDrawResult draw = runtime.TryBeginShot(Time.time);
+            DiceRevolverDrawResult draw = passiveRuntime != null
+                ? runtime.TryBeginShot(Time.time, passiveRuntime.FilterDrawCandidates)
+                : runtime.TryBeginShot(Time.time);
             if (draw.Status != DiceRevolverDrawStatus.Fired)
             {
                 return;
@@ -207,6 +233,7 @@ namespace DiceRevolver.Prototype
                 Mathf.Max(1, eventBudgetPerActivation),
                 shot => FireStarted?.Invoke(shot),
                 shot => FireEnded?.Invoke(shot));
+            passiveRuntime?.NotifyFaceConsumed(draw.Face);
 
             DiceRevolverRuntimeUpdate completion = runtime.CompleteShot(Time.time);
             if (completion.ReloadStarted)
@@ -269,7 +296,21 @@ namespace DiceRevolver.Prototype
 
         private void NotifyReloadStarted()
         {
+            passiveRuntime?.NotifyReloadStarted();
             ReloadStarted?.Invoke();
+        }
+
+        private void HandleLoadoutSlotChanged(
+            int face,
+            DiceFaceSlotType slotType,
+            DiceFaceEntry entry)
+        {
+            if (slotType != DiceFaceSlotType.Passive)
+            {
+                return;
+            }
+
+            passiveRuntime?.RebuildFace(face, entry != null ? entry.PassiveEffect : null);
         }
 
         private void AnimateReload(float progress)

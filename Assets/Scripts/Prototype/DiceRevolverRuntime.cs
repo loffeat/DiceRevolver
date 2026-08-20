@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -41,6 +42,7 @@ namespace DiceRevolver.Prototype
         private readonly float shotInterval;
         private readonly bool automaticReloadWhenEmpty;
         private readonly bool allowManualReload;
+        private readonly Func<int, int> drawIndexSelector;
 
         private float nextShotTime;
         private float reloadStartedAt;
@@ -48,11 +50,13 @@ namespace DiceRevolver.Prototype
         private float reloadDuration;
 
         public DiceRevolverRuntime(float shotsPerSecond, float reloadDuration,
-            bool automaticReloadWhenEmpty, bool allowManualReload)
+            bool automaticReloadWhenEmpty, bool allowManualReload,
+            Func<int, int> drawIndexSelector = null)
         {
             shotInterval = 1f / Mathf.Max(0.01f, shotsPerSecond);
             this.automaticReloadWhenEmpty = automaticReloadWhenEmpty;
             this.allowManualReload = allowManualReload;
+            this.drawIndexSelector = drawIndexSelector;
             ReloadDuration = reloadDuration;
             RefillAllFaces();
         }
@@ -75,6 +79,13 @@ namespace DiceRevolver.Prototype
 
         public DiceRevolverDrawResult TryBeginShot(float currentTime)
         {
+            return TryBeginShot(currentTime, null);
+        }
+
+        public DiceRevolverDrawResult TryBeginShot(
+            float currentTime,
+            Func<IReadOnlyList<int>, int?, DiceDrawConstraintResult> candidateFilter)
+        {
             if (IsReloading)
             {
                 return new DiceRevolverDrawResult(DiceRevolverDrawStatus.Reloading);
@@ -90,7 +101,7 @@ namespace DiceRevolver.Prototype
                 return new DiceRevolverDrawResult(DiceRevolverDrawStatus.Empty);
             }
 
-            int face = DrawFace();
+            int face = DrawFace(candidateFilter);
             nextShotTime = currentTime + shotInterval;
             return new DiceRevolverDrawResult(DiceRevolverDrawStatus.Fired, face);
         }
@@ -155,9 +166,21 @@ namespace DiceRevolver.Prototype
             return true;
         }
 
-        private int DrawFace()
+        private int DrawFace(
+            Func<IReadOnlyList<int>, int?, DiceDrawConstraintResult> candidateFilter)
         {
-            if (forcedNextFace.HasValue && remainingFaces.Contains(forcedNextFace.Value))
+            IReadOnlyList<int> candidates = remainingFaces;
+            if (candidateFilter != null)
+            {
+                DiceDrawConstraintResult filtered =
+                    candidateFilter(remainingFaces, forcedNextFace);
+                if (HasValidCandidates(filtered.Candidates))
+                {
+                    candidates = filtered.Candidates;
+                }
+            }
+
+            if (forcedNextFace.HasValue && ContainsFace(candidates, forcedNextFace.Value))
             {
                 int face = forcedNextFace.Value;
                 forcedNextFace = null;
@@ -165,11 +188,48 @@ namespace DiceRevolver.Prototype
                 return face;
             }
 
-            forcedNextFace = null;
-            int index = Random.Range(0, remainingFaces.Count);
-            int drawnFace = remainingFaces[index];
-            remainingFaces.RemoveAt(index);
+            if (forcedNextFace.HasValue && !remainingFaces.Contains(forcedNextFace.Value))
+            {
+                forcedNextFace = null;
+            }
+
+            int index = drawIndexSelector != null
+                ? Mathf.Clamp(drawIndexSelector(candidates.Count), 0, candidates.Count - 1)
+                : UnityEngine.Random.Range(0, candidates.Count);
+            int drawnFace = candidates[index];
+            remainingFaces.Remove(drawnFace);
             return drawnFace;
+        }
+
+        private bool HasValidCandidates(IReadOnlyList<int> candidates)
+        {
+            if (candidates == null || candidates.Count == 0)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < candidates.Count; index++)
+            {
+                if (!remainingFaces.Contains(candidates[index]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool ContainsFace(IReadOnlyList<int> faces, int face)
+        {
+            for (int index = 0; index < faces.Count; index++)
+            {
+                if (faces[index] == face)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void RefillAllFaces()

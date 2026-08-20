@@ -206,7 +206,7 @@ git commit -m "feat: implement projectile enemy piercing"
 - Produces: `DicePassiveRuntime.NotifyFaceConsumed(int face)` and reload notifications.
 - Changes: `DiceRevolverRuntime.TryBeginShot` accepts a candidate-filter callback while retaining fallback to true remaining faces.
 
-- [ ] **Step 1: Write failing independent-instance and Finisher tests**
+- [x] **Step 1: Write failing independent-instance and Finisher tests**
 
 ```csharp
 [Test]
@@ -228,11 +228,11 @@ public void ForcedFinisherWaitsUntilOrdinaryFacesAreConsumed()
 }
 ```
 
-- [ ] **Step 2: Run passive/runtime filters and verify RED**
+- [x] **Step 2: Run passive/runtime filters and verify RED**
 
 Expected: passive interfaces and candidate filtering are missing.
 
-- [ ] **Step 3: Implement `DicePassiveRuntime` as a pure C# module**
+- [x] **Step 3: Implement `DicePassiveRuntime` as a pure C# module**
 
 ```csharp
 public interface IDicePassiveEffectRuntime : IDisposable
@@ -246,15 +246,15 @@ public interface IDicePassiveEffectRuntime : IDisposable
 
 The runtime catches exceptions per instance, logs through an injected adapter, and leaves candidates unchanged on failure.
 
-- [ ] **Step 4: Implement Finisher filtering and forced-face waiting**
+- [x] **Step 4: Implement Finisher filtering and forced-face waiting**
 
 Ordinary faces are candidates while any remain. If only Finishers remain, all remaining Finishers are candidates. A forced Finisher stays pending while ineligible. Empty-filter fallback returns the real remaining list and one warning.
 
-- [ ] **Step 5: Wire Loadout `SlotChanged` and reload lifecycle in Gun**
+- [x] **Step 5: Wire Loadout `SlotChanged` and reload lifecycle in Gun**
 
 Only Passive slot changes rebuild an instance. Existing active slot edits do not reset passive state. Reload start/reset calls the passive runtime without adding concrete passive checks to Gun.
 
-- [ ] **Step 6: Run focused tests and verify GREEN**
+- [x] **Step 6: Run focused tests and verify GREEN**
 
 Expected: passive isolation, immediate replacement, Finisher ordering, multiple Finishers, forced waiting, fallback, and existing six-face tests pass.
 
