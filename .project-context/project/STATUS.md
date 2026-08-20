@@ -31,7 +31,7 @@
 
 ## 活跃工作流
 
-- [雷电构筑与左轮底层重构待办](workstreams/2026-08-20-lightning-build-backlog/STATE.md)（`planned`；下次同步时提醒用户）
+- [雷电构筑系统](workstreams/2026-08-20-lightning-build-backlog/STATE.md)（`active`；设计已批准，进入实施）
 
 ## 完成历史
 
