@@ -63,7 +63,7 @@
 ## 最近项目级验证
 
 - [passed] `2026-08-20`：左轮核心重构终审修复后分层聚焦 EditMode `58/58`，0 失败、0 跳过。
-- [failed] `2026-08-20`：终审修复后完整 EditMode `171/172`，0 跳过；唯一失败为已获用户豁免的 `RenderingLayerContractTests.PrototypeSceneUsesZeroHeightSpriteGroundAndEntities`（Ground `-0.01`，测试期望 `0`），没有新增失败。
+- [failed] `2026-08-20`：终审修复并 fast-forward 合并到本地 `main` 后，完整 EditMode 复验为 `171/172`，0 跳过；唯一失败为已获用户豁免的 `RenderingLayerContractTests.PrototypeSceneUsesZeroHeightSpriteGroundAndEntities`（Ground `-0.01`，测试期望 `0`），没有新增失败。
 - [not-run] `2026-08-20`：左轮核心重构的可见 PlayMode 六发抽取、换弹、DoubleTap、BlastRound 与 LoadedFour 手感尚未人工验收。
 - [passed] `2026-08-20`：左轮 Gun/Runtime/Pipeline/Inspector 联合测试 `70/70`，0 失败、0 跳过。
 - [failed] `2026-08-20`：完整 EditMode `165/166`；唯一失败为已知 Ground Y `-0.01` 契约差异，已获本任务豁免。

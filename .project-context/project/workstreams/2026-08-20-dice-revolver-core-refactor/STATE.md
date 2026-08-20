@@ -2,7 +2,7 @@
 
 - ID: `2026-08-20-dice-revolver-core-refactor`
 - Status: `completed`
-- Branch: `codex/dice-revolver-core-refactor`
+- Branch: `main`（功能分支已 fast-forward 合并并清理）
 - Created: `2026-08-20`
 - Updated: `2026-08-20`
 
@@ -45,6 +45,7 @@
 - 测试不再反射 Gun 私有调度器、私有事件上下文创建、私有弹丸生成或命中桥接；`SpawnActivationProjectile` 仅保留为 Gun 私有 Unity 适配方法。
 - 六次抽面测试已加强为精确集合 `{1, 2, 3, 4, 5, 6}`，并通过 `0..5` 受控 mutation 证明能捕获边界回归。
 - 自动化结构重构完成：聚焦测试全绿，完整回归没有新增失败。
+- 功能分支已 fast-forward 合并到本地 `main`；合并后完整 EditMode 复验保持唯一 Ground Y 豁免失败，隔离工作树和已合并分支已清理，未推送远端。
 
 ## 下一步
 
@@ -80,7 +81,6 @@
 - `.project-context/project/workstreams/2026-08-20-dice-revolver-core-refactor/STATE.md`
 - `.project-context/project/workstreams/2026-08-20-dice-revolver-core-refactor/HANDOFF.md`
 - `docs/superpowers/plans/2026-08-20-dice-revolver-core-refactor.md`
-- `.superpowers/sdd/2026-08-20-dice-revolver-core-refactor/final-fix-report.md`
 
 ## 验证记录
 
@@ -101,6 +101,7 @@
 - [passed] `2026-08-20`：终审受影响 Rules/Runtime/Gun EditMode `26/26`，0 失败、0 跳过。
 - [passed] `2026-08-20`：终审核心七组 EditMode `58/58`，0 失败、0 跳过；结果为 `Logs/final-fix-core-focused.xml`。
 - [failed] `2026-08-20`：终审修复后完整 EditMode `171/172`，0 跳过；唯一失败仍为具名 Ground Y `-0.01` 豁免项，没有新增失败；结果为 `Logs/final-fix-full.xml`。
+- [failed] `2026-08-20`：功能分支 fast-forward 合并到本地 `main` 后再次运行完整 EditMode，结果仍为 `171/172`、0 跳过；唯一失败仍是同一 Ground Y 豁免项，没有新增失败；结果为 `Logs/post-merge-full.xml`。
 - [passed] `2026-08-20`：终审项目上下文检查返回 `[context:ok]`；`git diff --check` 无空白错误；生产固定六面扫描只剩唯一规则定义，旧 `DiceRevolverDrawStatus.ReloadStarted` 引用为 0。
 - [not-run] `2026-08-20`：可见 PlayMode 人工验收仍未运行，不声称手感已验收。
 
