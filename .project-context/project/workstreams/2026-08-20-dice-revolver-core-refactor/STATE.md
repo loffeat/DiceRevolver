@@ -31,30 +31,32 @@
 
 ## 当前正在进行
 
-- 等待用户审核已写入的正式设计规格。
+- 实施计划已写入，等待用户选择执行方式。
 
 ## 已完成
 
 - 完成职责范围、数据流、兼容迁移、错误处理和测试策略的分段确认。
 - 完成正式架构设计规格及自审。
+- 完成测试先行、分任务提交的详细实施计划。
 
 ## 下一步
 
-1. 用户审核设计规格。
-2. 审核通过后编写详细实施计划。
-3. 使用隔离工作树按测试先行实施。
+1. 用户选择 Subagent-Driven 或当前会话内联执行。
+2. 使用隔离工作树按测试先行实施。
+3. 完成聚焦测试、完整 EditMode 回归和上下文同步。
 
 ## 阻塞
 
-- 实施计划等待用户审核设计规格。
+- 无；运行时代码实施等待用户选择执行方式。
 
 ## 尚未完成
 
-- 实施计划、运行时代码、Prefab 迁移和测试迁移均未开始。
+- 运行时代码、Prefab 迁移和测试迁移均未开始。
 
 ## 涉及文件
 
 - `docs/superpowers/specs/2026-08-20-dice-revolver-core-refactor-design.md`
+- `docs/superpowers/plans/2026-08-20-dice-revolver-core-refactor.md`
 - `.project-context/project/workstreams/2026-08-20-dice-revolver-core-refactor/STATE.md`
 - `.project-context/project/workstreams/2026-08-20-dice-revolver-core-refactor/HANDOFF.md`
 - `.project-context/project/STATUS.md`
@@ -63,10 +65,12 @@
 ## 验证记录
 
 - [passed] `2026-08-20`：用户逐段确认模块职责、开火与命中数据流、兼容清理和测试设计。
-- [not-run] Unity 测试未运行；当前仅完成架构设计，不修改运行时代码或资源。
+- [passed] `2026-08-20`：实施计划完成规格覆盖、占位符和接口一致性自审。
+- [not-run] Unity 测试未运行；当前仅完成架构设计和实施计划，不修改运行时代码或资源。
 
 ## 相关资料
 
 - [设计规格](../../../../docs/superpowers/specs/2026-08-20-dice-revolver-core-refactor-design.md)
+- [实施计划](../../../../docs/superpowers/plans/2026-08-20-dice-revolver-core-refactor.md)
 - [雷电构筑待办](../2026-08-20-lightning-build-backlog/STATE.md)
 - [既有事件管线](../2026-08-18-projectile-definition-event-pipeline/STATE.md)

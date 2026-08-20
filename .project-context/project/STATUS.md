@@ -30,7 +30,7 @@
 
 ## 活跃工作流
 
-- [左轮核心底层重构](workstreams/2026-08-20-dice-revolver-core-refactor/STATE.md)（`active`；设计规格待审核）
+- [左轮核心底层重构](workstreams/2026-08-20-dice-revolver-core-refactor/STATE.md)（`active`；实施计划待执行）
 - [雷电构筑与左轮底层重构待办](workstreams/2026-08-20-lightning-build-backlog/STATE.md)（`planned`；下次同步时提醒用户）
 
 ## 完成历史
