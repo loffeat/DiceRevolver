@@ -62,7 +62,8 @@
 
 ## 最近项目级验证
 
-- [passed] `2026-08-20`：左轮 Gun/Runtime/Pipeline/Inspector 联合测试 `70/70`；完整 EditMode `165/166`，唯一失败为已知 Ground Y `-0.01` 契约差异。
+- [passed] `2026-08-20`：左轮 Gun/Runtime/Pipeline/Inspector 联合测试 `70/70`，0 失败、0 跳过。
+- [failed] `2026-08-20`：完整 EditMode `165/166`；唯一失败为已知 Ground Y `-0.01` 契约差异，已获本任务豁免。
 - [passed] `2026-08-20`：范围爆炸运行时 `4/4`、资源绑定 `3/3`；完整 EditMode 回归 `139/139`，0 失败、0 跳过。
 - [passed] `2026-08-20`：Player、TargetDummy、TestRobot Prefab SHA256 与任务前一致；玩家射速、换弹时间、持枪距离、持枪高度保持 `2`、`2`、`0.85`、`0.72`。
 - [not-run] `2026-08-20`：可见 Play Mode 中的爆炸圆环视觉和战斗手感尚未人工验收。
