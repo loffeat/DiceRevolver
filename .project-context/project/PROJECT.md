@@ -92,6 +92,8 @@ ExplosionOnHitEffect -> BlastExplosion ProjectileDefinition -> AreaExplosionProj
 - 四槽位：每个骰面独立拥有基础、开火时、命中时、开火后四个单事件槽位。
 - 装备：`DiceFaceLoadout` 中六个面到四槽位配置的映射。
 - 弹丸事件：由 `BulletEventEffect` 在开火、命中或开火结束时执行的扩展行为。
+- 骰面激活：一次骰面被抽中后，从四阶段事件派发到其弹丸、命中与延迟连锁结束的独立攻击链。
+- 事件预算：一次骰面激活最多可消费的事件次数；预算在开火时固化，并由该激活的直接与延迟事件共享。
 - 工作流：`.project-context/project/workstreams/` 下一个独立事项的状态和交接记录。
 - 控制意图：共享角色控制器暴露的移动、瞄准、开火和换弹状态；来源可以是玩家输入或机器人 AI。
 - 行动节奏：测试机器人默认移动 `0.7` 秒、站定攻击 `1.0` 秒，站定结束后重新判断战术移动方向。
