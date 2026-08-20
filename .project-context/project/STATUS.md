@@ -24,7 +24,7 @@
 - 场景另包含一个 `TestRobot.prefab` 实例；机器人按距离接近、后退或横移，以移动 `0.7` 秒、站定攻击 `1.0` 秒的节奏循环，始终瞄准玩家，并通过共享左轮路径发射六面均为 0 伤害的基础视觉弹丸。
 - 测试机器人禁用角色根节点朝瞄准方向旋转，保持与玩家一致的站立立绘，只由 Sprite 翻面和手臂瞄准表达方向。
 - `TopDownCharacterController` 统一拥有移动、玩法平面约束和转向；玩家与机器人分别通过 `TopDownPlayerController` 和 `TestRobotController` 提供控制意图。
-- 弹丸与命中转发器统一复用 `Projectile.ShouldIgnoreCollision`；零引用的旧 `GunController` 和 `RevolverGun` 已删除。
+- `Projectile` 自身通过 `ShouldIgnoreCollision` 统一过滤碰撞并广播命中；`DiceShotPipeline` 处理合格 OnHit 后由 `Projectile` 提交直接伤害，旧 `GunController`、`RevolverGun` 与 `ProjectileHitReporter` 已删除。
 - BlastRound 命中事件已绑定独立爆炸弹丸：默认半径 `2.5`、伤害 `3`、视觉持续 `0.35` 秒；直击目标会同时承受直击和爆炸伤害，发射者自身层级免疫爆炸，共享场景父节点下的兄弟角色仍可受伤。
 - 可移植上下文系统已集成 `main`；原功能分支和隔离工作树已清理。
 - 项目上下文框架位于 `.project-context/framework/`，项目实例资料位于 `.project-context/project/`。
