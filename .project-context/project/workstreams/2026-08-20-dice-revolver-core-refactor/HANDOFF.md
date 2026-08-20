@@ -2,22 +2,23 @@
 
 ## 当前状态
 
-- 架构设计和详细实施计划均已写入，等待用户选择执行方式；尚未修改运行时代码。
+- Task 1-6 已完成：固定六面规则、Runtime、Pipeline、Projectile.Hit 与 Gun Unity 适配路径已落地。
+- Gun 联合聚焦测试 `70/70`；完整 EditMode 只有已知 Ground Y 豁免失败。
 
 ## 尚未完成
 
-- TDD 实现、Prefab 迁移和完整验证。
+- Task 7 Prefab/Reporter 迁移，以及最终完整验证与上下文收尾。
 
 ## 当前方案及原因
 
 - 用 Runtime 管理左轮机械状态，用 Pipeline 管理骰面事件生命周期，Gun 只承担 Unity 适配职责。
 - 固定六面使用统一规则常量，不保留虚假配置能力。
-- Projectile 自己广播命中，删除 Reporter。
+- Projectile 自己广播命中；Reporter 类型与 Prefab 组件暂留，待 Task 7 精确删除。
 - 事件预算由每把枪配置，并在开火时固化到激活上下文。
 
 ## 下一步首个动作
 
-- 按用户选择调用 subagent-driven-development（推荐）或 executing-plans，并在隔离工作树执行实施计划 Task 1。
+- 读取 Task 7 简报，先写 Prefab/Builder/Reporter 迁移契约 RED，再只修改允许的资源与 Builder。
 
 ## 必须保护
 
@@ -29,13 +30,13 @@
 
 - 自动换弹必须在开火后事件执行完成后判断，否则会破坏 LoadedFour。
 - 命中广播、直接伤害和 OnHit 的相对顺序必须通过现有行为测试锁定。
-- 计划完成不代表运行时代码已经修改。
+- Task 6 没有修改 Prefab、场景、Builder 或 Reporter；这些仍属于 Task 7。
 
 ## 最近验证
 
-- [passed] 用户已逐段确认完整架构设计。
-- [passed] 实施计划已完成规格覆盖、占位符和类型签名一致性自审。
-- [not-run] Unity 测试未运行，因为尚未进入实施阶段。
+- [passed] Task 6 RED `43/48`，失败来自新预算/Runtime/Projectile.Hit 适配契约缺失。
+- [passed] Task 6 Gun/Runtime/Pipeline/Inspector 联合测试 `70/70`。
+- [failed] 完整 EditMode `165/166`；唯一失败为已知 Ground Y `-0.01` 豁免项。
 
 ## 首先读取
 

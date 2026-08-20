@@ -15,6 +15,7 @@ namespace DiceRevolver.Tests
             yield return Port<DiceRevolverGun>("muzzle", "枪口");
             yield return Port<DiceRevolverGun>("shotsPerSecond", "每秒射击次数");
             yield return Port<DiceRevolverGun>("reloadDuration", "换弹时间（秒）");
+            yield return Port<DiceRevolverGun>("eventBudgetPerActivation", "单次骰面事件预算");
             yield return Port<DiceRevolverGun>("reloadBlinkSpeed", "换弹闪烁速度");
 
             yield return Port<DiceFaceEntry>("displayName", "显示名称");
@@ -65,6 +66,26 @@ namespace DiceRevolver.Tests
 
             Assert.That(inspectorName, Is.Not.Null);
             Assert.That(inspectorName.displayName, Is.EqualTo(expectedDisplayName));
+        }
+
+        [Test]
+        public void GunInspectorUsesFixedFaceRulesAndBoundedActivationBudget()
+        {
+            const BindingFlags flags =
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+            Assert.That(typeof(DiceRevolverGun).GetField("faceCount", flags), Is.Null);
+            Assert.That(typeof(DiceRevolverGun).GetField("reloadDropDistance", flags), Is.Null);
+
+            FieldInfo budget = typeof(DiceRevolverGun).GetField("eventBudgetPerActivation", flags);
+            Assert.That(budget, Is.Not.Null);
+            Assert.That(budget.GetCustomAttribute<SerializeField>(), Is.Not.Null);
+            MinAttribute minimum = budget.GetCustomAttribute<MinAttribute>();
+            Assert.That(minimum, Is.Not.Null);
+            Assert.That(minimum.min, Is.EqualTo(1f));
+            Assert.That(
+                budget.GetCustomAttribute<InspectorNameAttribute>()?.displayName,
+                Is.EqualTo("单次骰面事件预算"));
         }
 
         private static TestCaseData Port<T>(string propertyName, string displayName)

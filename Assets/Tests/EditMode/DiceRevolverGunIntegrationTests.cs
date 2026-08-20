@@ -1,256 +1,34 @@
+using System.Collections.Generic;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using DiceRevolver.Prototype;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
+using UnityEngine.TestTools;
 
 namespace DiceRevolver.Tests
 {
     public sealed class DiceRevolverGunIntegrationTests
     {
-        private static readonly System.Collections.Generic.List<string> TriggerOrder = new();
+        private const string PlayerPrefabPath = "Assets/Prefab/Player.prefab";
+        private const string BasicSpawnEffectPath =
+            "Assets/Resources/DiceFacePrototype/BulletEvents/FireBasicRevolverProjectile.asset";
 
         [Test]
-        public void SpawnConfiguredProjectileAppliesShotStats()
+        public void GunStartsWithTheFixedRulesFaceCount()
         {
             GameObject gunOwner = new GameObject("Gun");
-            DiceRevolverGun gun = gunOwner.AddComponent<DiceRevolverGun>();
-            GameObject prefabOwner = new GameObject("ProjectilePrefab");
-            Projectile prefab = prefabOwner.AddComponent<Projectile>();
-            DiceFaceEntry entry = ScriptableObject.CreateInstance<DiceFaceEntry>();
-            ProjectileRuntimeStats stats = new ProjectileRuntimeStats("Explosive", "PlayerBullet", 8f, 10f, 20f, 1);
-            DiceRevolverShotContext shot = new DiceRevolverShotContext(
-                5,
-                Vector3.zero,
-                Vector3.forward,
-                null,
-                entry,
-                stats,
-                prefab);
-
-            Projectile spawned = gun.SpawnConfiguredProjectile(shot, false);
-
-            Assert.That(spawned, Is.Not.Null);
-            Assert.That(spawned.ProjectileType, Is.EqualTo("Explosive"));
-            Assert.That(spawned.ProjectileTag, Is.EqualTo("PlayerBullet"));
-            Assert.That(spawned.Damage, Is.EqualTo(8f));
-            Assert.That(spawned.EnemyPierceCount, Is.EqualTo(1));
-
-            Object.DestroyImmediate(spawned.gameObject);
-            Object.DestroyImmediate(prefabOwner);
-            Object.DestroyImmediate(gunOwner);
-            Object.DestroyImmediate(entry);
-        }
-
-        [Test]
-        public void SpawnConfiguredProjectileFlattensOriginToGameplayPlane()
-        {
-            GameObject gunOwner = new GameObject("Gun");
-            DiceRevolverGun gun = gunOwner.AddComponent<DiceRevolverGun>();
-            GameObject prefabOwner = new GameObject("ProjectilePrefab");
-            Projectile prefab = prefabOwner.AddComponent<Projectile>();
-            DiceFaceEntry entry = ScriptableObject.CreateInstance<DiceFaceEntry>();
-            ProjectileRuntimeStats stats = new ProjectileRuntimeStats(
-                "Default",
-                "PlayerBullet",
-                1f,
-                10f,
-                20f,
-                0);
-            DiceRevolverShotContext shot = new DiceRevolverShotContext(
-                1,
-                new Vector3(2f, 5f, 3f),
-                Vector3.forward,
-                null,
-                entry,
-                stats,
-                prefab);
-
-            Projectile spawned = gun.SpawnConfiguredProjectile(shot, false);
-
             try
             {
-                Assert.That(spawned, Is.Not.Null);
-                Assert.That(spawned.transform.position.y, Is.EqualTo(0f).Within(0.0001f));
-            }
-            finally
-            {
-                if (spawned != null)
-                {
-                    Object.DestroyImmediate(spawned.gameObject);
-                }
+                DiceRevolverGun gun = gunOwner.AddComponent<DiceRevolverGun>();
 
-                Object.DestroyImmediate(prefabOwner);
-                Object.DestroyImmediate(gunOwner);
-                Object.DestroyImmediate(entry);
-            }
-        }
+                InvokePrivate(gun, "Awake");
 
-        [Test]
-        public void PlayerControllerAwakeSnapsRootToGameplayPlane()
-        {
-            GameObject playerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/Player.prefab");
-            GameObject playerInstance = Object.Instantiate(playerPrefab, new Vector3(2f, 3f, 4f), Quaternion.identity);
-            TopDownPlayerController player = playerInstance.GetComponent<TopDownPlayerController>();
-
-            try
-            {
-                InvokePrivate(player, "Awake");
-
-                Assert.That(playerInstance.transform.position.y, Is.EqualTo(0f).Within(0.0001f));
-            }
-            finally
-            {
-                Object.DestroyImmediate(playerInstance);
-            }
-        }
-
-        [Test]
-        public void SpawnConfiguredProjectileToleratesZeroDirection()
-        {
-            GameObject gunOwner = new GameObject("Gun");
-            DiceRevolverGun gun = gunOwner.AddComponent<DiceRevolverGun>();
-            GameObject prefabOwner = new GameObject("ProjectilePrefab");
-            Projectile prefab = prefabOwner.AddComponent<Projectile>();
-            DiceFaceEntry entry = ScriptableObject.CreateInstance<DiceFaceEntry>();
-            ProjectileRuntimeStats stats = new ProjectileRuntimeStats("Default", "PlayerBullet", 1f, 10f, 20f, 0);
-            DiceRevolverShotContext shot = new DiceRevolverShotContext(
-                1,
-                Vector3.zero,
-                Vector3.zero,
-                null,
-                entry,
-                stats,
-                prefab);
-
-            Projectile spawned = null;
-
-            Assert.DoesNotThrow(() => spawned = gun.SpawnConfiguredProjectile(shot, false));
-            Assert.That(spawned, Is.Not.Null);
-
-            Object.DestroyImmediate(spawned.gameObject);
-            Object.DestroyImmediate(prefabOwner);
-            Object.DestroyImmediate(gunOwner);
-            Object.DestroyImmediate(entry);
-        }
-
-        [Test]
-        public void ProjectileIgnoresAnotherProjectileCollider()
-        {
-            GameObject firstOwner = new GameObject("FirstProjectile");
-            firstOwner.AddComponent<SphereCollider>().isTrigger = true;
-            Projectile firstProjectile = firstOwner.AddComponent<Projectile>();
-
-            GameObject secondOwner = new GameObject("SecondProjectile");
-            SphereCollider secondCollider = secondOwner.AddComponent<SphereCollider>();
-            secondCollider.isTrigger = true;
-            secondOwner.AddComponent<Projectile>();
-
-            try
-            {
-                MethodInfo projectileTrigger = typeof(Projectile).GetMethod(
-                    "OnTriggerEnter",
-                    BindingFlags.Instance | BindingFlags.NonPublic);
-
-                Assert.That(projectileTrigger, Is.Not.Null);
-                projectileTrigger.Invoke(firstProjectile, new object[] { secondCollider });
-
-                Assert.That(firstProjectile, Is.Not.Null);
-            }
-            finally
-            {
-                if (firstOwner != null)
-                {
-                    Object.DestroyImmediate(firstOwner);
-                }
-
-                if (secondOwner != null)
-                {
-                    Object.DestroyImmediate(secondOwner);
-                }
-            }
-        }
-
-        [Test]
-        public void ProjectileHitReporterIgnoresAnotherProjectileCollider()
-        {
-            GameObject reporterOwner = new GameObject("ProjectileReporter");
-            ProjectileHitReporter reporter = reporterOwner.AddComponent<ProjectileHitReporter>();
-
-            GameObject projectileOwner = new GameObject("OtherProjectile");
-            SphereCollider projectileCollider = projectileOwner.AddComponent<SphereCollider>();
-            projectileOwner.AddComponent<Projectile>();
-
-            int hitCount = 0;
-            reporter.Hit += _ => hitCount++;
-
-            try
-            {
-                MethodInfo reporterTrigger = typeof(ProjectileHitReporter).GetMethod(
-                    "OnTriggerEnter",
-                    BindingFlags.Instance | BindingFlags.NonPublic);
-
-                Assert.That(reporterTrigger, Is.Not.Null);
-                reporterTrigger.Invoke(reporter, new object[] { projectileCollider });
-
-                Assert.That(hitCount, Is.Zero);
-            }
-            finally
-            {
-                Object.DestroyImmediate(reporterOwner);
-                Object.DestroyImmediate(projectileOwner);
-            }
-        }
-
-        [Test]
-        public void GunEventContextSchedulesThroughOwnedTimeScheduler()
-        {
-            GameObject gunOwner = new GameObject("Gun");
-            DiceRevolverGun gun = gunOwner.AddComponent<DiceRevolverGun>();
-            DiceRevolverShotContext shot = new DiceRevolverShotContext(
-                2,
-                Vector3.zero,
-                Vector3.forward,
-                null);
-            int executionCount = 0;
-
-            try
-            {
-                FieldInfo schedulerField = typeof(DiceRevolverGun).GetField(
-                    "eventTimeScheduler",
-                    BindingFlags.Instance | BindingFlags.NonPublic);
-                Assert.That(schedulerField, Is.Not.Null);
-
-                BulletEventTimeScheduler scheduler =
-                    (BulletEventTimeScheduler)schedulerField.GetValue(gun);
-                DiceFaceActivation activation = new DiceFaceActivation(
-                    2,
-                    default,
-                    Vector3.zero,
-                    Vector3.forward,
-                    (delay, callback) => scheduler.Schedule(0f, delay, callback),
-                    _ => { },
-                    _ => false,
-                    _ => { });
-                MethodInfo createEventContext = typeof(DiceRevolverGun).GetMethod(
-                    "CreateEventContext",
-                    BindingFlags.Instance | BindingFlags.NonPublic);
-                Assert.That(createEventContext, Is.Not.Null);
-
-                BulletEventContext context = (BulletEventContext)createEventContext.Invoke(
-                    gun,
-                    new object[] { activation, shot, null, Vector3.zero });
-                bool accepted = context.Schedule(0.25f, _ => executionCount++);
-
-                Assert.That(accepted, Is.True);
-                Assert.That(scheduler.PendingCount, Is.EqualTo(1));
-
-                scheduler.Tick(float.MaxValue);
-
-                Assert.That(executionCount, Is.EqualTo(1));
-                Assert.That(scheduler.PendingCount, Is.Zero);
+                Assert.That(gun.RemainingRounds, Is.EqualTo(DiceRevolverRules.FaceCount));
+                Assert.That(gun.RemainingRounds, Is.EqualTo(6));
             }
             finally
             {
@@ -259,159 +37,63 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
-        public void PlayerPrefabBaseEffectSpawnsConfiguredProjectileThroughGunScheduler()
+        public void PlayerPrefabShotConsumesOneRoundAndSpawnsConfiguredProjectile()
         {
-            const string playerPrefabPath = "Assets/Prefab/Player.prefab";
-            const string spawnEffectPath =
-                "Assets/Resources/DiceFacePrototype/BulletEvents/FireBasicRevolverProjectile.asset";
-
-            GameObject playerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(playerPrefabPath);
-            ProjectileSpawnEffect spawnEffect =
-                AssetDatabase.LoadAssetAtPath<ProjectileSpawnEffect>(spawnEffectPath);
-            GameObject playerInstance = Object.Instantiate(playerPrefab);
+            GameObject playerInstance = InstantiatePlayer();
             DiceRevolverGun gun = playerInstance.GetComponentInChildren<DiceRevolverGun>();
-            DiceFaceLoadout loadout = playerInstance.GetComponent<DiceFaceLoadout>();
+            Mouse mouse = null;
             Projectile spawned = null;
 
             try
             {
-                Assert.That(gun, Is.Not.Null);
-                Assert.That(loadout, Is.Not.Null);
-                Assert.That(loadout.GetBaseEffect(1), Is.SameAs(spawnEffect));
+                InitializePlayerGun(playerInstance, gun);
+                mouse = HoldLeftMouse();
 
-                InvokePrivate(gun, "Awake");
-                BulletEventTimeScheduler scheduler = GetPrivateField<BulletEventTimeScheduler>(
-                    gun,
-                    "eventTimeScheduler");
-                MethodInfo spawnActivationProjectile = typeof(DiceRevolverGun).GetMethod(
-                    "SpawnActivationProjectile",
-                    BindingFlags.Instance | BindingFlags.NonPublic);
-                Assert.That(spawnActivationProjectile, Is.Not.Null);
-
-                DiceFaceActivation activation = null;
-                activation = new DiceFaceActivation(
-                    1,
-                    default,
-                    new Vector3(40f, 5f, 40f),
-                    Vector3.forward,
-                    (delay, callback) => scheduler.Schedule(0f, delay, callback),
-                    request => spawned = (Projectile)spawnActivationProjectile.Invoke(
-                        gun,
-                        new object[] { activation, request }),
-                    _ => false,
-                    _ => { });
-
-                spawnEffect.Trigger(new BulletEventContext(activation, null, null, Vector3.zero));
-                scheduler.Tick(0f);
-
-                Assert.That(spawned, Is.Not.Null);
-                Assert.That(spawned.ProjectileType, Is.EqualTo("Revolver"));
-                Assert.That(spawned.Damage, Is.EqualTo(1f));
-            }
-            finally
-            {
-                if (spawned != null)
-                {
-                    Object.DestroyImmediate(spawned.gameObject);
-                }
-
-                Object.DestroyImmediate(playerInstance);
-            }
-        }
-
-        [Test]
-        public void PlayerPrefabLeftClickConsumesOneRoundAndSpawnsBaseProjectile()
-        {
-            GameObject playerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/Player.prefab");
-            GameObject playerInstance = Object.Instantiate(playerPrefab);
-            DiceRevolverGun gun = playerInstance.GetComponentInChildren<DiceRevolverGun>();
-            TopDownPlayerController player = playerInstance.GetComponent<TopDownPlayerController>();
-            TopDownAimHandRig aimRig = playerInstance.GetComponentInChildren<TopDownAimHandRig>();
-            Mouse mouse = InputSystem.AddDevice<Mouse>();
-            Projectile spawned = null;
-
-            try
-            {
-                InvokePrivate(player, "Awake");
-                InvokePrivate(aimRig, "Awake");
-                InvokePrivate(gun, "Awake");
-                mouse.MakeCurrent();
-                InputSystem.QueueStateEvent(
-                    mouse,
-                    new MouseState().WithButton(MouseButton.Left));
-                InputSystem.Update();
-
-                InvokePrivate(gun, "TryFire");
-                BulletEventTimeScheduler scheduler = GetPrivateField<BulletEventTimeScheduler>(
-                    gun,
-                    "eventTimeScheduler");
-                scheduler.Tick(Time.time);
-                Projectile[] projectiles = Object.FindObjectsByType<Projectile>(FindObjectsSortMode.None);
-                for (int i = 0; i < projectiles.Length; i++)
-                {
-                    if (projectiles[i].gameObject.scene.IsValid())
-                    {
-                        spawned = projectiles[i];
-                        break;
-                    }
-                }
+                InvokePrivate(gun, "Update");
+                InvokePrivate(gun, "LateUpdate");
+                spawned = FindSceneProjectile();
 
                 Assert.That(gun.RemainingRounds, Is.EqualTo(5));
                 Assert.That(spawned, Is.Not.Null);
+                Assert.That(spawned.ProjectileType, Is.EqualTo("Revolver"));
+                Assert.That(spawned.ProjectileTag, Is.EqualTo("PlayerBullet"));
+                Assert.That(spawned.Damage, Is.EqualTo(1f));
+                Assert.That(spawned.EnemyPierceCount, Is.Zero);
             }
             finally
             {
-                InputSystem.RemoveDevice(mouse);
-                if (spawned != null)
-                {
-                    Object.DestroyImmediate(spawned.gameObject);
-                }
-
+                RemoveDevice(mouse);
+                DestroyProjectile(spawned);
                 Object.DestroyImmediate(playerInstance);
             }
         }
 
         [Test]
-        public void PlayerFireTriggersIndependentBaseOnFireAndOnFireEndSlotsInOrder()
+        public void GunPreservesFireStageOrder()
         {
-            GameObject playerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/Player.prefab");
-            GameObject playerInstance = Object.Instantiate(playerPrefab);
+            GameObject playerInstance = InstantiatePlayer();
             DiceRevolverGun gun = playerInstance.GetComponentInChildren<DiceRevolverGun>();
             DiceFaceLoadout loadout = playerInstance.GetComponent<DiceFaceLoadout>();
-            TopDownPlayerController player = playerInstance.GetComponent<TopDownPlayerController>();
-            TopDownAimHandRig aimRig = playerInstance.GetComponentInChildren<TopDownAimHandRig>();
-            RecordingEffect baseEffect = CreateRecordingEffect("base");
-            RecordingEffect onFireEffect = CreateRecordingEffect("on-fire");
-            RecordingEffect onFireEndEffect = CreateRecordingEffect("on-fire-end");
+            List<string> order = new List<string>();
+            OrderRecordingEffect baseEffect = CreateRecordingEffect("base", order);
+            OrderRecordingEffect onFireEffect = CreateRecordingEffect("on-fire", order);
+            OrderRecordingEffect onFireEndEffect = CreateRecordingEffect("on-fire-end", order);
             DiceFaceEntry onFireEntry = CreateEntry(DiceFaceSlotType.OnFire, onFireEffect);
             DiceFaceEntry onFireEndEntry = CreateEntry(DiceFaceSlotType.OnFireEnd, onFireEndEffect);
-            Mouse mouse = InputSystem.AddDevice<Mouse>();
-            TriggerOrder.Clear();
+            Mouse mouse = null;
 
             try
             {
-                for (int face = 1; face <= 6; face++)
-                {
-                    loadout.SetBaseEffect(face, baseEffect);
-                    loadout.Equip(face, onFireEntry);
-                    loadout.Equip(face, onFireEndEntry);
-                }
+                ConfigureEveryFace(loadout, baseEffect, onFireEntry, onFireEndEntry);
+                gun.FireStarted += _ => order.Add("fire-started");
+                gun.FireEnded += _ => order.Add("fire-ended");
+                InitializePlayerGun(playerInstance, gun);
+                mouse = HoldLeftMouse();
 
-                gun.FireStarted += _ => TriggerOrder.Add("fire-started");
-                gun.FireEnded += _ => TriggerOrder.Add("fire-ended");
-                InvokePrivate(player, "Awake");
-                InvokePrivate(aimRig, "Awake");
-                InvokePrivate(gun, "Awake");
-                mouse.MakeCurrent();
-                InputSystem.QueueStateEvent(
-                    mouse,
-                    new MouseState().WithButton(MouseButton.Left));
-                InputSystem.Update();
-
-                InvokePrivate(gun, "TryFire");
+                InvokePrivate(gun, "LateUpdate");
 
                 Assert.That(
-                    TriggerOrder,
+                    order,
                     Is.EqualTo(new[]
                     {
                         "fire-started",
@@ -423,31 +105,306 @@ namespace DiceRevolver.Tests
             }
             finally
             {
-                InputSystem.RemoveDevice(mouse);
+                RemoveDevice(mouse);
                 Object.DestroyImmediate(playerInstance);
                 Object.DestroyImmediate(onFireEntry);
                 Object.DestroyImmediate(onFireEndEntry);
                 Object.DestroyImmediate(baseEffect);
                 Object.DestroyImmediate(onFireEffect);
                 Object.DestroyImmediate(onFireEndEffect);
-                TriggerOrder.Clear();
+            }
+        }
+
+        [Test]
+        public void LoadedFourAtFireEndPreventsIncorrectAutomaticReload()
+        {
+            GameObject playerInstance = InstantiatePlayer();
+            DiceRevolverGun gun = playerInstance.GetComponentInChildren<DiceRevolverGun>();
+            DiceFaceLoadout loadout = playerInstance.GetComponent<DiceFaceLoadout>();
+            ConditionalLoadedFourEffect loadedFour =
+                ScriptableObject.CreateInstance<ConditionalLoadedFourEffect>();
+            DiceFaceEntry loadedFourEntry = CreateEntry(DiceFaceSlotType.OnFireEnd, loadedFour);
+            Mouse mouse = null;
+
+            try
+            {
+                SetPrivateField(gun, "shotsPerSecond", float.PositiveInfinity);
+                loadedFour.Gun = gun;
+                for (int face = 1; face <= DiceRevolverRules.FaceCount; face++)
+                {
+                    loadout.Equip(face, loadedFourEntry);
+                }
+
+                InitializePlayerGun(playerInstance, gun);
+                mouse = HoldLeftMouse();
+
+                for (int shot = 0; shot < DiceRevolverRules.FaceCount; shot++)
+                {
+                    InvokePrivate(gun, "LateUpdate");
+                }
+
+                Assert.That(gun.RemainingRounds, Is.EqualTo(1));
+                Assert.That(gun.IsReloading, Is.False);
+            }
+            finally
+            {
+                RemoveDevice(mouse);
+                DestroyAllSceneProjectiles();
+                Object.DestroyImmediate(playerInstance);
+                Object.DestroyImmediate(loadedFourEntry);
+                Object.DestroyImmediate(loadedFour);
+            }
+        }
+
+        [Test]
+        public void GunRelaysProjectileHitBeforeOnHitAndDirectDamage()
+        {
+            GameObject playerInstance = InstantiatePlayer();
+            DiceRevolverGun gun = playerInstance.GetComponentInChildren<DiceRevolverGun>();
+            DiceFaceLoadout loadout = playerInstance.GetComponent<DiceFaceLoadout>();
+            List<string> order = new List<string>();
+            OrderRecordingEffect onHitEffect = CreateRecordingEffect("on-hit", order);
+            DiceFaceEntry onHitEntry = CreateEntry(DiceFaceSlotType.OnHit, onHitEffect);
+            GameObject target = new GameObject("Target");
+            BoxCollider targetCollider = target.AddComponent<BoxCollider>();
+            RecordingDamageReceiver receiver = target.AddComponent<RecordingDamageReceiver>();
+            Mouse mouse = null;
+            Projectile spawned = null;
+
+            try
+            {
+                receiver.Order = order;
+                for (int face = 1; face <= DiceRevolverRules.FaceCount; face++)
+                {
+                    loadout.Equip(face, onHitEntry);
+                }
+
+                gun.ProjectileHit += _ => order.Add("projectile-hit");
+                InitializePlayerGun(playerInstance, gun);
+                mouse = HoldLeftMouse();
+                InvokePrivate(gun, "LateUpdate");
+                spawned = FindSceneProjectile();
+                Assert.That(spawned, Is.Not.Null);
+
+                ExpectEditModeDestroy();
+                InvokePrivate(spawned, "OnTriggerEnter", targetCollider);
+
+                Assert.That(
+                    order,
+                    Is.EqualTo(new[] { "projectile-hit", "on-hit", "damage" }));
+            }
+            finally
+            {
+                RemoveDevice(mouse);
+                DestroyProjectile(spawned);
+                Object.DestroyImmediate(target);
+                Object.DestroyImmediate(playerInstance);
+                Object.DestroyImmediate(onHitEntry);
+                Object.DestroyImmediate(onHitEffect);
+            }
+        }
+
+        [Test]
+        public void MissingCharacterControllerMakesUpdateAndLateUpdateSafeNoOps()
+        {
+            GameObject gunOwner = new GameObject("Gun");
+            try
+            {
+                DiceRevolverGun gun = gunOwner.AddComponent<DiceRevolverGun>();
+                InvokePrivate(gun, "Awake");
+
+                Assert.DoesNotThrow(() => InvokePrivate(gun, "Update"));
+                Assert.DoesNotThrow(() => InvokePrivate(gun, "LateUpdate"));
+                Assert.That(gun.RemainingRounds, Is.EqualTo(DiceRevolverRules.FaceCount));
+            }
+            finally
+            {
+                Object.DestroyImmediate(gunOwner);
+            }
+        }
+
+        [Test]
+        public void MissingMuzzleDoesNotConsumeADieFace()
+        {
+            GameObject playerInstance = InstantiatePlayer();
+            DiceRevolverGun gun = playerInstance.GetComponentInChildren<DiceRevolverGun>();
+            Mouse mouse = null;
+
+            try
+            {
+                InitializePlayerGun(playerInstance, gun);
+                SetPrivateField<Transform>(gun, "muzzle", null);
+                mouse = HoldLeftMouse();
+
+                InvokePrivate(gun, "Update");
+                InvokePrivate(gun, "LateUpdate");
+
+                Assert.That(gun.RemainingRounds, Is.EqualTo(DiceRevolverRules.FaceCount));
+            }
+            finally
+            {
+                RemoveDevice(mouse);
+                Object.DestroyImmediate(playerInstance);
+            }
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void MissingProjectileDefinitionOrPrefabWarnsAndContinuesLaterActivation(
+            bool definitionExistsWithoutPrefab)
+        {
+            GameObject playerInstance = InstantiatePlayer();
+            DiceRevolverGun gun = playerInstance.GetComponentInChildren<DiceRevolverGun>();
+            DiceFaceLoadout loadout = playerInstance.GetComponent<DiceFaceLoadout>();
+            ProjectileSpawnEffect missingSpawn = ScriptableObject.CreateInstance<ProjectileSpawnEffect>();
+            ProjectileDefinition missingPrefabDefinition = null;
+            ProjectileSpawnEffect validSpawn =
+                AssetDatabase.LoadAssetAtPath<ProjectileSpawnEffect>(BasicSpawnEffectPath);
+            DiceFaceEntry validEntry = CreateEntry(DiceFaceSlotType.OnFire, validSpawn);
+            Mouse mouse = null;
+            Projectile spawned = null;
+
+            try
+            {
+                if (definitionExistsWithoutPrefab)
+                {
+                    missingPrefabDefinition = ScriptableObject.CreateInstance<ProjectileDefinition>();
+                    SetPrivateField(missingSpawn, "projectileDefinition", missingPrefabDefinition);
+                    LogAssert.Expect(
+                        LogType.Warning,
+                        new Regex("Projectile spawn skipped.*missing", RegexOptions.Singleline));
+                }
+                else
+                {
+                    LogAssert.Expect(
+                        LogType.Warning,
+                        $"{nameof(ProjectileSpawnEffect)} skipped because no projectile definition is assigned.");
+                }
+
+                for (int face = 1; face <= DiceRevolverRules.FaceCount; face++)
+                {
+                    loadout.SetBaseEffect(face, missingSpawn);
+                    loadout.Equip(face, validEntry);
+                }
+
+                InitializePlayerGun(playerInstance, gun);
+                mouse = HoldLeftMouse();
+                InvokePrivate(gun, "LateUpdate");
+                spawned = FindSceneProjectile();
+
+                Assert.That(spawned, Is.Not.Null);
+                Assert.That(spawned.ProjectileType, Is.EqualTo("Revolver"));
+            }
+            finally
+            {
+                RemoveDevice(mouse);
+                DestroyProjectile(spawned);
+                Object.DestroyImmediate(playerInstance);
+                Object.DestroyImmediate(validEntry);
+                Object.DestroyImmediate(missingSpawn);
+                if (missingPrefabDefinition != null)
+                {
+                    Object.DestroyImmediate(missingPrefabDefinition);
+                }
+            }
+        }
+
+        [Test]
+        public void GunPassesConfiguredEventBudgetIntoEachActivation()
+        {
+            GameObject playerInstance = InstantiatePlayer();
+            DiceRevolverGun gun = playerInstance.GetComponentInChildren<DiceRevolverGun>();
+            DiceFaceLoadout loadout = playerInstance.GetComponent<DiceFaceLoadout>();
+            List<string> order = new List<string>();
+            OrderRecordingEffect baseEffect = CreateRecordingEffect("base", order);
+            OrderRecordingEffect onFireEffect = CreateRecordingEffect("on-fire", order);
+            DiceFaceEntry onFireEntry = CreateEntry(DiceFaceSlotType.OnFire, onFireEffect);
+            Mouse mouse = null;
+
+            try
+            {
+                SetPrivateField(gun, "eventBudgetPerActivation", 1);
+                for (int face = 1; face <= DiceRevolverRules.FaceCount; face++)
+                {
+                    loadout.SetBaseEffect(face, baseEffect);
+                    loadout.Equip(face, onFireEntry);
+                }
+
+                InitializePlayerGun(playerInstance, gun);
+                mouse = HoldLeftMouse();
+                LogAssert.Expect(
+                    LogType.Warning,
+                    new Regex("Dice face .* event budget was exhausted", RegexOptions.Singleline));
+
+                InvokePrivate(gun, "LateUpdate");
+
+                Assert.That(order, Is.EqualTo(new[] { "base" }));
+            }
+            finally
+            {
+                RemoveDevice(mouse);
+                Object.DestroyImmediate(playerInstance);
+                Object.DestroyImmediate(onFireEntry);
+                Object.DestroyImmediate(baseEffect);
+                Object.DestroyImmediate(onFireEffect);
+            }
+        }
+
+        [Test]
+        public void ReloadCompletionAllowsLateUpdateToFireInTheSameFrame()
+        {
+            GameObject playerObject = new GameObject("Player");
+            playerObject.AddComponent<CharacterController>();
+            ControllableCharacterController player =
+                playerObject.AddComponent<ControllableCharacterController>();
+            GameObject gunObject = new GameObject("Gun");
+            gunObject.transform.SetParent(playerObject.transform);
+            DiceRevolverGun gun = gunObject.AddComponent<DiceRevolverGun>();
+            GameObject muzzleObject = new GameObject("Muzzle");
+            muzzleObject.transform.SetParent(gunObject.transform);
+
+            try
+            {
+                SetPrivateField<TopDownCharacterController>(gun, "player", player);
+                SetPrivateField(gun, "visualRoot", gunObject.transform);
+                SetPrivateField(gun, "muzzle", muzzleObject.transform);
+                SetPrivateField(gun, "shotsPerSecond", float.PositiveInfinity);
+                InvokePrivate(gun, "Awake");
+                DiceRevolverRuntime runtime = new DiceRevolverRuntime(
+                    float.PositiveInfinity,
+                    0.05f,
+                    true,
+                    true);
+                Assert.That(runtime.TryBeginShot(0f).Status, Is.EqualTo(DiceRevolverDrawStatus.Fired));
+                Assert.That(runtime.Tick(-1f, true).ReloadStarted, Is.True);
+                SetPrivateField(gun, "runtime", runtime);
+                player.SetFireHeld(true);
+
+                InvokePrivate(gun, "Update");
+                Assert.That(gun.IsReloading, Is.False);
+                Assert.That(gun.RemainingRounds, Is.EqualTo(DiceRevolverRules.FaceCount));
+
+                InvokePrivate(gun, "LateUpdate");
+
+                Assert.That(gun.RemainingRounds, Is.EqualTo(DiceRevolverRules.FaceCount - 1));
+            }
+            finally
+            {
+                Object.DestroyImmediate(playerObject);
             }
         }
 
         [Test]
         public void ReloadBlinkDoesNotMoveOrRotateArmVisual()
         {
-            GameObject playerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefab/Player.prefab");
-            GameObject playerInstance = Object.Instantiate(playerPrefab);
+            GameObject playerInstance = InstantiatePlayer();
             DiceRevolverGun gun = playerInstance.GetComponentInChildren<DiceRevolverGun>();
             Transform armVisual = playerInstance.transform.Find("VisualRoot/HandRig/AimRoot/ArmVisual");
 
             try
             {
-                Assert.That(gun, Is.Not.Null);
                 Assert.That(armVisual, Is.Not.Null);
                 InvokePrivate(gun, "Awake");
-
                 Vector3 originalPosition = armVisual.localPosition;
                 Quaternion originalRotation = armVisual.localRotation;
                 Color originalColor = armVisual.GetComponent<SpriteRenderer>().color;
@@ -464,115 +421,146 @@ namespace DiceRevolver.Tests
             }
         }
 
-        [TestCase(true, 1)]
-        [TestCase(false, 0)]
-        public void ProjectileHitDispatchesFaceHitEffectsOnlyWhenAllowed(
-            bool allowHitEffects,
-            int expectedTriggerCount)
+        [Test]
+        public void PlayerControllerAwakeSnapsRootToGameplayPlane()
         {
-            GameObject gunOwner = new GameObject("Gun");
-            DiceRevolverGun gun = gunOwner.AddComponent<DiceRevolverGun>();
-            GameObject projectileOwner = new GameObject("Projectile");
-            Projectile projectile = projectileOwner.AddComponent<Projectile>();
-            ProjectileHitReporter reporter = projectileOwner.AddComponent<ProjectileHitReporter>();
-            GameObject target = new GameObject("Target");
-            BoxCollider targetCollider = target.AddComponent<BoxCollider>();
-            CountingHitEffect effect = ScriptableObject.CreateInstance<CountingHitEffect>();
-            DiceFaceEntry entry = ScriptableObject.CreateInstance<DiceFaceEntry>();
-            typeof(DiceFaceEntry).GetField(
-                "onHitEffects",
-                BindingFlags.Instance | BindingFlags.NonPublic).SetValue(
-                entry,
-                new BulletEventEffect[] { effect });
-            DiceFaceActivation activation = new DiceFaceActivation(
-                3,
-                DiceFaceConfigurationSnapshot.FromEntry(entry),
-                Vector3.zero,
-                Vector3.forward,
-                (_, callback) => callback.Invoke(),
-                _ => { },
-                _ => false,
-                _ => { });
-            DiceRevolverShotContext shot = new DiceRevolverShotContext(
-                3,
-                Vector3.zero,
-                Vector3.forward,
-                projectile,
-                DiceFaceConfigurationSnapshot.FromEntry(entry),
-                default,
-                null,
-                null,
-                activation,
-                allowHitEffects);
+            GameObject playerInstance = Object.Instantiate(
+                AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath),
+                new Vector3(2f, 3f, 4f),
+                Quaternion.identity);
+            TopDownPlayerController player = playerInstance.GetComponent<TopDownPlayerController>();
 
             try
             {
-                MethodInfo bridge = typeof(DiceRevolverGun).GetMethod(
-                    "BridgeProjectileHit",
-                    BindingFlags.Instance | BindingFlags.NonPublic);
-                bridge.Invoke(gun, new object[] { projectile, shot, allowHitEffects });
+                InvokePrivate(player, "Awake");
 
-                MethodInfo reportHit = typeof(ProjectileHitReporter).GetMethod(
-                    "OnTriggerEnter",
-                    BindingFlags.Instance | BindingFlags.NonPublic);
-                reportHit.Invoke(reporter, new object[] { targetCollider });
-
-                Assert.That(effect.TriggerCount, Is.EqualTo(expectedTriggerCount));
+                Assert.That(playerInstance.transform.position.y, Is.EqualTo(0f).Within(0.0001f));
             }
             finally
             {
-                Object.DestroyImmediate(entry);
-                Object.DestroyImmediate(effect);
-                Object.DestroyImmediate(target);
-                Object.DestroyImmediate(projectileOwner);
-                Object.DestroyImmediate(gunOwner);
+                Object.DestroyImmediate(playerInstance);
+            }
+        }
+
+        private static GameObject InstantiatePlayer()
+        {
+            return Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath));
+        }
+
+        private static void InitializePlayerGun(GameObject playerInstance, DiceRevolverGun gun)
+        {
+            TopDownPlayerController player = playerInstance.GetComponent<TopDownPlayerController>();
+            TopDownAimHandRig aimRig = playerInstance.GetComponentInChildren<TopDownAimHandRig>();
+            Assert.That(player, Is.Not.Null);
+            Assert.That(aimRig, Is.Not.Null);
+            Assert.That(gun, Is.Not.Null);
+            InvokePrivate(player, "Awake");
+            InvokePrivate(aimRig, "Awake");
+            InvokePrivate(gun, "Awake");
+        }
+
+        private static Mouse HoldLeftMouse()
+        {
+            Mouse mouse = InputSystem.AddDevice<Mouse>();
+            mouse.MakeCurrent();
+            InputSystem.QueueStateEvent(
+                mouse,
+                new MouseState().WithButton(MouseButton.Left));
+            InputSystem.Update();
+            return mouse;
+        }
+
+        private static void RemoveDevice(InputDevice device)
+        {
+            if (device != null && device.added)
+            {
+                InputSystem.RemoveDevice(device);
+            }
+        }
+
+        private static Projectile FindSceneProjectile()
+        {
+            Projectile[] projectiles =
+                Object.FindObjectsByType<Projectile>(FindObjectsSortMode.None);
+            for (int i = 0; i < projectiles.Length; i++)
+            {
+                if (projectiles[i].gameObject.scene.IsValid())
+                {
+                    return projectiles[i];
+                }
+            }
+
+            return null;
+        }
+
+        private static void DestroyProjectile(Projectile projectile)
+        {
+            if (projectile != null)
+            {
+                Object.DestroyImmediate(projectile.gameObject);
+            }
+        }
+
+        private static void DestroyAllSceneProjectiles()
+        {
+            Projectile[] projectiles =
+                Object.FindObjectsByType<Projectile>(FindObjectsSortMode.None);
+            for (int i = 0; i < projectiles.Length; i++)
+            {
+                if (projectiles[i] != null && projectiles[i].gameObject.scene.IsValid())
+                {
+                    Object.DestroyImmediate(projectiles[i].gameObject);
+                }
+            }
+        }
+
+        private static void ConfigureEveryFace(
+            DiceFaceLoadout loadout,
+            BulletEventEffect baseEffect,
+            params DiceFaceEntry[] entries)
+        {
+            for (int face = 1; face <= DiceRevolverRules.FaceCount; face++)
+            {
+                loadout.SetBaseEffect(face, baseEffect);
+                for (int entry = 0; entry < entries.Length; entry++)
+                {
+                    loadout.Equip(face, entries[entry]);
+                }
             }
         }
 
         private static DiceFaceEntry CreateEntry(DiceFaceSlotType slotType, BulletEventEffect effect)
         {
             DiceFaceEntry entry = ScriptableObject.CreateInstance<DiceFaceEntry>();
-            typeof(DiceFaceEntry).GetField("slotType", BindingFlags.Instance | BindingFlags.NonPublic)
-                .SetValue(entry, slotType);
-            typeof(DiceFaceEntry).GetField("effect", BindingFlags.Instance | BindingFlags.NonPublic)
-                .SetValue(entry, effect);
+            SetPrivateField(entry, "slotType", slotType);
+            SetPrivateField(entry, "effect", effect);
             return entry;
         }
 
-        private static RecordingEffect CreateRecordingEffect(string marker)
+        private static OrderRecordingEffect CreateRecordingEffect(
+            string marker,
+            List<string> order)
         {
-            RecordingEffect effect = ScriptableObject.CreateInstance<RecordingEffect>();
+            OrderRecordingEffect effect = ScriptableObject.CreateInstance<OrderRecordingEffect>();
             effect.Marker = marker;
+            effect.Order = order;
             return effect;
         }
 
-        private sealed class RecordingEffect : BulletEventEffect
+        private static void ExpectEditModeDestroy()
         {
-            public string Marker { get; set; }
-
-            public override void Trigger(BulletEventContext context)
-            {
-                TriggerOrder.Add(Marker);
-            }
+            LogAssert.Expect(
+                LogType.Error,
+                new Regex("Destroy may not be called from edit mode!.*", RegexOptions.Singleline));
         }
 
-        private sealed class CountingHitEffect : BulletEventEffect
-        {
-            public int TriggerCount { get; private set; }
-
-            public override void Trigger(BulletEventContext context)
-            {
-                TriggerCount++;
-            }
-        }
-
-        private static T GetPrivateField<T>(object owner, string fieldName)
+        private static void SetPrivateField<T>(object owner, string fieldName, T value)
         {
             FieldInfo field = owner.GetType().GetField(
                 fieldName,
                 BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.That(field, Is.Not.Null);
-            return (T)field.GetValue(owner);
+            Assert.That(field, Is.Not.Null, $"Missing field {owner.GetType().Name}.{fieldName}");
+            field.SetValue(owner, value);
         }
 
         private static void InvokePrivate(object owner, string methodName, params object[] arguments)
@@ -580,8 +568,61 @@ namespace DiceRevolver.Tests
             MethodInfo method = owner.GetType().GetMethod(
                 methodName,
                 BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.That(method, Is.Not.Null);
+            Assert.That(method, Is.Not.Null, $"Missing method {owner.GetType().Name}.{methodName}");
             method.Invoke(owner, arguments);
+        }
+
+        private sealed class OrderRecordingEffect : BulletEventEffect
+        {
+            public string Marker { get; set; }
+            public List<string> Order { get; set; }
+
+            public override void Trigger(BulletEventContext context)
+            {
+                Order.Add(Marker);
+            }
+        }
+
+        private sealed class ConditionalLoadedFourEffect : BulletEventEffect
+        {
+            public DiceRevolverGun Gun { get; set; }
+
+            public override void Trigger(BulletEventContext context)
+            {
+                if (Gun.RemainingRounds == 0)
+                {
+                    context.RequestRefillAndForceNextFace(4);
+                }
+            }
+        }
+
+        public sealed class RecordingDamageReceiver : MonoBehaviour, IDamageReceiver
+        {
+            public List<string> Order { get; set; }
+
+            public void ReceiveDamage(DamageInfo damage)
+            {
+                Order.Add("damage");
+            }
+        }
+
+        public sealed class ControllableCharacterController : TopDownCharacterController
+        {
+            public override Vector3 AimWorldPoint { get; protected set; }
+            public override Vector3 AimDirection { get; protected set; } = Vector3.forward;
+            public override Vector2 MoveInput { get; protected set; }
+            public override bool FireHeld { get; protected set; }
+            public override bool ReloadPressedThisFrame { get; protected set; }
+
+            public override void RefreshControlIntent(float time)
+            {
+            }
+
+            public void SetFireHeld(bool value)
+            {
+                FireHeld = value;
+            }
+
         }
     }
 }

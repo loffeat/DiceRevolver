@@ -31,7 +31,7 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 
 - [Assets/Scripts/Prototype](../../Assets/Scripts/Prototype)：运行时玩家、左轮、弹丸、事件与 UI。
 - [Assets/Scripts/Editor](../../Assets/Scripts/Editor)：原型场景和骰面资源生成工具。
-- [Assets/Tests/EditMode](../../Assets/Tests/EditMode)：弹巢、装备、弹丸、效果、UI 和瞄准测试。
+- [Assets/Tests/EditMode](../../Assets/Tests/EditMode)：左轮运行时、装备、弹丸、效果、UI 和瞄准测试。
 - [Assets/Resources/DiceFacePrototype](../../Assets/Resources/DiceFacePrototype)：四个示例词条、弹丸定义及事件资源。
 - [docs/superpowers](../../docs/superpowers)：已批准的设计规格和实施计划。
 - [.superpowers/sdd](../../.superpowers/sdd)：既有骰面构筑任务的执行与复核证据。
@@ -44,8 +44,9 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 - [BehaviorTree.cs](../../Assets/Scripts/Prototype/BehaviorTree.cs)：不依赖场景的 Sequence、Selector、Parallel、Condition 和 Action 行为树节点。
 - [TestRobotCombatBrain.cs](../../Assets/Scripts/Prototype/TestRobotCombatBrain.cs)：按近/远阈值输出接近、后退或横移，在移动爆发与站定攻击间循环，并持续提供瞄准与开火意图。
 - [TopDownAimHandRig.cs](../../Assets/Scripts/Prototype/TopDownAimHandRig.cs)：处理手臂镜像、枪口姿态和近距离稳定瞄准。
-- [DiceChamber.cs](../../Assets/Scripts/Prototype/DiceChamber.cs)：维护剩余骰面、强制下次骰面和重置规则。
-- [DiceRevolverGun.cs](../../Assets/Scripts/Prototype/DiceRevolverGun.cs)：协调射速、抽面、弹丸生成、事件和换弹。
+- [DiceRevolverRuntime.cs](../../Assets/Scripts/Prototype/DiceRevolverRuntime.cs)：维护固定六面骰池、射击冷却与换弹机械状态。
+- [DiceShotPipeline.cs](../../Assets/Scripts/Prototype/DiceShotPipeline.cs)：执行四阶段骰面事件、延迟调度、命中效果与事件预算。
+- [DiceRevolverGun.cs](../../Assets/Scripts/Prototype/DiceRevolverGun.cs)：把角色输入、Unity 时间、姿态、弹丸实例化和公开事件适配到 Runtime/Pipeline。
 - [DiceFaceLoadout.cs](../../Assets/Scripts/Prototype/DiceFaceLoadout.cs)：保存六个骰面的四槽位运行时装备，并兼容读取旧序列化数据。
 - [DiceFaceConfiguration.cs](../../Assets/Scripts/Prototype/DiceFaceConfiguration.cs)：保存单面四槽位配置并生成单次激活快照。
 - [DiceFaceEntry.cs](../../Assets/Scripts/Prototype/DiceFaceEntry.cs)：单槽位 ScriptableObject 构筑词条，绑定一个槽位类型和一个事件效果。
@@ -68,7 +69,8 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 玩家输入 -> TopDownPlayerController -> TopDownCharacterController
 目标位置 -> TestRobotCombatBrain -> TestRobotController -> TopDownCharacterController
 TopDownCharacterController -> 移动/瞄准/动画/DiceRevolverGun
-DiceChamber 抽面 -> DiceFaceLoadout -> DiceFaceConfigurationSnapshot 四槽位快照
+DiceRevolverRuntime 抽面 -> DiceFaceLoadout -> DiceFaceConfigurationSnapshot 四槽位快照
+DiceShotPipeline -> Base/OnFire/OnFireEnd + 延迟调度；Projectile.Hit -> OnHit
 ProjectileSpawnEffect -> ProjectileDefinition -> ProjectileRuntimeStats + 弹丸 Prefab
 DiceFaceActivation -> 延迟生成、命中事件关系与连锁预算
 DiceBuildPageUI -> DiceFaceLoadout.Equip -> 只替换词条所属槽位 -> 后续射击读取新快照
@@ -76,8 +78,8 @@ Projectile -> IDamageReceiver -> TargetDummy.DamageReceived -> WorldDamageNumber
 ExplosionOnHitEffect -> BlastExplosion ProjectileDefinition -> AreaExplosionProjectile -> 范围 IDamageReceiver
 ```
 
-额外射击通过事件上下文请求同属性弹丸，并禁止递归触发额外射击。命中事件由 `ProjectileHitReporter` 桥接回本次射击上下文。
-需要延迟的事件通过 `BulletEventContext.Schedule` 登记回调，由所属左轮使用 `Time.time` 驱动；暂停游戏时延迟计时同步暂停。
+额外射击通过事件上下文请求同属性弹丸，并禁止递归触发额外射击。`Projectile.Hit` 先经 Gun 转发公开命中事件和合格的 OnHit，再由 Projectile 提交直接伤害。
+需要延迟的事件通过 `BulletEventContext.Schedule` 登记回调，由 `DiceShotPipeline` 使用 Gun 提供的 `Time.time` 驱动；暂停游戏时延迟计时同步暂停。
 
 ## 明确非目标
 
@@ -87,7 +89,7 @@ ExplosionOnHitEffect -> BlastExplosion ProjectileDefinition -> AreaExplosionProj
 
 ## 术语
 
-- 骰池：`DiceChamber` 中尚未被抽出的骰面集合。
+- 骰池：`DiceRevolverRuntime` 中尚未被抽出的固定六面集合。
 - 骰面词条：绑定一个事件阶段、可装备到对应槽位的 `DiceFaceEntry` 资源。
 - 四槽位：每个骰面独立拥有基础、开火时、命中时、开火后四个单事件槽位。
 - 装备：`DiceFaceLoadout` 中六个面到四槽位配置的映射。

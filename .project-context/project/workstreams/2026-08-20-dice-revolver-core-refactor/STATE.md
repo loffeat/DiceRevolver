@@ -2,7 +2,7 @@
 
 - ID: `2026-08-20-dice-revolver-core-refactor`
 - Status: `active`
-- Branch: `main`
+- Branch: `codex/dice-revolver-core-refactor`
 - Created: `2026-08-20`
 - Updated: `2026-08-20`
 
@@ -31,27 +31,34 @@
 
 ## 当前正在进行
 
-- 实施计划已写入，等待用户选择执行方式。
+- 核心规则、事件能力、Runtime、Pipeline、Projectile.Hit 与 Gun 适配器已按 Task 1-6 完成。
+- 下一步迁移 Player/TestRobot Prefab，随后删除 Reporter 类型与 Builder 依赖。
 
 ## 已完成
 
 - 完成职责范围、数据流、兼容迁移、错误处理和测试策略的分段确认。
 - 完成正式架构设计规格及自审。
 - 完成测试先行、分任务提交的详细实施计划。
+- 固定六面规则并抽取 `DiceRevolverRuntime` 与 `DiceShotPipeline`。
+- `Projectile` 已统一广播命中，Gun 已切换到 Runtime/Pipeline/Projectile.Hit 适配路径。
+- 删除旧 `DiceChamber`、Gun 私有事件管线与公开 `SpawnConfiguredProjectile` 测试端口。
+- 新增每把枪 `eventBudgetPerActivation` Inspector 端口及真实 Gun 行为/接线契约测试。
 
 ## 下一步
 
-1. 用户选择 Subagent-Driven 或当前会话内联执行。
-2. 使用隔离工作树按测试先行实施。
-3. 完成聚焦测试、完整 EditMode 回归和上下文同步。
+1. 执行 Task 7：只迁移 Player/TestRobot Prefab 的失效字段与默认预算。
+2. 删除 `ProjectileHitReporter` 类型、Prefab 组件和 Builder 依赖。
+3. 完成最终聚焦测试、完整 EditMode 回归和上下文收尾。
 
 ## 阻塞
 
-- 无；运行时代码实施等待用户选择执行方式。
+- 无。
 
 ## 尚未完成
 
-- 运行时代码、Prefab 迁移和测试迁移均未开始。
+- Player/TestRobot Prefab 序列化迁移。
+- Reporter 类型、Prefab 组件与 Builder 引用清理。
+- 最终完整回归与可见 Play Mode 人工验收。
 
 ## 涉及文件
 
@@ -66,7 +73,9 @@
 
 - [passed] `2026-08-20`：用户逐段确认模块职责、开火与命中数据流、兼容清理和测试设计。
 - [passed] `2026-08-20`：实施计划完成规格覆盖、占位符和接口一致性自审。
-- [not-run] Unity 测试未运行；当前仅完成架构设计和实施计划，不修改运行时代码或资源。
+- [failed] `2026-08-20`：Task 6 RED 为 `43/48`，预期暴露预算字段、固定六面 Inspector、Runtime 适配与 Projectile.Hit 接线缺口。
+- [passed] `2026-08-20`：Task 6 Gun/Runtime/Pipeline/Inspector 联合测试 `70/70`。
+- [failed] `2026-08-20`：完整 EditMode 为 `165/166`；唯一失败是已获豁免的 Ground Y `-0.01` 既有差异，没有新增失败。
 
 ## 相关资料
 

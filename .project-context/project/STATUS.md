@@ -12,6 +12,7 @@
 - 构筑页可在场景加载后自动创建，按 `E` 打开或关闭；瞄准系统使用镜像虚拟枪口、近距离稳定解算和开火前同帧姿态刷新。
 - 子弹事件可通过 `BulletEventContext.Schedule` 使用轻量游戏时间调度；双重射击默认在第一发后 `0.25` 秒生成第二发。
 - 弹丸运行时属性已迁移到 `ProjectileDefinition`；每次骰面触发使用独立 `DiceFaceActivation`，并以默认 `32` 次事件预算限制连锁。
+- 左轮机械状态与骰面事件流程已分别收敛到 `DiceRevolverRuntime` 和 `DiceShotPipeline`；`DiceRevolverGun` 只保留 Unity 输入、姿态、实例化与事件适配，旧 `DiceChamber` 已删除。
 - 六个骰面均绑定基础左轮子弹生成事件；基础子弹视觉通过独立包装引用 `fire_1.prefab`，附加弹默认不回触命中事件。
 - `fire_1.prefab` 原材质引用的 Shader 资源实际缺失；`ProjectileVisualWrapper` 现在只对错误 Shader 使用项目内透明粒子 Shader 兼容包装，不修改原始特效资源。
 - 玩家、测试靶、弹丸和 Ground 统一使用世界 `Y=0` 玩法平面；玩家移动不再依赖重力或地面 Collider。
@@ -30,7 +31,7 @@
 
 ## 活跃工作流
 
-- [左轮核心底层重构](workstreams/2026-08-20-dice-revolver-core-refactor/STATE.md)（`active`；实施计划待执行）
+- [左轮核心底层重构](workstreams/2026-08-20-dice-revolver-core-refactor/STATE.md)（`active`；Runtime/Pipeline/Gun 迁移完成，待 Prefab 与 Reporter 清理）
 - [雷电构筑与左轮底层重构待办](workstreams/2026-08-20-lightning-build-backlog/STATE.md)（`planned`；下次同步时提醒用户）
 
 ## 完成历史
@@ -61,6 +62,7 @@
 
 ## 最近项目级验证
 
+- [passed] `2026-08-20`：左轮 Gun/Runtime/Pipeline/Inspector 联合测试 `70/70`；完整 EditMode `165/166`，唯一失败为已知 Ground Y `-0.01` 契约差异。
 - [passed] `2026-08-20`：范围爆炸运行时 `4/4`、资源绑定 `3/3`；完整 EditMode 回归 `139/139`，0 失败、0 跳过。
 - [passed] `2026-08-20`：Player、TargetDummy、TestRobot Prefab SHA256 与任务前一致；玩家射速、换弹时间、持枪距离、持枪高度保持 `2`、`2`、`0.85`、`0.72`。
 - [not-run] `2026-08-20`：可见 Play Mode 中的爆炸圆环视觉和战斗手感尚未人工验收。

@@ -19,25 +19,23 @@ namespace DiceRevolver.Prototype
         [SerializeField, InspectorName("自动驱动武器姿态")] private bool driveWeaponPose = true;
 
         [Header("骰子左轮")]
-        [SerializeField, InspectorName("骰面数量")] private int faceCount = 6;
         [SerializeField, InspectorName("每秒射击次数")] private float shotsPerSecond = 5f;
         [SerializeField, InspectorName("换弹时间（秒）")] private float reloadDuration = 1.8f;
         [SerializeField, InspectorName("弹巢耗尽时自动换弹")] private bool automaticReloadWhenEmpty = true;
         [SerializeField, InspectorName("允许手动换弹")] private bool allowManualReload = true;
+        [SerializeField, Min(1), InspectorName("单次骰面事件预算")]
+        private int eventBudgetPerActivation = DiceFaceActivation.DefaultEventBudget;
 
         [Header("换弹视觉")]
-        [SerializeField, InspectorName("换弹下沉距离")] private float reloadDropDistance = 0.22f;
         [SerializeField, InspectorName("换弹闪烁速度")] private float reloadBlinkSpeed = 8f;
-        [SerializeField, InspectorName("换弹暗色")] private Color reloadDimColor = new Color(0.35f, 0.35f, 0.35f, 1f);
+        [SerializeField, InspectorName("换弹暗色")] private Color reloadDimColor =
+            new Color(0.35f, 0.35f, 0.35f, 1f);
 
-        private DiceChamber chamber;
-        private float nextShotTime;
-        private float reloadStartedAt;
-        private bool isReloading;
+        private DiceRevolverRuntime runtime;
+        private DiceShotPipeline shotPipeline;
         private SpriteRenderer reloadBlinkRenderer;
         private Color reloadBlinkDefaultColor = Color.white;
         private TopDownAimHandRig aimRig;
-        private readonly BulletEventTimeScheduler eventTimeScheduler = new BulletEventTimeScheduler();
 
         public event Action<DiceRevolverShotContext> FireStarted;
         public event Action<DiceRevolverHitContext> ProjectileHit;
@@ -45,18 +43,35 @@ namespace DiceRevolver.Prototype
         public event Action ReloadStarted;
         public event Action ReloadCompleted;
 
-        public int RemainingRounds => chamber?.RemainingCount ?? 0;
-        public bool IsReloading => isReloading;
+        public int RemainingRounds => runtime?.RemainingRounds ?? 0;
+        public bool IsReloading => runtime?.IsReloading ?? false;
         public float ReloadDuration
         {
-            get => reloadDuration;
-            set => reloadDuration = Mathf.Max(0.05f, value);
+            get => runtime?.ReloadDuration ?? reloadDuration;
+            set
+            {
+                reloadDuration = Mathf.Max(0.05f, value);
+                if (runtime != null)
+                {
+                    runtime.ReloadDuration = reloadDuration;
+                }
+            }
         }
 
         private void Awake()
         {
-            faceCount = Mathf.Max(1, faceCount);
-            chamber = new DiceChamber(faceCount);
+            runtime = new DiceRevolverRuntime(
+                shotsPerSecond,
+                reloadDuration,
+                automaticReloadWhenEmpty,
+                allowManualReload);
+            shotPipeline = new DiceShotPipeline(
+                () => Time.time,
+                SpawnActivationProjectile,
+                runtime.TryRefillAndForceNextFace,
+                message => Debug.LogWarning(message),
+                (exception, context) => Debug.LogException(exception, context));
+
             if (loadout == null)
             {
                 loadout = GetComponentInParent<DiceFaceLoadout>();
@@ -81,14 +96,38 @@ namespace DiceRevolver.Prototype
 
         private void Update()
         {
-            if (player == null)
+            if (runtime == null)
             {
                 return;
             }
 
-            UpdatePose();
-            UpdateReload();
-            TryManualReload();
+            if (player != null)
+            {
+                UpdatePose();
+            }
+
+            DiceRevolverRuntimeUpdate update = runtime.Tick(
+                Time.time,
+                player != null && player.ReloadPressedThisFrame);
+            if (update.ReloadStarted)
+            {
+                NotifyReloadStarted();
+            }
+
+            if (update.ReloadCompleted)
+            {
+                ResetVisualRoot();
+                ReloadCompleted?.Invoke();
+            }
+
+            if (runtime.IsReloading)
+            {
+                AnimateReload(runtime.GetReloadProgress(Time.time));
+            }
+            else
+            {
+                ResetVisualRoot();
+            }
         }
 
         private void LateUpdate()
@@ -99,70 +138,59 @@ namespace DiceRevolver.Prototype
                 TryFire();
             }
 
-            eventTimeScheduler.Tick(Time.time, Debug.LogException);
+            shotPipeline?.Tick(Time.time);
         }
 
         private void OnDestroy()
         {
-            eventTimeScheduler.Clear();
+            shotPipeline?.Clear();
         }
 
         private void UpdatePose()
         {
-            if (!driveWeaponPose)
+            if (!driveWeaponPose || player == null)
             {
                 return;
             }
 
             Vector3 aimDirection = player.AimDirection;
-            transform.position = player.transform.position + aimDirection * holdDistance + Vector3.up * holdHeight;
+            transform.position = player.transform.position +
+                aimDirection * holdDistance +
+                Vector3.up * holdHeight;
             transform.rotation = Quaternion.LookRotation(aimDirection, Vector3.up);
-        }
-
-        private void TryManualReload()
-        {
-            if (!allowManualReload || isReloading || chamber == null)
-            {
-                return;
-            }
-
-            if (player.ReloadPressedThisFrame && chamber.RemainingCount < faceCount)
-            {
-                BeginReload();
-            }
         }
 
         private void TryFire()
         {
-            if (muzzle == null || chamber == null)
+            if (player == null || muzzle == null || runtime == null || shotPipeline == null ||
+                !player.FireHeld)
             {
                 return;
             }
 
-            if (!player.FireHeld || isReloading || Time.time < nextShotTime)
+            DiceRevolverDrawResult draw = runtime.TryBeginShot(Time.time);
+            if (draw.Status == DiceRevolverDrawStatus.ReloadStarted)
+            {
+                NotifyReloadStarted();
+            }
+
+            if (draw.Status != DiceRevolverDrawStatus.Fired)
             {
                 return;
             }
 
-            if (!chamber.TryDrawFace(out int face))
-            {
-                BeginReload();
-                return;
-            }
-
-            nextShotTime = Time.time + 1f / shotsPerSecond;
             if (loadout == null)
             {
                 loadout = GetComponentInParent<DiceFaceLoadout>();
             }
 
-            DiceFaceConfigurationSnapshot configuration = loadout != null
-                ? loadout.GetSnapshot(face)
+            DiceFaceConfigurationSnapshot snapshot = loadout != null
+                ? loadout.GetSnapshot(draw.Face)
                 : default;
-
             Vector3 shotOrigin = muzzle.position;
             Quaternion shotRotation = muzzle.rotation;
-            if (aimRig != null && aimRig.TryGetShotPose(out Vector3 rigOrigin, out Quaternion rigRotation))
+            if (aimRig != null &&
+                aimRig.TryGetShotPose(out Vector3 rigOrigin, out Quaternion rigRotation))
             {
                 shotOrigin = rigOrigin;
                 shotRotation = rigRotation;
@@ -176,100 +204,44 @@ namespace DiceRevolver.Prototype
             }
 
             shotDirection.Normalize();
-            DiceFaceActivation activation = null;
-            activation = new DiceFaceActivation(
-                face,
-                configuration,
+            shotPipeline.ExecuteShot(
+                draw.Face,
+                snapshot,
                 shotOrigin,
                 shotDirection,
-                (delaySeconds, callback) =>
-                    eventTimeScheduler.Schedule(Time.time, delaySeconds, callback),
-                request => SpawnActivationProjectile(activation, request),
-                requestedFace =>
-                {
-                    if (requestedFace != 4 || chamber == null || chamber.ContainsFace(4))
-                    {
-                        return false;
-                    }
+                Mathf.Max(1, eventBudgetPerActivation),
+                shot => FireStarted?.Invoke(shot),
+                shot => FireEnded?.Invoke(shot));
 
-                    return chamber.TryRefillFace(4) && chamber.TryForceNextFace(4);
-                },
-                Debug.LogWarning);
-
-            DiceRevolverShotContext faceTrigger = new DiceRevolverShotContext(
-                face,
-                shotOrigin,
-                shotDirection,
-                null,
-                configuration,
-                default,
-                null,
-                null,
-                activation,
-                false);
-            BulletEventContext eventContext = CreateEventContext(
-                activation,
-                faceTrigger,
-                null,
-                shotOrigin);
-
-            FireStarted?.Invoke(faceTrigger);
-            TriggerEffect(configuration.GetEffect(DiceFaceSlotType.Base), eventContext);
-            TriggerEffect(configuration.GetEffect(DiceFaceSlotType.OnFire), eventContext);
-            FireEnded?.Invoke(faceTrigger);
-            TriggerEffect(configuration.GetEffect(DiceFaceSlotType.OnFireEnd), eventContext);
-
-            if (chamber.IsEmpty && automaticReloadWhenEmpty)
+            DiceRevolverRuntimeUpdate completion = runtime.CompleteShot(Time.time);
+            if (completion.ReloadStarted)
             {
-                BeginReload();
+                NotifyReloadStarted();
             }
         }
 
-        public Projectile SpawnConfiguredProjectile(DiceRevolverShotContext shot, bool allowTriggeredEffects)
-        {
-            if (shot == null)
-            {
-                return null;
-            }
-
-            Projectile prefab = shot.ProjectilePrefab != null ? shot.ProjectilePrefab : projectilePrefab;
-            Quaternion rotation = GetShotRotation(shot.Direction, transform.rotation);
-            Projectile spawned = SpawnProjectile(
-                shot.Origin,
-                shot.Direction,
-                rotation,
-                prefab,
-                shot.Stats,
-                shot.Configuration.HasAnyEntry);
-            if (spawned != null)
-            {
-                BridgeProjectileHit(spawned, shot, allowTriggeredEffects);
-            }
-
-            return spawned;
-        }
-
-        private Projectile SpawnActivationProjectile(
+        private void SpawnActivationProjectile(
             DiceFaceActivation activation,
             ProjectileSpawnRequest request)
         {
             ProjectileDefinition definition = request.Definition;
             Projectile prefab = definition != null ? definition.ProjectilePrefab : null;
-            if (activation == null || prefab == null)
+            if (activation == null || definition == null || prefab == null)
             {
-                Debug.LogWarning("Projectile spawn skipped because its definition or runtime prefab is missing.", definition);
-                return null;
+                Debug.LogWarning(
+                    "Projectile spawn skipped because its definition or runtime prefab is missing.",
+                    definition);
+                return;
             }
 
             ProjectileRuntimeStats stats = definition.BuildRuntimeStats();
             Quaternion rotation = GetShotRotation(request.Direction, transform.rotation);
-            Projectile projectile = SpawnProjectile(
-                request.Origin,
-                request.Direction,
-                rotation,
-                prefab,
-                stats,
-                true);
+            Vector3 origin = request.Origin;
+            origin.y = 0f;
+            Projectile projectile = Instantiate(prefab, origin, rotation);
+            projectile.Configure(stats);
+            projectile.Launch(request.Direction, ownerCollider);
+
             DiceRevolverShotContext shot = new DiceRevolverShotContext(
                 activation.Face,
                 request.Origin,
@@ -281,59 +253,12 @@ namespace DiceRevolver.Prototype
                 definition,
                 activation,
                 request.CanTriggerHitEffects);
-            BridgeProjectileHit(projectile, shot, request.CanTriggerHitEffects);
-            return projectile;
-        }
-
-        private Projectile SpawnProjectile(
-            Vector3 origin,
-            Vector3 direction,
-            Quaternion rotation,
-            Projectile prefab,
-            ProjectileRuntimeStats stats,
-            bool applyStats)
-        {
-            if (prefab == null)
-            {
-                return null;
-            }
-
-            origin.y = 0f;
-            Projectile projectile = Instantiate(prefab, origin, rotation);
-            if (applyStats)
-            {
-                projectile.Configure(stats);
-            }
-
-            projectile.Launch(direction, ownerCollider);
-            return projectile;
-        }
-
-        private void BridgeProjectileHit(Projectile projectile, DiceRevolverShotContext shot, bool allowTriggeredEffects)
-        {
-            if (projectile == null)
-            {
-                return;
-            }
-
-            ProjectileHitReporter reporter = projectile.GetComponent<ProjectileHitReporter>();
-            if (reporter == null)
-            {
-                reporter = projectile.gameObject.AddComponent<ProjectileHitReporter>();
-            }
-
-            reporter.Hit += hitCollider =>
-            {
-                Vector3 hitPosition = projectile.transform.position;
-                DiceRevolverHitContext hit = new DiceRevolverHitContext(shot, hitCollider, hitPosition);
-                ProjectileHit?.Invoke(hit);
-                if (allowTriggeredEffects)
-                {
-                    TriggerEffect(
-                        shot.Configuration.GetEffect(DiceFaceSlotType.OnHit),
-                        CreateEventContext(shot.Activation, shot, hitCollider, hitPosition));
-                }
-            };
+            projectile.Hit += (hitCollider, hitPosition) =>
+                shotPipeline.HandleHit(
+                    shot,
+                    hitCollider,
+                    hitPosition,
+                    hit => ProjectileHit?.Invoke(hit));
         }
 
         private static Quaternion GetShotRotation(Vector3 direction, Quaternion fallback)
@@ -347,68 +272,9 @@ namespace DiceRevolver.Prototype
             return Quaternion.LookRotation(direction.normalized, Vector3.up);
         }
 
-        private BulletEventContext CreateEventContext(
-            DiceFaceActivation activation,
-            DiceRevolverShotContext shot,
-            Collider hitCollider,
-            Vector3 hitPosition)
+        private void NotifyReloadStarted()
         {
-            return new BulletEventContext(
-                activation,
-                shot,
-                hitCollider,
-                hitPosition);
-        }
-
-        private static void TriggerEffect(BulletEventEffect effect, BulletEventContext context)
-        {
-            if (effect == null || context.Activation == null || !context.Activation.TryConsumeEventBudget())
-            {
-                return;
-            }
-
-            try
-            {
-                effect.Trigger(context);
-            }
-            catch (Exception exception)
-            {
-                Debug.LogException(exception, effect);
-            }
-        }
-
-        private void BeginReload()
-        {
-            if (isReloading)
-            {
-                return;
-            }
-
-            isReloading = true;
-            reloadStartedAt = Time.time;
             ReloadStarted?.Invoke();
-        }
-
-        private void UpdateReload()
-        {
-            if (!isReloading)
-            {
-                ResetVisualRoot();
-                return;
-            }
-
-            float progress = Mathf.Clamp01((Time.time - reloadStartedAt) / ReloadDuration);
-            AnimateReload(progress);
-
-            if (progress < 1f)
-            {
-                return;
-            }
-
-            chamber.Reset();
-            isReloading = false;
-            ResetVisualRoot();
-            ReloadCompleted?.Invoke();
         }
 
         private void AnimateReload(float progress)
@@ -419,10 +285,10 @@ namespace DiceRevolver.Prototype
             }
 
             float blink = Mathf.PingPong(progress * reloadBlinkSpeed, 1f);
-
             if (reloadBlinkRenderer != null)
             {
-                reloadBlinkRenderer.color = Color.Lerp(reloadDimColor, reloadBlinkDefaultColor, blink);
+                reloadBlinkRenderer.color =
+                    Color.Lerp(reloadDimColor, reloadBlinkDefaultColor, blink);
             }
         }
 
