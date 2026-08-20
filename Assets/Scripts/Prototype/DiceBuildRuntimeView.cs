@@ -137,13 +137,21 @@ namespace DiceRevolver.Prototype
             Button button = owner.AddComponent<Button>();
             button.targetGraphic = owner.GetComponent<Image>();
             Text faceLabel = CreateText("Face", owner.transform, face.ToString(), 28, TextAnchor.UpperCenter,
-                new Vector2(0.05f, 0.72f), new Vector2(0.95f, 0.96f));
-            Text baseLabel = CreateSlotText("Base", owner.transform, new Vector2(0.05f, 0.54f), new Vector2(0.95f, 0.72f));
-            Text onFireLabel = CreateSlotText("OnFire", owner.transform, new Vector2(0.05f, 0.36f), new Vector2(0.95f, 0.54f));
-            Text onHitLabel = CreateSlotText("OnHit", owner.transform, new Vector2(0.05f, 0.18f), new Vector2(0.95f, 0.36f));
-            Text onFireEndLabel = CreateSlotText("OnFireEnd", owner.transform, new Vector2(0.05f, 0.02f), new Vector2(0.95f, 0.18f));
+                new Vector2(0.05f, 0.80f), new Vector2(0.95f, 0.96f));
+            Text baseLabel = CreateSlotText("Base", owner.transform, new Vector2(0.05f, 0.65f), new Vector2(0.95f, 0.80f));
+            Text onFireLabel = CreateSlotText("OnFire", owner.transform, new Vector2(0.05f, 0.50f), new Vector2(0.95f, 0.65f));
+            Text onHitLabel = CreateSlotText("OnHit", owner.transform, new Vector2(0.05f, 0.35f), new Vector2(0.95f, 0.50f));
+            Text onFireEndLabel = CreateSlotText("OnFireEnd", owner.transform, new Vector2(0.05f, 0.20f), new Vector2(0.95f, 0.35f));
+            Text passiveLabel = CreateSlotText("Passive", owner.transform, new Vector2(0.05f, 0.05f), new Vector2(0.95f, 0.20f));
             DiceBuildFaceSlotUI slot = owner.AddComponent<DiceBuildFaceSlotUI>();
-            slot.Configure(button, faceLabel, baseLabel, onFireLabel, onHitLabel, onFireEndLabel);
+            slot.Configure(
+                button,
+                faceLabel,
+                baseLabel,
+                onFireLabel,
+                onHitLabel,
+                onFireEndLabel,
+                passiveLabel);
         }
 
         private static Transform CreateEntryList(Transform parent)

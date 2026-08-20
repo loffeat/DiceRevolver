@@ -10,6 +10,7 @@ namespace DiceRevolver.Prototype
         [SerializeField, InspectorName("开火时事件")] private DiceFaceEntry onFireEntry;
         [SerializeField, InspectorName("命中时事件")] private DiceFaceEntry onHitEntry;
         [SerializeField, InspectorName("开火后事件")] private DiceFaceEntry onFireEndEntry;
+        [SerializeField, InspectorName("被动事件")] private DiceFaceEntry passiveEntry;
 
         public bool Equip(DiceFaceEntry entry)
         {
@@ -30,6 +31,7 @@ namespace DiceRevolver.Prototype
                 DiceFaceSlotType.OnFire => onFireEntry,
                 DiceFaceSlotType.OnHit => onHitEntry,
                 DiceFaceSlotType.OnFireEnd => onFireEndEntry,
+                DiceFaceSlotType.Passive => passiveEntry,
                 _ => null
             };
         }
@@ -41,6 +43,7 @@ namespace DiceRevolver.Prototype
                 onFireEntry,
                 onHitEntry,
                 onFireEndEntry,
+                passiveEntry,
                 legacyBaseEffect);
         }
 
@@ -60,6 +63,9 @@ namespace DiceRevolver.Prototype
                 case DiceFaceSlotType.OnFireEnd:
                     onFireEndEntry = entry;
                     break;
+                case DiceFaceSlotType.Passive:
+                    passiveEntry = entry;
+                    break;
             }
         }
     }
@@ -70,6 +76,7 @@ namespace DiceRevolver.Prototype
         private readonly DiceFaceEntry onFireEntry;
         private readonly DiceFaceEntry onHitEntry;
         private readonly DiceFaceEntry onFireEndEntry;
+        private readonly DiceFaceEntry passiveEntry;
         private readonly BulletEventEffect legacyBaseEffect;
 
         public DiceFaceConfigurationSnapshot(
@@ -78,11 +85,29 @@ namespace DiceRevolver.Prototype
             DiceFaceEntry onHitEntry,
             DiceFaceEntry onFireEndEntry,
             BulletEventEffect legacyBaseEffect = null)
+            : this(
+                baseEntry,
+                onFireEntry,
+                onHitEntry,
+                onFireEndEntry,
+                null,
+                legacyBaseEffect)
+        {
+        }
+
+        public DiceFaceConfigurationSnapshot(
+            DiceFaceEntry baseEntry,
+            DiceFaceEntry onFireEntry,
+            DiceFaceEntry onHitEntry,
+            DiceFaceEntry onFireEndEntry,
+            DiceFaceEntry passiveEntry,
+            BulletEventEffect legacyBaseEffect = null)
         {
             this.baseEntry = baseEntry;
             this.onFireEntry = onFireEntry;
             this.onHitEntry = onHitEntry;
             this.onFireEndEntry = onFireEndEntry;
+            this.passiveEntry = passiveEntry;
             this.legacyBaseEffect = legacyBaseEffect;
         }
 
@@ -94,6 +119,7 @@ namespace DiceRevolver.Prototype
                 DiceFaceSlotType.OnFire => onFireEntry,
                 DiceFaceSlotType.OnHit => onHitEntry,
                 DiceFaceSlotType.OnFireEnd => onFireEndEntry,
+                DiceFaceSlotType.Passive => passiveEntry,
                 _ => null
             };
         }
@@ -109,17 +135,24 @@ namespace DiceRevolver.Prototype
             return slotType == DiceFaceSlotType.Base ? legacyBaseEffect : null;
         }
 
+        public PassiveEventEffect GetPassiveEffect()
+        {
+            return passiveEntry != null ? passiveEntry.PassiveEffect : null;
+        }
+
         public DiceFaceEntry FirstEntry =>
             baseEntry != null ? baseEntry :
             onFireEntry != null ? onFireEntry :
             onHitEntry != null ? onHitEntry :
-            onFireEndEntry;
+            onFireEndEntry != null ? onFireEndEntry :
+            passiveEntry;
 
         public bool HasAnyEffect =>
             GetEffect(DiceFaceSlotType.Base) != null ||
             GetEffect(DiceFaceSlotType.OnFire) != null ||
             GetEffect(DiceFaceSlotType.OnHit) != null ||
-            GetEffect(DiceFaceSlotType.OnFireEnd) != null;
+            GetEffect(DiceFaceSlotType.OnFireEnd) != null ||
+            GetPassiveEffect() != null;
 
         public bool HasAnyEntry => FirstEntry != null;
 
@@ -136,6 +169,12 @@ namespace DiceRevolver.Prototype
                 DiceFaceSlotType.OnFire => new DiceFaceConfigurationSnapshot(null, entry, null, null),
                 DiceFaceSlotType.OnHit => new DiceFaceConfigurationSnapshot(null, null, entry, null),
                 DiceFaceSlotType.OnFireEnd => new DiceFaceConfigurationSnapshot(null, null, null, entry),
+                DiceFaceSlotType.Passive => new DiceFaceConfigurationSnapshot(
+                    null,
+                    null,
+                    null,
+                    null,
+                    entry),
                 _ => default
             };
         }

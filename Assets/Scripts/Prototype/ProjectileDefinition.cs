@@ -16,6 +16,9 @@ namespace DiceRevolver.Prototype
         [Header("弹幕属性")]
         [SerializeField, InspectorName("弹幕类型")] private string projectileType = "Default";
         [SerializeField, InspectorName("弹幕标签")] private string projectileTag = "Default";
+        [SerializeField, InspectorName("弹幕类型资源")] private ProjectileTypeDefinition projectileTypeDefinition;
+        [SerializeField, InspectorName("弹幕标签资源")]
+        private ProjectileTagDefinition[] projectileTags = Array.Empty<ProjectileTagDefinition>();
         [SerializeField, InspectorName("弹幕伤害")] private float damage = 1f;
         [SerializeField, InspectorName("飞行距离")] private float flightDistance = 18f;
         [SerializeField, InspectorName("飞行速度")] private float flightSpeed = 18f;
@@ -28,6 +31,9 @@ namespace DiceRevolver.Prototype
         public string DisplayName => displayName;
         public Projectile ProjectilePrefab => projectilePrefab;
         public bool DefaultAttackEffect => defaultAttackEffect;
+        public ProjectileTypeDefinition ProjectileTypeDefinition => projectileTypeDefinition;
+        public IReadOnlyList<ProjectileTagDefinition> ProjectileTags =>
+            projectileTags ?? Array.Empty<ProjectileTagDefinition>();
         public IReadOnlyList<ProjectileExtensionPort> ExtensionPorts =>
             extensionPorts ?? Array.Empty<ProjectileExtensionPort>();
 
@@ -36,6 +42,8 @@ namespace DiceRevolver.Prototype
             return new ProjectileRuntimeStats(
                 projectileType,
                 projectileTag,
+                projectileTypeDefinition,
+                projectileTags,
                 damage,
                 flightDistance,
                 flightSpeed,

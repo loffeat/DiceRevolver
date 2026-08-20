@@ -27,6 +27,8 @@
 
 **Files:**
 - Create: `Assets/Scripts/Prototype/PassiveEventEffect.cs`
+- Create: `Assets/Scripts/Prototype/PassiveBindingContext.cs`
+- Create: `Assets/Scripts/Prototype/IDicePassiveEffectRuntime.cs`
 - Create: `Assets/Scripts/Prototype/ProjectileTypeDefinition.cs`
 - Create: `Assets/Scripts/Prototype/ProjectileTagDefinition.cs`
 - Create: `Assets/Scripts/Prototype/ProjectileTypeLibrary.cs`
@@ -49,7 +51,7 @@
 - Produces: `ProjectileTypeDefinition`, `ProjectileTagDefinition`, and `ProjectileRuntimeStats.HasTag(ProjectileTagDefinition)`.
 - Preserves: legacy `ProjectileRuntimeStats.ProjectileType` and `ProjectileTag` string accessors until all existing callers migrate.
 
-- [ ] **Step 1: Write failing five-slot and identity tests**
+- [x] **Step 1: Write failing five-slot and identity tests**
 
 ```csharp
 [Test]
@@ -75,13 +77,13 @@ public void RuntimeStatsCompareTypeIdentityAndMultipleTagIdentity()
 }
 ```
 
-- [ ] **Step 2: Run the focused tests and verify RED**
+- [x] **Step 2: Run the focused tests and verify RED**
 
 Run Unity EditMode filters `DiceFacePassiveSlotTests;ProjectileIdentityTests;DiceBuildUITests`.
 
 Expected: compile/test failure because Passive slot, passive factory, type identity, and tag collection do not exist.
 
-- [ ] **Step 3: Implement the data interfaces and migration-safe fields**
+- [x] **Step 3: Implement the data interfaces and migration-safe fields**
 
 ```csharp
 public abstract class PassiveEventEffect : ScriptableObject
@@ -104,7 +106,7 @@ public sealed class ProjectileTagDefinition : ScriptableObject
 
 Add `passiveEntry` after the existing four serialized entries. Add `projectileTypeDefinition` and `projectileTags` after the existing string fields. `BuildRuntimeStats()` passes both legacy and identity data; no existing numeric field is rewritten.
 
-- [ ] **Step 4: Add the fifth UI label and update snapshot helpers**
+- [x] **Step 4: Add the fifth UI label and update snapshot helpers**
 
 `DiceBuildFaceSlotUI.SetConfiguration` must call:
 
@@ -114,11 +116,11 @@ SetSlotLabel(passiveLabel, DiceFaceSlotType.Passive, configuration);
 
 `DiceFaceConfigurationSnapshot.FirstEntry`, `HasAnyEntry`, `FromEntry`, `GetEntry`, and label conversion must include Passive without changing active execution order.
 
-- [ ] **Step 5: Run focused tests and verify GREEN**
+- [x] **Step 5: Run focused tests and verify GREEN**
 
 Expected: all Task 1 filters pass; legacy four-slot tests remain green.
 
-- [ ] **Step 6: Commit Task 1**
+- [x] **Step 6: Commit Task 1**
 
 ```powershell
 git add Assets/Scripts/Prototype Assets/Tests/EditMode
@@ -189,8 +191,8 @@ git commit -m "feat: implement projectile enemy piercing"
 
 **Files:**
 - Create: `Assets/Scripts/Prototype/DicePassiveRuntime.cs`
-- Create: `Assets/Scripts/Prototype/PassiveBindingContext.cs`
-- Create: `Assets/Scripts/Prototype/IDicePassiveEffectRuntime.cs`
+- Modify: `Assets/Scripts/Prototype/PassiveBindingContext.cs`
+- Modify: `Assets/Scripts/Prototype/IDicePassiveEffectRuntime.cs`
 - Create: `Assets/Scripts/Prototype/FinisherPassiveEffect.cs`
 - Modify: `Assets/Scripts/Prototype/DiceRevolverRuntime.cs`
 - Modify: `Assets/Scripts/Prototype/DiceRevolverGun.cs`

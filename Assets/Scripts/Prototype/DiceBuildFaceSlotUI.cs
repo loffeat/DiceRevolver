@@ -12,6 +12,7 @@ namespace DiceRevolver.Prototype
         [SerializeField] private Text onFireLabel;
         [SerializeField] private Text onHitLabel;
         [SerializeField] private Text onFireEndLabel;
+        [SerializeField] private Text passiveLabel;
 
         private int face;
         private Action<int> clicked;
@@ -23,7 +24,8 @@ namespace DiceRevolver.Prototype
             Text configuredBaseLabel,
             Text configuredOnFireLabel,
             Text configuredOnHitLabel,
-            Text configuredOnFireEndLabel)
+            Text configuredOnFireEndLabel,
+            Text configuredPassiveLabel = null)
         {
             button = configuredButton;
             faceLabel = configuredFaceLabel;
@@ -31,6 +33,7 @@ namespace DiceRevolver.Prototype
             onFireLabel = configuredOnFireLabel;
             onHitLabel = configuredOnHitLabel;
             onFireEndLabel = configuredOnFireEndLabel;
+            passiveLabel = configuredPassiveLabel;
             isWired = false;
             EnsureButtonWired();
         }
@@ -78,6 +81,7 @@ namespace DiceRevolver.Prototype
             SetSlotLabel(onFireLabel, DiceFaceSlotType.OnFire, configuration);
             SetSlotLabel(onHitLabel, DiceFaceSlotType.OnHit, configuration);
             SetSlotLabel(onFireEndLabel, DiceFaceSlotType.OnFireEnd, configuration);
+            SetSlotLabel(passiveLabel, DiceFaceSlotType.Passive, configuration);
         }
 
         private static void SetSlotLabel(
