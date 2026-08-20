@@ -71,6 +71,22 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void EmptyDrawDoesNotBypassCompleteShotToStartAutomaticReload()
+        {
+            DiceRevolverRuntime runtime = new DiceRevolverRuntime(100f, 2f, true, true);
+
+            for (int i = 0; i < DiceRevolverRules.FaceCount; i++)
+                runtime.TryBeginShot(i * 0.02f);
+
+            DiceRevolverDrawResult emptyDraw = runtime.TryBeginShot(1f);
+
+            Assert.That(emptyDraw.Status, Is.EqualTo(DiceRevolverDrawStatus.Empty));
+            Assert.That(runtime.IsReloading, Is.False);
+            Assert.That(runtime.CompleteShot(1f).ReloadStarted, Is.True);
+            Assert.That(runtime.IsReloading, Is.True);
+        }
+
+        [Test]
         public void ManualReloadOnlyStartsWhenChamberIsNotFull()
         {
             DiceRevolverRuntime runtime = new(5f, 2f, true, true);

@@ -64,18 +64,23 @@
 
 - `Assets/Scripts/Prototype/DiceRevolverRules.cs`
 - `Assets/Scripts/Prototype/DiceRevolverRuntime.cs`
+- `Assets/Scripts/Prototype/DiceRevolverAmmoFace.cs`
 - `Assets/Scripts/Prototype/DiceShotPipeline.cs`
 - `Assets/Scripts/Prototype/DiceRevolverGun.cs`
 - `Assets/Scripts/Prototype/Projectile.cs`
 - `Assets/Tests/EditMode/DiceRevolverRuntimeTests.cs`
+- `Assets/Tests/EditMode/DiceRevolverRulesTests.cs`
 - `Assets/Tests/EditMode/DiceRevolverGunIntegrationTests.cs`
 - `Assets/Tests/EditMode/DiceRevolverCoreAssetMigrationTests.cs`
 - `Assets/Prefab/Player.prefab`
 - `Assets/Prefab/TestRobot.prefab`
 - `.project-context/project/PROJECT.md`
+- `.project-context/project/ENVIRONMENT.md`
 - `.project-context/project/STATUS.md`
 - `.project-context/project/workstreams/2026-08-20-dice-revolver-core-refactor/STATE.md`
 - `.project-context/project/workstreams/2026-08-20-dice-revolver-core-refactor/HANDOFF.md`
+- `docs/superpowers/plans/2026-08-20-dice-revolver-core-refactor.md`
+- `.superpowers/sdd/2026-08-20-dice-revolver-core-refactor/final-fix-report.md`
 
 ## 验证记录
 
@@ -92,6 +97,12 @@
 - [passed] `2026-08-20`：项目上下文检查返回 `[context:ok]`；`git diff --check` 无错误。
 - [passed] `2026-08-20`：提交前 `git status --short` 只包含本任务的 5 个测试/上下文文件。
 - [not-run] `2026-08-20`：可见 PlayMode 人工验收未运行，不声称手感已验收。
+- [failed] `2026-08-20`：终审 AmmoFace 行为测试在受控 mutation 将唯一规则源临时改为 `7`、保留旧 HUD 上界 `6` 时为 `0/1`（期望 `7`、实际 `6`）；随后恢复固定六面规则并接入唯一规则源。
+- [passed] `2026-08-20`：终审受影响 Rules/Runtime/Gun EditMode `26/26`，0 失败、0 跳过。
+- [passed] `2026-08-20`：终审核心七组 EditMode `58/58`，0 失败、0 跳过；结果为 `Logs/final-fix-core-focused.xml`。
+- [failed] `2026-08-20`：终审修复后完整 EditMode `171/172`，0 跳过；唯一失败仍为具名 Ground Y `-0.01` 豁免项，没有新增失败；结果为 `Logs/final-fix-full.xml`。
+- [passed] `2026-08-20`：终审项目上下文检查返回 `[context:ok]`；`git diff --check` 无空白错误；生产固定六面扫描只剩唯一规则定义，旧 `DiceRevolverDrawStatus.ReloadStarted` 引用为 0。
+- [not-run] `2026-08-20`：可见 PlayMode 人工验收仍未运行，不声称手感已验收。
 
 ## 相关资料
 

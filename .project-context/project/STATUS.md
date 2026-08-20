@@ -15,7 +15,7 @@
 - 左轮机械状态与骰面事件流程已分别收敛到 `DiceRevolverRuntime` 和 `DiceShotPipeline`；`DiceRevolverGun` 只保留 Unity 输入、姿态、实例化与事件适配，旧 `DiceChamber` 已删除。
 - 六个骰面均绑定基础左轮子弹生成事件；基础子弹视觉通过独立包装引用 `fire_1.prefab`，附加弹默认不回触命中事件。
 - `fire_1.prefab` 原材质引用的 Shader 资源实际缺失；`ProjectileVisualWrapper` 现在只对错误 Shader 使用项目内透明粒子 Shader 兼容包装，不修改原始特效资源。
-- 玩家、测试靶、弹丸和 Ground 统一使用世界 `Y=0` 玩法平面；玩家移动不再依赖重力或地面 Collider。
+- 玩家、测试靶和弹丸使用世界 `Y=0` 玩法平面，Ground 当前视觉高度为 `Y=-0.01`；玩家移动不再依赖重力或地面 Collider。
 - Ground 已改为 `Background` Sorting Layer 的平铺 SpriteRenderer；基础弹丸粒子包装默认使用 `projectile` Sorting Layer。
 - AimRoot 运行时具有最低渲染平面保护，玩家根节点为 `Y=0` 时手臂不会落入 Ground 下方；基础左轮弹丸视觉缩放为 `0.4`。
 - 换弹视觉只对 `ArmVisual` 做明暗闪烁，不再写入其位置或旋转。
@@ -62,8 +62,8 @@
 
 ## 最近项目级验证
 
-- [passed] `2026-08-20`：左轮核心重构分层聚焦 EditMode `56/56`，0 失败、0 跳过。
-- [failed] `2026-08-20`：完整 EditMode `169/170`，0 跳过；唯一失败为已获用户豁免的 `RenderingLayerContractTests.PrototypeSceneUsesZeroHeightSpriteGroundAndEntities`（Ground `-0.01`，测试期望 `0`），没有新增失败。
+- [passed] `2026-08-20`：左轮核心重构终审修复后分层聚焦 EditMode `58/58`，0 失败、0 跳过。
+- [failed] `2026-08-20`：终审修复后完整 EditMode `171/172`，0 跳过；唯一失败为已获用户豁免的 `RenderingLayerContractTests.PrototypeSceneUsesZeroHeightSpriteGroundAndEntities`（Ground `-0.01`，测试期望 `0`），没有新增失败。
 - [not-run] `2026-08-20`：左轮核心重构的可见 PlayMode 六发抽取、换弹、DoubleTap、BlastRound 与 LoadedFour 手感尚未人工验收。
 - [passed] `2026-08-20`：左轮 Gun/Runtime/Pipeline/Inspector 联合测试 `70/70`，0 失败、0 跳过。
 - [failed] `2026-08-20`：完整 EditMode `165/166`；唯一失败为已知 Ground Y `-0.01` 契约差异，已获本任务豁免。

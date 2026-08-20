@@ -3,7 +3,7 @@
 ## 当前状态
 
 - 自动化结构重构已完成：固定六面 Runtime、四阶段 Pipeline、Gun Unity 适配器和 Projectile 命中广播路径均已落地。
-- 最终分层聚焦 EditMode `56/56`；完整 EditMode `169/170`，唯一失败为用户明确豁免的 Ground Y 既有契约差异，没有新增失败。
+- 终审修复后分层聚焦 EditMode `58/58`；完整 EditMode `171/172`，唯一失败为用户明确豁免的 Ground Y 既有契约差异，没有新增失败。
 - 可见 PlayMode 战斗流程和手感仍为 `[not-run]`，不得声称已人工验收。
 
 ## 尚未完成
@@ -30,14 +30,15 @@
 
 ## 风险与不可假定事项
 
-- 完整回归不是全绿：真实状态必须保持 `[failed] 169/170`，唯一失败为 `RenderingLayerContractTests.PrototypeSceneUsesZeroHeightSpriteGroundAndEntities`。
+- 完整回归不是全绿：真实状态必须保持 `[failed] 171/172`，唯一失败为 `RenderingLayerContractTests.PrototypeSceneUsesZeroHeightSpriteGroundAndEntities`。
 - 雷电构筑的抽面约束、临时快照、元素反应和重复触发语义尚需设计确认。
 
 ## 最近验证
 
 - [failed] 抽面边界 mutation `0/1`，按预期捕获 `0..5` 错误集合；恢复后 `1/1` 通过。
-- [passed] Task 8 分层聚焦 EditMode `56/56`，0 失败、0 跳过。
-- [failed] 完整 EditMode `169/170`，0 跳过；唯一失败为已知 Ground Y `-0.01` 豁免项，没有新增失败。
+- [failed] AmmoFace 规则源 mutation `0/1`，按预期捕获旧 HUD 上界 `6` 与临时规则源 `7` 的分叉；恢复固定六面并修复后相关测试通过。
+- [passed] 终审核心分层聚焦 EditMode `58/58`，0 失败、0 跳过。
+- [failed] 完整 EditMode `171/172`，0 跳过；唯一失败为已知 Ground Y `-0.01` 豁免项，没有新增失败。
 - [not-run] 可见 PlayMode 战斗流程与手感人工验收。
 
 ## 首先读取

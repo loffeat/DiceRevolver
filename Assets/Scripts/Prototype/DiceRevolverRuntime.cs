@@ -8,8 +8,7 @@ namespace DiceRevolver.Prototype
         Fired,
         CoolingDown,
         Reloading,
-        Empty,
-        ReloadStarted
+        Empty
     }
 
     public readonly struct DiceRevolverDrawResult

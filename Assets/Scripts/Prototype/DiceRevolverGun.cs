@@ -169,11 +169,6 @@ namespace DiceRevolver.Prototype
             }
 
             DiceRevolverDrawResult draw = runtime.TryBeginShot(Time.time);
-            if (draw.Status == DiceRevolverDrawStatus.ReloadStarted)
-            {
-                NotifyReloadStarted();
-            }
-
             if (draw.Status != DiceRevolverDrawStatus.Fired)
             {
                 return;

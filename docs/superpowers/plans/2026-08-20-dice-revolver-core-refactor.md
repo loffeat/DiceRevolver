@@ -21,7 +21,7 @@
 - Player 与 TestRobot Prefab 只允许删除 `faceCount`、删除 `reloadDropDistance`、新增 `eventBudgetPerActivation: 32`；其余枪械数值、引用、Transform 和 Sorting Layer 不变。
 - 删除 `ProjectileHitReporter` 脚本、meta、Prefab 组件和 Builder 接线，不保留兼容壳。
 - 不实现任何雷电构筑，不新增全局事件总线、时间单例、对象池或阵营系统。
-- 每个任务遵循红—绿—重构；聚焦测试通过后才能提交。最终必须通过完整 EditMode 回归和项目上下文检查。
+- 每个任务遵循红—绿—重构；聚焦测试通过后才能提交。最终完整 EditMode 回归只允许具名已知的 `RenderingLayerContractTests.PrototypeSceneUsesZeroHeightSpriteGroundAndEntities` Ground Y 失败且不得新增失败，结果必须如实记为 `[failed]`；项目上下文检查必须通过。
 
 ## File Structure
 
@@ -185,7 +185,7 @@ public void CompleteShotChecksAutomaticReloadAfterLoadedFourCapability()
 }
 ```
 
-同一测试文件还必须覆盖：冷却时返回 `CoolingDown`、换弹中返回 `Reloading`、空膛返回并触发 `ReloadStarted`、手动换弹仅在未满膛时开始、换弹完成恢复六面、完成换弹的同一时间点允许射击。
+同一测试文件还必须覆盖：冷却时返回 `CoolingDown`、换弹中返回 `Reloading`、空膛返回 `Empty` 且不自行开始换弹、`CompleteShot` 是自动换弹唯一入口、手动换弹仅在未满膛时开始、换弹完成恢复六面、完成换弹的同一时间点允许射击。
 
 - [ ] **Step 2: 运行 Runtime 测试确认红灯**
 
@@ -203,8 +203,7 @@ public enum DiceRevolverDrawStatus
     Fired,
     CoolingDown,
     Reloading,
-    Empty,
-    ReloadStarted
+    Empty
 }
 
 public readonly struct DiceRevolverDrawResult
@@ -666,8 +665,6 @@ public float ReloadDuration
 
 ```csharp
 DiceRevolverDrawResult draw = runtime.TryBeginShot(Time.time);
-if (draw.Status == DiceRevolverDrawStatus.ReloadStarted)
-    NotifyReloadStarted();
 if (draw.Status != DiceRevolverDrawStatus.Fired)
     return;
 
@@ -858,7 +855,7 @@ Expected: 全部 PASS、`failed="0"`、`skipped="0"`。
 Select-String -LiteralPath .\Logs\core-refactor-full.xml -Pattern '<test-run '
 ```
 
-Expected: 全部测试通过、`failed="0"`、`skipped="0"`，总数不少于基线 `139`。
+Expected: 除具名已知的 `RenderingLayerContractTests.PrototypeSceneUsesZeroHeightSpriteGroundAndEntities` Ground Y 失败外不得有其他失败，`skipped="0"`，总数不少于基线 `139`；结果必须如实记录为 `[failed]`，不得暗示全绿。
 
 - [ ] **Step 4: 更新项目上下文为真实结果**
 
@@ -876,7 +873,7 @@ DiceRevolverRuntime 抽面/换弹 -> DiceShotPipeline 激活四槽位 -> DiceRev
 Projectile 命中广播 -> DiceShotPipeline OnHit -> Projectile 直接伤害
 ```
 
-STATE 记录每条实际测试命令和数量；仅在完整回归通过后改为 `completed`。HANDOFF 指向雷电构筑待办，并保留“PlayMode 手感尚需人工验收”。
+STATE 记录每条实际测试命令和数量；仅在完整回归没有新增失败、唯一失败仍为具名 Ground Y 豁免项时改为 `completed`，同时保持该回归为 `[failed]`。HANDOFF 指向雷电构筑待办，并保留“PlayMode 手感尚需人工验收”。
 
 - [ ] **Step 5: 验证上下文、diff 和工作区**
 

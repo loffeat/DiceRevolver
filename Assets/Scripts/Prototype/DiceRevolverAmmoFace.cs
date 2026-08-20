@@ -9,7 +9,7 @@ namespace DiceRevolver.Prototype
         public int FaceValue
         {
             get => faceValue;
-            set => faceValue = Mathf.Clamp(value, 1, 6);
+            set => faceValue = Mathf.Clamp(value, 1, DiceRevolverRules.FaceCount);
         }
     }
 }

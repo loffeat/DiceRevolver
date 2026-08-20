@@ -69,5 +69,5 @@ Unity Test Runner 完成后会自行退出，不要添加可能在测试开始�
 
 - 当前设备执行部分全仓库 Git 检查时，Git LFS clean filter 对 `.git/lfs/tmp` 返回访问被拒绝。源代码和上下文文本读写不受影响，但不能据此声称整个工作区干净。
 - 当前设备已确认可调用匹配项目版本的 Unity Editor `6000.3.10f1`；绝对安装路径属于设备本地信息，不写入共享资料。
-- `2026-08-20` Unity 6000.3.10f1 已成功连接许可证服务；最近一次 EditMode 全量回归为命中范围爆炸合入后的 `139/139`，0 失败、0 跳过。
+- `2026-08-20` Unity 6000.3.10f1 已成功连接许可证服务；最近一次 EditMode 全量回归为 `[failed] 171/172`，0 跳过，唯一失败是已获用户豁免的 `RenderingLayerContractTests.PrototypeSceneUsesZeroHeightSpriteGroundAndEntities`（Ground 实际 `Y=-0.01`、测试期望 `0`），没有新增失败。
 - 完整 PlayMode 战斗流程仍未运行。
