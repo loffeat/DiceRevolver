@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace DiceRevolver.Prototype
@@ -22,6 +23,7 @@ namespace DiceRevolver.Prototype
         public float Damage => damage;
         public int EnemyPierceCount => enemyPierceCount;
         public Transform OwnerTransform { get; private set; }
+        public event Action<Collider, Vector3> Hit;
 
         private void Awake()
         {
@@ -82,8 +84,10 @@ namespace DiceRevolver.Prototype
                 return;
             }
 
+            Vector3 hitPosition = transform.position;
+            Hit?.Invoke(other, hitPosition);
             IDamageReceiver receiver = other.GetComponentInParent<IDamageReceiver>();
-            receiver?.ReceiveDamage(new DamageInfo(damage, transform.position, gameObject));
+            receiver?.ReceiveDamage(new DamageInfo(damage, hitPosition, gameObject));
             Destroy(gameObject);
         }
 
