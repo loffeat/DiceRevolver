@@ -410,6 +410,7 @@ namespace DiceRevolver.Prototype
 
         private void NotifyReloadStarted()
         {
+            shotPipeline?.ClearForReload();
             passiveRuntime?.NotifyReloadStarted();
             ReloadStarted?.Invoke();
         }

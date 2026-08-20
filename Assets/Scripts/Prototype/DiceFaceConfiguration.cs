@@ -156,6 +156,18 @@ namespace DiceRevolver.Prototype
 
         public bool HasAnyEntry => FirstEntry != null;
 
+        public DiceFaceConfigurationSnapshot MergeActiveOverlay(
+            DiceFaceActiveOverlay overlay)
+        {
+            return new DiceFaceConfigurationSnapshot(
+                overlay.BaseEntry != null ? overlay.BaseEntry : baseEntry,
+                overlay.OnFireEntry != null ? overlay.OnFireEntry : onFireEntry,
+                overlay.OnHitEntry != null ? overlay.OnHitEntry : onHitEntry,
+                overlay.OnFireEndEntry != null ? overlay.OnFireEndEntry : onFireEndEntry,
+                passiveEntry,
+                legacyBaseEffect);
+        }
+
         public static DiceFaceConfigurationSnapshot FromEntry(DiceFaceEntry entry)
         {
             if (entry == null)

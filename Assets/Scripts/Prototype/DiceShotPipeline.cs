@@ -15,6 +15,8 @@ namespace DiceRevolver.Prototype
         private OwnedProjectileRegistry ownedProjectiles;
         private Func<ProjectileHandle, IReadOnlyList<ProjectileHandle>, LightningChainDefinition, bool>
             requestLightningChain;
+        private DiceFaceActiveOverlay pendingNormalShotOverlay;
+        private bool hasPendingNormalShotOverlay;
 
         public DiceShotPipeline(
             Func<float> currentTime,
@@ -105,6 +107,13 @@ namespace DiceRevolver.Prototype
             Action<DiceRevolverShotContext> fireStarted,
             Action<DiceRevolverShotContext> fireEnded)
         {
+            if (!isBonusActivation && hasPendingNormalShotOverlay)
+            {
+                configuration = configuration.MergeActiveOverlay(pendingNormalShotOverlay);
+                pendingNormalShotOverlay = default;
+                hasPendingNormalShotOverlay = false;
+            }
+
             DiceFaceActivation activation = null;
             activation = new DiceFaceActivation(
                 face,
@@ -121,6 +130,7 @@ namespace DiceRevolver.Prototype
                 isBonusActivation,
                 suppressedPassiveInstanceId);
             activation.ConfigureLightningServices(ownedProjectiles, requestLightningChain);
+            activation.ConfigureOverlayService(QueueNextShotOverlay);
             DiceRevolverShotContext faceTrigger = new DiceRevolverShotContext(
                 face,
                 origin,
@@ -157,6 +167,19 @@ namespace DiceRevolver.Prototype
             requestLightningChain = chainRequest;
         }
 
+        public void QueueNextShotOverlay(DiceFaceActiveOverlay overlay)
+        {
+            if (overlay.IsEmpty)
+            {
+                return;
+            }
+
+            pendingNormalShotOverlay = hasPendingNormalShotOverlay
+                ? pendingNormalShotOverlay.Merge(overlay)
+                : overlay;
+            hasPendingNormalShotOverlay = true;
+        }
+
         public void HandleHit(
             DiceRevolverShotContext shot,
             Collider hitCollider,
@@ -182,7 +205,14 @@ namespace DiceRevolver.Prototype
 
         public void Clear()
         {
+            ClearForReload();
+        }
+
+        public void ClearForReload()
+        {
             scheduler.Clear();
+            pendingNormalShotOverlay = default;
+            hasPendingNormalShotOverlay = false;
         }
 
         private void TriggerEffect(BulletEventEffect effect, BulletEventContext context)

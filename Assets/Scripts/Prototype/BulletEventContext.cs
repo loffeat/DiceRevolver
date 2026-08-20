@@ -86,5 +86,10 @@ namespace DiceRevolver.Prototype
             return Activation != null &&
                 Activation.RequestLightningChain(origin, targets, definition);
         }
+
+        public bool QueueNextShotOverlay(DiceFaceActiveOverlay overlay)
+        {
+            return Activation != null && Activation.QueueNextShotOverlay(overlay);
+        }
     }
 }

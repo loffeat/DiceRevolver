@@ -464,19 +464,19 @@ git commit -m "feat: add echo synergy passive shots"
 - Produces: `DiceFaceConfigurationSnapshot.MergeActiveOverlay(DiceFaceActiveOverlay overlay)`.
 - Passive entry is not a member of `DiceFaceActiveOverlay`.
 
-- [ ] **Step 1: Write failing overlay tests**
+- [x] **Step 1: Write failing overlay tests**
 
 Use source `[Base=A, OnFire=B, OnHit=null, OnFireEnd=Chain]` and target `[Base=X, OnFire=null, OnHit=Y, OnFireEnd=Z]`; assert final `[A, B, Y, Z]`, target Passive unchanged, actual target face consumed, and Loadout unchanged.
 
 Also assert later non-empty queued overlays win, empty slots never erase, one-shot consumption, and reload clear.
 
-- [ ] **Step 2: Run ChainReaction/Pipeline filters and verify RED**
+- [x] **Step 2: Run ChainReaction/Pipeline filters and verify RED**
 
-- [ ] **Step 3: Implement active-only immutable overlay**
+- [x] **Step 3: Implement active-only immutable overlay**
 
 The effect builds the overlay after excluding its own OnFireEnd entry. Pipeline merges queued overlays in order immediately before executing the next normal shot, then clears the queue. Bonus activations do not consume the pending normal-shot overlay.
 
-- [ ] **Step 4: Run focused tests and verify GREEN**
+- [x] **Step 4: Run focused tests and verify GREEN**
 
 - [ ] **Step 5: Commit Task 8**
 

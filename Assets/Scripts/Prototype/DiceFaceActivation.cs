@@ -37,6 +37,7 @@ namespace DiceRevolver.Prototype
         private readonly Action<string> warningAction;
         private Func<ProjectileHandle, IReadOnlyList<ProjectileHandle>, LightningChainDefinition, bool>
             lightningChainAction;
+        private Action<DiceFaceActiveOverlay> queueNextShotOverlayAction;
 
         public DiceFaceActivation(
             int face,
@@ -161,6 +162,22 @@ namespace DiceRevolver.Prototype
                 targets != null &&
                 targets.Count > 0 &&
                 lightningChainAction.Invoke(origin, targets, definition);
+        }
+
+        public void ConfigureOverlayService(Action<DiceFaceActiveOverlay> queueOverlay)
+        {
+            queueNextShotOverlayAction = queueOverlay;
+        }
+
+        public bool QueueNextShotOverlay(DiceFaceActiveOverlay overlay)
+        {
+            if (overlay.IsEmpty || queueNextShotOverlayAction == null)
+            {
+                return false;
+            }
+
+            queueNextShotOverlayAction.Invoke(overlay);
+            return true;
         }
 
         public bool Schedule(float delaySeconds, Action callback)
