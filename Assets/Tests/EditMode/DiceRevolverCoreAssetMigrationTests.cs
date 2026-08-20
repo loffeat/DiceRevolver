@@ -83,6 +83,65 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void PlayerFallbackProjectilePrefabHasNoMissingComponentAndKeepsItsConfiguration()
+        {
+            GameObject playerPrefab = LoadPrefab(PlayerPrefabPath);
+            DiceRevolverGun gun = playerPrefab.GetComponentInChildren<DiceRevolverGun>(true);
+            SerializedObject serializedGun = new SerializedObject(gun);
+            Projectile projectile = ReadReference(serializedGun, "projectilePrefab") as Projectile;
+
+            Assert.That(projectile, Is.Not.Null);
+            Assert.That(
+                AssetDatabase.GetAssetPath(projectile),
+                Is.EqualTo(PrototypeProjectilePrefabPath));
+
+            GameObject prefab = projectile.gameObject;
+            Type[] componentTypes = prefab.GetComponents<Component>()
+                .Select(component => component?.GetType())
+                .ToArray();
+            Assert.That(
+                componentTypes,
+                Is.EqualTo(new[]
+                {
+                    typeof(Transform),
+                    typeof(MeshFilter),
+                    typeof(SphereCollider),
+                    typeof(MeshRenderer),
+                    typeof(Rigidbody),
+                    typeof(Projectile)
+                }));
+
+            AssertTransform(
+                prefab.transform,
+                Vector3.zero,
+                Quaternion.identity,
+                Vector3.one * 0.24f);
+            Assert.That(prefab.GetComponent<MeshFilter>().sharedMesh, Is.Not.Null);
+
+            MeshRenderer renderer = prefab.GetComponent<MeshRenderer>();
+            Assert.That(
+                AssetDatabase.GetAssetPath(renderer.sharedMaterial),
+                Is.EqualTo("Assets/Prototype_Bullet.mat"));
+            AssertSorting(renderer, "Default", 0);
+
+            SphereCollider collider = prefab.GetComponent<SphereCollider>();
+            Assert.That(collider.isTrigger, Is.True);
+            Assert.That(collider.radius, Is.EqualTo(0.5f));
+            Assert.That(collider.center, Is.EqualTo(Vector3.zero));
+
+            Rigidbody body = prefab.GetComponent<Rigidbody>();
+            Assert.That(body.useGravity, Is.False);
+            Assert.That(body.isKinematic, Is.True);
+            Assert.That(body.mass, Is.EqualTo(1f));
+            Assert.That(body.collisionDetectionMode, Is.EqualTo(CollisionDetectionMode.Discrete));
+
+            SerializedObject serializedProjectile = new SerializedObject(projectile);
+            Assert.That(RequiredProperty(serializedProjectile, "speed").floatValue, Is.EqualTo(18f));
+            Assert.That(RequiredProperty(serializedProjectile, "lifetime").floatValue, Is.EqualTo(1.6f));
+            Assert.That(typeof(Projectile).GetEvent(nameof(Projectile.Hit)), Is.Not.Null);
+        }
+
+        [Test]
         public void BasicProjectilePrefabUsesProjectileAsItsOnlyHitOwner()
         {
             GameObject prefab = LoadPrefab(BasicProjectilePrefabPath);
