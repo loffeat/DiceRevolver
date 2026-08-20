@@ -55,12 +55,15 @@ namespace DiceRevolver.Prototype
                 return stats.WithDamage(stats.Damage * (1f + stackCount * damagePerStack));
             }
 
-            public void OnProjectileSpawned(int sourceFace, ProjectileHandle projectile)
+            public bool OnProjectileSpawned(int sourceFace, ProjectileHandle projectile)
             {
                 if (lightningTag != null && projectile.Stats.HasTag(lightningTag))
                 {
                     stackCount++;
+                    return true;
                 }
+
+                return false;
             }
 
             public bool AllowsDraw(int face, IReadOnlyList<int> remainingFaces)

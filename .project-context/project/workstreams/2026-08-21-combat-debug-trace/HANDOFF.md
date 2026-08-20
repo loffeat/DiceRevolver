@@ -30,7 +30,8 @@
 ## 最近验证
 
 - [passed] Debug 聚焦回归 `107/107`。
-- [failed] 完整 EditMode `249/250`，仅有既有 Ground 高度契约失败。
+- [passed] 特斯拉、收尾者与 Debug 联合测试 `20/20`。
+- [failed] 完整 EditMode `251/252`，仅有既有 Ground 高度契约失败。
 - [not-run] 可见 PlayMode 人工验收。
 
 ## 首先读取

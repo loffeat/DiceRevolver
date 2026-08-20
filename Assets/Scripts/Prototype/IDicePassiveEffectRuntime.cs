@@ -25,7 +25,7 @@ namespace DiceRevolver.Prototype
 
     public interface IDiceProjectileSpawnObserver
     {
-        void OnProjectileSpawned(int sourceFace, ProjectileHandle projectile);
+        bool OnProjectileSpawned(int sourceFace, ProjectileHandle projectile);
     }
 
     public interface IDiceProjectileHitObserver

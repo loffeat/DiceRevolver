@@ -71,7 +71,8 @@
 ## 最近项目级验证
 
 - [passed] `2026-08-21`：战斗 Debug、枪械事件管线、被动和 UI 聚焦 EditMode `107/107`。
-- [failed] `2026-08-21`：战斗 Debug 完成后的完整 EditMode 为 `249/250`；唯一失败仍为既有 Ground `Y=-0.01` 契约差异，没有新增失败。
+- [passed] `2026-08-21`：特斯拉、收尾者与战斗 Debug 联合 EditMode `20/20`。
+- [failed] `2026-08-21`：战斗 Debug 完成后的完整 EditMode 为 `251/252`；唯一失败仍为既有 Ground `Y=-0.01` 契约差异，没有新增失败。
 - [not-run] `2026-08-21`：左上角 Debug 文本的可见 PlayMode 排版与事件密度验收。
 - [passed] `2026-08-21`：雷电资源、中文 Inspector、五槽位和 UI 联合 EditMode `65/65`，0 失败、0 跳过。
 - [failed] `2026-08-21`：雷电构筑完成后的完整 EditMode 为 `233/234`，0 跳过；唯一失败为已获豁免的 `RenderingLayerContractTests.PrototypeSceneUsesZeroHeightSpriteGroundAndEntities`（Ground `-0.01`，测试期望 `0`），没有新增失败。

@@ -93,6 +93,7 @@ namespace DiceRevolver.Prototype
                 message => Debug.LogWarning(message, this),
                 exception => Debug.LogException(exception, this));
             passiveRuntime.ConfigureBonusActivation(ExecuteBonusActivation);
+            passiveRuntime.ConfigureDebugTrace(debugTrace, () => Time.time);
             if (loadout != null)
             {
                 loadout.SlotChanged -= HandleLoadoutSlotChanged;
@@ -286,7 +287,7 @@ namespace DiceRevolver.Prototype
             projectile.Configure(stats);
             projectile.Launch(request.Direction, ownerCollider);
             ProjectileHandle handle = ownedProjectiles.Register(projectile, stats);
-            passiveRuntime?.NotifyProjectileSpawned(activation.Face, handle);
+            passiveRuntime?.NotifyProjectileSpawned(activation.Face, handle, activation);
 
             DiceRevolverShotContext shot = new DiceRevolverShotContext(
                 activation.Face,

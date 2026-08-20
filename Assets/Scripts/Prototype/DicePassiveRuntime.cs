@@ -24,6 +24,8 @@ namespace DiceRevolver.Prototype
         private readonly Action<string> warningLogger;
         private readonly Action<Exception> exceptionLogger;
         private Func<BonusDiceActivationRequest, bool> bonusActivationRequest;
+        private CombatDebugTrace debugTrace;
+        private Func<float> debugTime;
         private long nextInstanceId = 1;
         private bool warnedAboutEmptyCandidates;
 
@@ -72,7 +74,11 @@ namespace DiceRevolver.Prototype
                         RequestBonusActivation));
                 if (runtime != null)
                 {
-                    instances[index] = new PassiveInstance(face, instanceId, runtime);
+                    instances[index] = new PassiveInstance(
+                        face,
+                        instanceId,
+                        string.IsNullOrWhiteSpace(effect.name) ? effect.GetType().Name : effect.name,
+                        runtime);
                 }
             }
             catch (Exception exception)
@@ -91,6 +97,17 @@ namespace DiceRevolver.Prototype
             }
 
             int minimumPriority = FindMinimumPriority(remainingFaces);
+            for (int index = 0; index < instances.Length; index++)
+            {
+                PassiveInstance instance = instances[index];
+                if (instance != null &&
+                    ContainsFace(remainingFaces, instance.Face) &&
+                    GetDrawPriority(instance.Face) > minimumPriority)
+                {
+                    RecordPassive(instance, null, $"骰面 {instance.Face} 保留到最后");
+                }
+            }
+
             List<int> candidates = new List<int>(remainingFaces.Count);
             for (int candidateIndex = 0; candidateIndex < remainingFaces.Count; candidateIndex++)
             {
@@ -181,16 +198,28 @@ namespace DiceRevolver.Prototype
 
         public void NotifyProjectileSpawned(int sourceFace, ProjectileHandle projectile)
         {
+            NotifyProjectileSpawned(sourceFace, projectile, null);
+        }
+
+        public void NotifyProjectileSpawned(
+            int sourceFace,
+            ProjectileHandle projectile,
+            DiceFaceActivation sourceActivation)
+        {
             for (int index = 0; index < instances.Length; index++)
             {
-                if (instances[index]?.Runtime is not IDiceProjectileSpawnObserver observer)
+                PassiveInstance instance = instances[index];
+                if (instance?.Runtime is not IDiceProjectileSpawnObserver observer)
                 {
                     continue;
                 }
 
                 try
                 {
-                    observer.OnProjectileSpawned(sourceFace, projectile);
+                    if (observer.OnProjectileSpawned(sourceFace, projectile))
+                    {
+                        RecordPassive(instance, sourceActivation, "雷电弹丸使本轮层数增加 1");
+                    }
                 }
                 catch (Exception exception)
                 {
@@ -203,6 +232,12 @@ namespace DiceRevolver.Prototype
             Func<BonusDiceActivationRequest, bool> request)
         {
             bonusActivationRequest = request;
+        }
+
+        public void ConfigureDebugTrace(CombatDebugTrace trace, Func<float> currentTime)
+        {
+            debugTrace = trace;
+            debugTime = currentTime;
         }
 
         public void NotifyProjectileHit(
@@ -361,9 +396,46 @@ namespace DiceRevolver.Prototype
             exceptionLogger?.Invoke(exception);
         }
 
+        private void RecordPassive(
+            PassiveInstance instance,
+            DiceFaceActivation sourceActivation,
+            string detail)
+        {
+            if (debugTrace == null || instance == null)
+            {
+                return;
+            }
+
+            float time = debugTime != null ? debugTime.Invoke() : 0f;
+            CombatDebugScope scope = sourceActivation != null && sourceActivation.DebugScope.IsValid
+                ? sourceActivation.DebugScope
+                : debugTrace.BeginActivation(instance.Face, false, default, time);
+            debugTrace.Record(
+                scope,
+                CombatDebugEventType.PassiveTriggered,
+                "被动",
+                instance.EffectName,
+                detail,
+                sourceActivation != null ? 1 : 0,
+                time);
+        }
+
         private static bool IsValidFace(int face)
         {
             return face >= 1 && face <= DiceRevolverRules.FaceCount;
+        }
+
+        private static bool ContainsFace(IReadOnlyList<int> faces, int face)
+        {
+            for (int index = 0; index < faces.Count; index++)
+            {
+                if (faces[index] == face)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private sealed class PassiveInstance
@@ -371,15 +443,18 @@ namespace DiceRevolver.Prototype
             public PassiveInstance(
                 int face,
                 long instanceId,
+                string effectName,
                 IDicePassiveEffectRuntime runtime)
             {
                 Face = face;
                 InstanceId = instanceId;
+                EffectName = effectName;
                 Runtime = runtime;
             }
 
             public int Face { get; }
             public long InstanceId { get; }
+            public string EffectName { get; }
             public IDicePassiveEffectRuntime Runtime { get; }
         }
     }
