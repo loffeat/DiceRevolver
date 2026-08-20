@@ -140,7 +140,7 @@ git commit -m "feat: add passive dice slot and projectile identities"
 - Consumes: `ProjectileRuntimeStats.EnemyPierceCount`.
 - Produces: one hit/damage per distinct `IDamageReceiver`, total receiver limit `EnemyPierceCount + 1`.
 
-- [ ] **Step 1: Write failing piercing tests**
+- [x] **Step 1: Write failing piercing tests**
 
 ```csharp
 [Test]
@@ -166,15 +166,15 @@ public void MultipleCollidersOnSameReceiverDoNotConsumePierceTwice()
 }
 ```
 
-- [ ] **Step 2: Run `ProjectilePiercingTests;ProjectileCollisionTests` and verify RED**
+- [x] **Step 2: Run `ProjectilePiercingTests;ProjectileCollisionTests` and verify RED**
 
 Expected: projectile destroys on first receiver and duplicate receiver protection is absent.
 
-- [ ] **Step 3: Implement receiver identity tracking and pierce consumption**
+- [x] **Step 3: Implement receiver identity tracking and pierce consumption**
 
 Use a `HashSet<IDamageReceiver>` and `remainingEnemyPierces`. Ignore already-hit receivers. A new receiver receives Hit broadcast and direct damage; destroy only when `remainingEnemyPierces == 0`, otherwise decrement and continue. A collider with no receiver destroys immediately.
 
-- [ ] **Step 4: Run focused tests and verify GREEN**
+- [x] **Step 4: Run focused tests and verify GREEN**
 
 Expected: new piercing tests and existing collision-order tests pass.
 

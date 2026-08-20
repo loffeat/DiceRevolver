@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DiceRevolver.Prototype
@@ -15,8 +16,10 @@ namespace DiceRevolver.Prototype
         private string projectileTag = "Default";
         private float damage = 1f;
         private int enemyPierceCount;
+        private int remainingEnemyPierces;
         private float despawnTime;
         private Collider projectileCollider;
+        private readonly HashSet<IDamageReceiver> damagedReceivers = new HashSet<IDamageReceiver>();
 
         public string ProjectileType => projectileType;
         public string ProjectileTag => projectileTag;
@@ -39,6 +42,8 @@ namespace DiceRevolver.Prototype
             runtimeSpeed = stats.FlightSpeed;
             runtimeLifetime = stats.FlightDistance / stats.FlightSpeed;
             enemyPierceCount = stats.EnemyPierceCount;
+            remainingEnemyPierces = enemyPierceCount;
+            damagedReceivers.Clear();
         }
 
         public void Launch(Vector3 launchDirection, Collider ownerCollider = null)
@@ -62,6 +67,8 @@ namespace DiceRevolver.Prototype
         private void OnEnable()
         {
             EnsureRuntimeDefaults();
+            remainingEnemyPierces = enemyPierceCount;
+            damagedReceivers.Clear();
             despawnTime = Time.time + runtimeLifetime;
         }
 
@@ -84,11 +91,29 @@ namespace DiceRevolver.Prototype
                 return;
             }
 
+            IDamageReceiver receiver = other.GetComponentInParent<IDamageReceiver>();
+            if (receiver == null)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            if (!damagedReceivers.Add(receiver))
+            {
+                return;
+            }
+
             Vector3 hitPosition = transform.position;
             Hit?.Invoke(other, hitPosition);
-            IDamageReceiver receiver = other.GetComponentInParent<IDamageReceiver>();
-            receiver?.ReceiveDamage(new DamageInfo(damage, hitPosition, gameObject));
-            Destroy(gameObject);
+            receiver.ReceiveDamage(new DamageInfo(damage, hitPosition, gameObject));
+
+            if (remainingEnemyPierces <= 0)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            remainingEnemyPierces--;
         }
 
         public static bool ShouldIgnoreCollision(Collider other)
