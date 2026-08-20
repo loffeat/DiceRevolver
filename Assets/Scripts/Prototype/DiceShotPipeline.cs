@@ -60,6 +60,51 @@ namespace DiceRevolver.Prototype
             Action<DiceRevolverShotContext> fireStarted,
             Action<DiceRevolverShotContext> fireEnded)
         {
+            return ExecuteActivation(
+                face,
+                configuration,
+                origin,
+                direction,
+                new DiceEventBudget(eventBudget),
+                false,
+                0,
+                fireStarted,
+                fireEnded);
+        }
+
+        public DiceFaceActivation ExecuteBonusShot(
+            int face,
+            DiceFaceConfigurationSnapshot configuration,
+            Vector3 origin,
+            Vector3 direction,
+            DiceEventBudget sharedEventBudget,
+            long suppressedPassiveInstanceId,
+            Action<DiceRevolverShotContext> fireStarted,
+            Action<DiceRevolverShotContext> fireEnded)
+        {
+            return ExecuteActivation(
+                face,
+                configuration,
+                origin,
+                direction,
+                sharedEventBudget,
+                true,
+                suppressedPassiveInstanceId,
+                fireStarted,
+                fireEnded);
+        }
+
+        private DiceFaceActivation ExecuteActivation(
+            int face,
+            DiceFaceConfigurationSnapshot configuration,
+            Vector3 origin,
+            Vector3 direction,
+            DiceEventBudget eventBudget,
+            bool isBonusActivation,
+            long suppressedPassiveInstanceId,
+            Action<DiceRevolverShotContext> fireStarted,
+            Action<DiceRevolverShotContext> fireEnded)
+        {
             DiceFaceActivation activation = null;
             activation = new DiceFaceActivation(
                 face,
@@ -72,7 +117,9 @@ namespace DiceRevolver.Prototype
                     : default,
                 refillAndForceNextFace,
                 logWarning,
-                eventBudget);
+                eventBudget,
+                isBonusActivation,
+                suppressedPassiveInstanceId);
             activation.ConfigureLightningServices(ownedProjectiles, requestLightningChain);
             DiceRevolverShotContext faceTrigger = new DiceRevolverShotContext(
                 face,

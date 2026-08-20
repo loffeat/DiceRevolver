@@ -423,21 +423,21 @@ git commit -m "feat: add electromagnetic lightning chains"
 - Produces: constrained bonus activation request with face, causal shared budget, suppressed passive instance id, current muzzle pose, and direction.
 - Produces: `BonusShotSpreadAllocator.Next(float maxAngle, float minimumSeparation): float` reset once per Unity frame.
 
-- [ ] **Step 1: Write failing Echo behavior tests**
+- [x] **Step 1: Write failing Echo behavior tests**
 
 Test matching type triggers immediately, tag-only match does not, maximum four, same passive cannot self-recurse, another face's Echo can respond, normal owner-face shot stops Echo, reload restores count, and child activation shares the causal budget.
 
-- [ ] **Step 2: Write failing spread tests**
+- [x] **Step 2: Write failing spread tests**
 
 With an injected deterministic random sequence, assert all offsets stay within `[-8, 8]` and same-frame accepted offsets differ by at least `2` degrees.
 
-- [ ] **Step 3: Run Echo/spread filters and verify RED**
+- [x] **Step 3: Run Echo/spread filters and verify RED**
 
-- [ ] **Step 4: Implement immediate bonus activation and suppression token**
+- [x] **Step 4: Implement immediate bonus activation and suppression token**
 
 Do not queue through time. Handle the bonus request in the same frame through Pipeline, using the current Gun muzzle pose. Carry the same shared budget object and a suppression token identifying only the originating Echo instance.
 
-- [ ] **Step 5: Run focused tests and verify GREEN**
+- [x] **Step 5: Run focused tests and verify GREEN**
 
 - [ ] **Step 6: Commit Task 7**
 

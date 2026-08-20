@@ -37,8 +37,6 @@ namespace DiceRevolver.Prototype
         private readonly Action<string> warningAction;
         private Func<ProjectileHandle, IReadOnlyList<ProjectileHandle>, LightningChainDefinition, bool>
             lightningChainAction;
-        private int remainingEventBudget;
-        private bool budgetWarningIssued;
 
         public DiceFaceActivation(
             int face,
@@ -79,6 +77,33 @@ namespace DiceRevolver.Prototype
             Func<int, bool> refillAndForceNextFaceAction,
             Action<string> warningAction,
             int eventBudget = DefaultEventBudget)
+            : this(
+                face,
+                configuration,
+                origin,
+                direction,
+                scheduleAction,
+                spawnAction,
+                refillAndForceNextFaceAction,
+                warningAction,
+                new DiceEventBudget(eventBudget),
+                false,
+                0)
+        {
+        }
+
+        public DiceFaceActivation(
+            int face,
+            DiceFaceConfigurationSnapshot configuration,
+            Vector3 origin,
+            Vector3 direction,
+            Action<float, Action> scheduleAction,
+            Func<ProjectileSpawnRequest, ProjectileHandle> spawnAction,
+            Func<int, bool> refillAndForceNextFaceAction,
+            Action<string> warningAction,
+            DiceEventBudget eventBudget,
+            bool isBonusActivation,
+            long suppressedPassiveInstanceId)
         {
             Face = face;
             Configuration = configuration;
@@ -88,7 +113,9 @@ namespace DiceRevolver.Prototype
             this.spawnAction = spawnAction;
             this.refillAndForceNextFaceAction = refillAndForceNextFaceAction;
             this.warningAction = warningAction;
-            remainingEventBudget = Mathf.Max(1, eventBudget);
+            EventBudget = eventBudget ?? new DiceEventBudget(DefaultEventBudget);
+            IsBonusActivation = isBonusActivation;
+            SuppressedPassiveInstanceId = suppressedPassiveInstanceId;
         }
 
         public int Face { get; }
@@ -98,23 +125,15 @@ namespace DiceRevolver.Prototype
         public ProjectileDefinition PrimaryProjectileDefinition { get; private set; }
         public ProjectileHandle PrimaryProjectile { get; private set; }
         public OwnedProjectileRegistry OwnedProjectiles { get; private set; }
-        public int RemainingEventBudget => remainingEventBudget;
+        public DiceEventBudget EventBudget { get; }
+        public bool IsBonusActivation { get; }
+        public long SuppressedPassiveInstanceId { get; }
+        public int RemainingEventBudget => EventBudget.Remaining;
 
         public bool TryConsumeEventBudget()
         {
-            if (remainingEventBudget > 0)
-            {
-                remainingEventBudget--;
-                return true;
-            }
-
-            if (!budgetWarningIssued)
-            {
-                budgetWarningIssued = true;
-                warningAction?.Invoke($"Dice face {Face} stopped because its event budget was exhausted.");
-            }
-
-            return false;
+            return EventBudget.TryConsume(() => warningAction?.Invoke(
+                $"Dice face {Face} stopped because its event budget was exhausted."));
         }
 
         public bool RequestRefillAndForceNextFace(int face)

@@ -36,6 +36,7 @@ namespace DiceRevolver.Prototype
         private DiceShotPipeline shotPipeline;
         private DicePassiveRuntime passiveRuntime;
         private readonly OwnedProjectileRegistry ownedProjectiles = new OwnedProjectileRegistry();
+        private readonly BonusShotSpreadAllocator bonusShotSpread = new BonusShotSpreadAllocator();
         private SpriteRenderer reloadBlinkRenderer;
         private Color reloadBlinkDefaultColor = Color.white;
         private TopDownAimHandRig aimRig;
@@ -88,6 +89,7 @@ namespace DiceRevolver.Prototype
             passiveRuntime = new DicePassiveRuntime(
                 message => Debug.LogWarning(message, this),
                 exception => Debug.LogException(exception, this));
+            passiveRuntime.ConfigureBonusActivation(ExecuteBonusActivation);
             if (loadout != null)
             {
                 loadout.SlotChanged -= HandleLoadoutSlotChanged;
@@ -289,12 +291,66 @@ namespace DiceRevolver.Prototype
                 activation,
                 request.CanTriggerHitEffects);
             projectile.Hit += (hitCollider, hitPosition) =>
+            {
                 shotPipeline.HandleHit(
                     shot,
                     hitCollider,
                     hitPosition,
                     hit => ProjectileHit?.Invoke(hit));
+                passiveRuntime?.NotifyProjectileHit(
+                    shot,
+                    hitCollider,
+                    hitPosition,
+                    activation.SuppressedPassiveInstanceId);
+            };
             return handle;
+        }
+
+        private bool ExecuteBonusActivation(BonusDiceActivationRequest request)
+        {
+            if (shotPipeline == null ||
+                loadout == null ||
+                muzzle == null ||
+                request.EventBudget == null ||
+                !request.EventBudget.TryConsume(() => Debug.LogWarning(
+                    $"Dice face {request.Face} bonus activation stopped because its event budget was exhausted.",
+                    this)))
+            {
+                return false;
+            }
+
+            aimRig?.RefreshAimPose();
+            Vector3 origin = muzzle.position;
+            Quaternion rotation = muzzle.rotation;
+            if (aimRig != null &&
+                aimRig.TryGetShotPose(out Vector3 rigOrigin, out Quaternion rigRotation))
+            {
+                origin = rigOrigin;
+                rotation = rigRotation;
+            }
+
+            Vector3 direction = rotation * Vector3.forward;
+            direction.y = 0f;
+            if (direction.sqrMagnitude <= 0.0001f)
+            {
+                direction = player != null ? player.AimDirection : Vector3.forward;
+            }
+
+            direction.Normalize();
+            float spreadAngle = bonusShotSpread.Next(
+                request.MaximumSpreadAngle,
+                request.MinimumSpreadSeparation);
+            direction = Quaternion.AngleAxis(spreadAngle, Vector3.up) * direction;
+            shotPipeline.ExecuteBonusShot(
+                request.Face,
+                loadout.GetSnapshot(request.Face),
+                origin,
+                direction,
+                request.EventBudget,
+                request.SuppressedPassiveInstanceId,
+                shot => FireStarted?.Invoke(shot),
+                shot => FireEnded?.Invoke(shot));
+            return true;
         }
 
         private bool ExecuteLightningChain(

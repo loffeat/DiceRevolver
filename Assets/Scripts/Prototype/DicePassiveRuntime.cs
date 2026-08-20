@@ -23,6 +23,8 @@ namespace DiceRevolver.Prototype
             new ProjectileTypeDefinition[DiceRevolverRules.FaceCount];
         private readonly Action<string> warningLogger;
         private readonly Action<Exception> exceptionLogger;
+        private Func<BonusDiceActivationRequest, bool> bonusActivationRequest;
+        private long nextInstanceId = 1;
         private bool warnedAboutEmptyCandidates;
 
         public DicePassiveRuntime(
@@ -61,11 +63,16 @@ namespace DiceRevolver.Prototype
 
             try
             {
+                long instanceId = nextInstanceId++;
                 IDicePassiveEffectRuntime runtime =
-                    effect.CreateRuntime(new PassiveBindingContext(face, GetBaseProjectileType));
+                    effect.CreateRuntime(new PassiveBindingContext(
+                        face,
+                        instanceId,
+                        GetBaseProjectileType,
+                        RequestBonusActivation));
                 if (runtime != null)
                 {
-                    instances[index] = new PassiveInstance(face, runtime);
+                    instances[index] = new PassiveInstance(face, instanceId, runtime);
                 }
             }
             catch (Exception exception)
@@ -192,6 +199,44 @@ namespace DiceRevolver.Prototype
             }
         }
 
+        public void ConfigureBonusActivation(
+            Func<BonusDiceActivationRequest, bool> request)
+        {
+            bonusActivationRequest = request;
+        }
+
+        public void NotifyProjectileHit(
+            DiceRevolverShotContext shot,
+            UnityEngine.Collider hitCollider,
+            UnityEngine.Vector3 hitPosition,
+            long suppressedPassiveInstanceId = 0)
+        {
+            if (shot == null)
+            {
+                return;
+            }
+
+            for (int index = 0; index < instances.Length; index++)
+            {
+                PassiveInstance instance = instances[index];
+                if (instance == null ||
+                    instance.InstanceId == suppressedPassiveInstanceId ||
+                    instance.Runtime is not IDiceProjectileHitObserver observer)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    observer.OnProjectileHit(shot, hitCollider, hitPosition);
+                }
+                catch (Exception exception)
+                {
+                    LogException(exception);
+                }
+            }
+        }
+
         public void Dispose()
         {
             for (int index = 0; index < instances.Length; index++)
@@ -306,6 +351,11 @@ namespace DiceRevolver.Prototype
             return IsValidFace(face) ? baseProjectileTypes[face - 1] : null;
         }
 
+        private bool RequestBonusActivation(BonusDiceActivationRequest request)
+        {
+            return bonusActivationRequest != null && bonusActivationRequest.Invoke(request);
+        }
+
         private void LogException(Exception exception)
         {
             exceptionLogger?.Invoke(exception);
@@ -318,13 +368,18 @@ namespace DiceRevolver.Prototype
 
         private sealed class PassiveInstance
         {
-            public PassiveInstance(int face, IDicePassiveEffectRuntime runtime)
+            public PassiveInstance(
+                int face,
+                long instanceId,
+                IDicePassiveEffectRuntime runtime)
             {
                 Face = face;
+                InstanceId = instanceId;
                 Runtime = runtime;
             }
 
             public int Face { get; }
+            public long InstanceId { get; }
             public IDicePassiveEffectRuntime Runtime { get; }
         }
     }

@@ -27,4 +27,12 @@ namespace DiceRevolver.Prototype
     {
         void OnProjectileSpawned(int sourceFace, ProjectileHandle projectile);
     }
+
+    public interface IDiceProjectileHitObserver
+    {
+        void OnProjectileHit(
+            DiceRevolverShotContext shot,
+            UnityEngine.Collider hitCollider,
+            UnityEngine.Vector3 hitPosition);
+    }
 }
