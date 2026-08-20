@@ -15,4 +15,16 @@ namespace DiceRevolver.Prototype
     {
         int DrawPriority { get; }
     }
+
+    public interface IDiceProjectileStatsModifier
+    {
+        ProjectileRuntimeStats ModifyProjectileStats(
+            int sourceFace,
+            ProjectileRuntimeStats stats);
+    }
+
+    public interface IDiceProjectileSpawnObserver
+    {
+        void OnProjectileSpawned(int sourceFace, ProjectileHandle projectile);
+    }
 }

@@ -90,9 +90,11 @@ namespace DiceRevolver.Prototype
                 loadout.SlotChanged += HandleLoadoutSlotChanged;
                 for (int face = 1; face <= DiceRevolverRules.FaceCount; face++)
                 {
+                    DiceFaceConfigurationSnapshot snapshot = loadout.GetSnapshot(face);
                     passiveRuntime.RebuildFace(
                         face,
-                        loadout.GetSnapshot(face).GetPassiveEffect());
+                        snapshot.GetPassiveEffect(),
+                        GetBaseProjectileType(snapshot));
                 }
             }
 
@@ -259,6 +261,9 @@ namespace DiceRevolver.Prototype
             }
 
             ProjectileRuntimeStats stats = definition.BuildRuntimeStats();
+            stats = passiveRuntime != null
+                ? passiveRuntime.ModifyProjectileStats(activation.Face, stats)
+                : stats;
             Quaternion rotation = GetShotRotation(request.Direction, transform.rotation);
             Vector3 origin = request.Origin;
             origin.y = 0f;
@@ -266,6 +271,7 @@ namespace DiceRevolver.Prototype
             projectile.Configure(stats);
             projectile.Launch(request.Direction, ownerCollider);
             ProjectileHandle handle = ownedProjectiles.Register(projectile, stats);
+            passiveRuntime?.NotifyProjectileSpawned(activation.Face, handle);
 
             DiceRevolverShotContext shot = new DiceRevolverShotContext(
                 activation.Face,
@@ -309,12 +315,34 @@ namespace DiceRevolver.Prototype
             DiceFaceSlotType slotType,
             DiceFaceEntry entry)
         {
-            if (slotType != DiceFaceSlotType.Passive)
+            if (slotType == DiceFaceSlotType.Base)
             {
+                passiveRuntime?.UpdateBaseProjectileType(
+                    face,
+                    loadout != null
+                        ? GetBaseProjectileType(loadout.GetSnapshot(face))
+                        : null);
                 return;
             }
 
-            passiveRuntime?.RebuildFace(face, entry != null ? entry.PassiveEffect : null);
+            if (slotType == DiceFaceSlotType.Passive)
+            {
+                DiceFaceConfigurationSnapshot snapshot = loadout != null
+                    ? loadout.GetSnapshot(face)
+                    : default;
+                passiveRuntime?.RebuildFace(
+                    face,
+                    entry != null ? entry.PassiveEffect : null,
+                    GetBaseProjectileType(snapshot));
+            }
+        }
+
+        private static ProjectileTypeDefinition GetBaseProjectileType(
+            DiceFaceConfigurationSnapshot snapshot)
+        {
+            return snapshot.GetEffect(DiceFaceSlotType.Base) is ProjectileSpawnEffect spawnEffect
+                ? spawnEffect.ProjectileDefinition?.ProjectileTypeDefinition
+                : null;
         }
 
         private void AnimateReload(float progress)

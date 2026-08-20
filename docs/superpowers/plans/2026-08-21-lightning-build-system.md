@@ -336,7 +336,7 @@ git commit -m "feat: track owned projectiles for lightning builds"
 - Produces: `DicePassiveRuntime.ModifyProjectileStats(int sourceFace, ProjectileRuntimeStats stats): ProjectileRuntimeStats`.
 - Produces: `DicePassiveRuntime.NotifyProjectileSpawned(int sourceFace, ProjectileHandle projectile)`.
 
-- [ ] **Step 1: Write failing Tesla tests**
+- [x] **Step 1: Write failing Tesla tests**
 
 ```csharp
 [Test]
@@ -350,13 +350,13 @@ public void LightningProjectileUsesOldStacksThenAddsOneStack()
 
 Also assert two Tesla instances grow independently, non-lightning projectiles do not add stacks, reload clears stacks, and the ScriptableObject definition damage remains unchanged.
 
-- [ ] **Step 2: Run `TeslaPassiveTests` and verify RED**
+- [x] **Step 2: Run `TeslaPassiveTests` and verify RED**
 
-- [ ] **Step 3: Implement additive per-face modifiers**
+- [x] **Step 3: Implement additive per-face modifiers**
 
 Tesla runtime stores `stackCount`. `ModifyProjectileStats` applies `1f + stackCount * damagePerStack` only when source face equals owner face and projectile type equals that face's Base projectile type. `NotifyProjectileSpawned` increments after final stats are captured when the projectile has Lightning tag.
 
-- [ ] **Step 4: Run Tesla and pipeline regressions and verify GREEN**
+- [x] **Step 4: Run Tesla and pipeline regressions and verify GREEN**
 
 - [ ] **Step 5: Commit Task 5**
 

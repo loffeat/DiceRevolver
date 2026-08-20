@@ -75,6 +75,19 @@ namespace DiceRevolver.Prototype
             return false;
         }
 
+        public ProjectileRuntimeStats WithDamage(float newDamage)
+        {
+            return new ProjectileRuntimeStats(
+                ProjectileType,
+                ProjectileTag,
+                ProjectileTypeDefinition,
+                Tags,
+                newDamage,
+                FlightDistance,
+                FlightSpeed,
+                EnemyPierceCount);
+        }
+
         private static ProjectileTagDefinition[] CopyTags(
             IReadOnlyList<ProjectileTagDefinition> source)
         {

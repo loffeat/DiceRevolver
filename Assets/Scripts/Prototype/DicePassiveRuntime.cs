@@ -19,6 +19,8 @@ namespace DiceRevolver.Prototype
     {
         private readonly PassiveInstance[] instances =
             new PassiveInstance[DiceRevolverRules.FaceCount];
+        private readonly ProjectileTypeDefinition[] baseProjectileTypes =
+            new ProjectileTypeDefinition[DiceRevolverRules.FaceCount];
         private readonly Action<string> warningLogger;
         private readonly Action<Exception> exceptionLogger;
         private bool warnedAboutEmptyCandidates;
@@ -33,12 +35,21 @@ namespace DiceRevolver.Prototype
 
         public void RebuildFace(int face, PassiveEventEffect effect)
         {
+            RebuildFace(face, effect, GetBaseProjectileType(face));
+        }
+
+        public void RebuildFace(
+            int face,
+            PassiveEventEffect effect,
+            ProjectileTypeDefinition baseProjectileType)
+        {
             if (!IsValidFace(face))
             {
                 return;
             }
 
             int index = face - 1;
+            baseProjectileTypes[index] = baseProjectileType;
             DisposeInstance(instances[index]);
             instances[index] = null;
             warnedAboutEmptyCandidates = false;
@@ -51,7 +62,7 @@ namespace DiceRevolver.Prototype
             try
             {
                 IDicePassiveEffectRuntime runtime =
-                    effect.CreateRuntime(new PassiveBindingContext(face));
+                    effect.CreateRuntime(new PassiveBindingContext(face, GetBaseProjectileType));
                 if (runtime != null)
                 {
                     instances[index] = new PassiveInstance(face, runtime);
@@ -124,6 +135,61 @@ namespace DiceRevolver.Prototype
         public void NotifyFaceConsumed(int face)
         {
             Notify(runtime => runtime.OnFaceConsumed(face));
+        }
+
+        public void UpdateBaseProjectileType(
+            int face,
+            ProjectileTypeDefinition baseProjectileType)
+        {
+            if (IsValidFace(face))
+            {
+                baseProjectileTypes[face - 1] = baseProjectileType;
+            }
+        }
+
+        public ProjectileRuntimeStats ModifyProjectileStats(
+            int sourceFace,
+            ProjectileRuntimeStats stats)
+        {
+            ProjectileRuntimeStats modified = stats;
+            for (int index = 0; index < instances.Length; index++)
+            {
+                if (instances[index]?.Runtime is not IDiceProjectileStatsModifier modifier)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    modified = modifier.ModifyProjectileStats(sourceFace, modified);
+                }
+                catch (Exception exception)
+                {
+                    LogException(exception);
+                }
+            }
+
+            return modified;
+        }
+
+        public void NotifyProjectileSpawned(int sourceFace, ProjectileHandle projectile)
+        {
+            for (int index = 0; index < instances.Length; index++)
+            {
+                if (instances[index]?.Runtime is not IDiceProjectileSpawnObserver observer)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    observer.OnProjectileSpawned(sourceFace, projectile);
+                }
+                catch (Exception exception)
+                {
+                    LogException(exception);
+                }
+            }
         }
 
         public void Dispose()
@@ -233,6 +299,11 @@ namespace DiceRevolver.Prototype
         private PassiveInstance GetInstance(int face)
         {
             return IsValidFace(face) ? instances[face - 1] : null;
+        }
+
+        private ProjectileTypeDefinition GetBaseProjectileType(int face)
+        {
+            return IsValidFace(face) ? baseProjectileTypes[face - 1] : null;
         }
 
         private void LogException(Exception exception)
