@@ -283,15 +283,15 @@ git commit -m "feat: add passive runtime and finisher draw rule"
 - Produces: `FindNearby(Vector3 center, float radius, ProjectileTagDefinition tag, Projectile exclude, List<ProjectileHandle> results)`.
 - Changes: spawn adapter returns `ProjectileHandle`; primary handle is available through `BulletEventContext.PrimaryProjectile`.
 
-- [ ] **Step 1: Write failing registry and primary-handle tests**
+- [x] **Step 1: Write failing registry and primary-handle tests**
 
 Test owner isolation with two Registry instances, radius filtering, tag filtering, exclude-current behavior, and destroyed-reference cleanup. Test that Base spawn completes before OnFire and exposes the actual primary projectile handle.
 
-- [ ] **Step 2: Run registry/pipeline filters and verify RED**
+- [x] **Step 2: Run registry/pipeline filters and verify RED**
 
 Expected: registry and spawn-result interface do not exist.
 
-- [ ] **Step 3: Implement Registry and synchronous spawn result**
+- [x] **Step 3: Implement Registry and synchronous spawn result**
 
 ```csharp
 public readonly struct ProjectileHandle
@@ -310,7 +310,7 @@ public readonly struct ProjectileHandle
 
 Each Gun owns one Registry and registers every successful spawn. Do not use a static singleton.
 
-- [ ] **Step 4: Add lightning asset contract tests**
+- [x] **Step 4: Add lightning asset contract tests**
 
 Assert type LightningOrb, tags Lightning and Elemental, damage `1`, speed `5`, distance `15`, pierce `4`, attack effect false, and collider radius `0.35`.
 

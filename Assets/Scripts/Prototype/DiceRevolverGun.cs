@@ -34,6 +34,7 @@ namespace DiceRevolver.Prototype
         private DiceRevolverRuntime runtime;
         private DiceShotPipeline shotPipeline;
         private DicePassiveRuntime passiveRuntime;
+        private readonly OwnedProjectileRegistry ownedProjectiles = new OwnedProjectileRegistry();
         private SpriteRenderer reloadBlinkRenderer;
         private Color reloadBlinkDefaultColor = Color.white;
         private TopDownAimHandRig aimRig;
@@ -46,6 +47,7 @@ namespace DiceRevolver.Prototype
 
         public int RemainingRounds => runtime?.RemainingRounds ?? 0;
         public bool IsReloading => runtime?.IsReloading ?? false;
+        public OwnedProjectileRegistry OwnedProjectiles => ownedProjectiles;
         public float ReloadDuration
         {
             get => runtime?.ReloadDuration ?? reloadDuration;
@@ -242,7 +244,7 @@ namespace DiceRevolver.Prototype
             }
         }
 
-        private void SpawnActivationProjectile(
+        private ProjectileHandle SpawnActivationProjectile(
             DiceFaceActivation activation,
             ProjectileSpawnRequest request)
         {
@@ -253,7 +255,7 @@ namespace DiceRevolver.Prototype
                 Debug.LogWarning(
                     "Projectile spawn skipped because its definition or runtime prefab is missing.",
                     definition);
-                return;
+                return default;
             }
 
             ProjectileRuntimeStats stats = definition.BuildRuntimeStats();
@@ -263,6 +265,7 @@ namespace DiceRevolver.Prototype
             Projectile projectile = Instantiate(prefab, origin, rotation);
             projectile.Configure(stats);
             projectile.Launch(request.Direction, ownerCollider);
+            ProjectileHandle handle = ownedProjectiles.Register(projectile, stats);
 
             DiceRevolverShotContext shot = new DiceRevolverShotContext(
                 activation.Face,
@@ -281,6 +284,7 @@ namespace DiceRevolver.Prototype
                     hitCollider,
                     hitPosition,
                     hit => ProjectileHit?.Invoke(hit));
+            return handle;
         }
 
         private static Quaternion GetShotRotation(Vector3 direction, Quaternion fallback)

@@ -295,6 +295,47 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void BaseSpawnCompletesBeforeOnFireAndExposesPrimaryProjectileHandle()
+        {
+            GameObject projectileOwner = Own(new GameObject("Primary Projectile"));
+            Projectile projectile = projectileOwner.AddComponent<Projectile>();
+            ProjectileDefinition definition = Own(ScriptableObject.CreateInstance<ProjectileDefinition>());
+            ProjectileSpawnEffect spawnEffect = Own(
+                ScriptableObject.CreateInstance<ProjectileSpawnEffect>());
+            SetPrivate(spawnEffect, "projectileDefinition", definition);
+            ProjectileRuntimeStats stats = new ProjectileRuntimeStats(
+                "LightningOrb",
+                "Lightning",
+                1f,
+                15f,
+                5f,
+                4);
+            ProjectileHandle observed = default;
+            DiceShotPipeline pipeline = new DiceShotPipeline(
+                () => 3f,
+                (_, _) => new ProjectileHandle(projectile, stats),
+                null,
+                null,
+                null);
+
+            pipeline.ExecuteShot(
+                2,
+                CreateSnapshot(
+                    spawnEffect,
+                    Effect(context => observed = context.PrimaryProjectile),
+                    null,
+                    null),
+                Vector3.zero,
+                Vector3.forward,
+                4,
+                null,
+                null);
+
+            Assert.That(observed.Projectile, Is.SameAs(projectile));
+            Assert.That(observed.Stats.ProjectileType, Is.EqualTo("LightningOrb"));
+        }
+
+        [Test]
         public void EffectExceptionIsLoggedAndDoesNotBlockLaterEffectsOrActivations()
         {
             List<string> triggered = new List<string>();

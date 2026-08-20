@@ -21,6 +21,8 @@ namespace DiceRevolver.Prototype
         public DiceRevolverShotContext Shot { get; }
         public Collider HitCollider { get; }
         public Vector3 HitPosition { get; }
+        public ProjectileHandle PrimaryProjectile =>
+            Activation != null ? Activation.PrimaryProjectile : default;
 
         public bool RequestProjectile(
             ProjectileDefinition definition,

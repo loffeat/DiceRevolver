@@ -31,7 +31,7 @@ namespace DiceRevolver.Prototype
         public const int DefaultEventBudget = 32;
 
         private readonly Action<float, Action> scheduleAction;
-        private readonly Action<ProjectileSpawnRequest> spawnAction;
+        private readonly Func<ProjectileSpawnRequest, ProjectileHandle> spawnAction;
         private readonly Func<int, bool> refillAndForceNextFaceAction;
         private readonly Action<string> warningAction;
         private int remainingEventBudget;
@@ -44,6 +44,35 @@ namespace DiceRevolver.Prototype
             Vector3 direction,
             Action<float, Action> scheduleAction,
             Action<ProjectileSpawnRequest> spawnAction,
+            Func<int, bool> refillAndForceNextFaceAction,
+            Action<string> warningAction,
+            int eventBudget = DefaultEventBudget)
+            : this(
+                face,
+                configuration,
+                origin,
+                direction,
+                scheduleAction,
+                spawnAction == null
+                    ? null
+                    : request =>
+                    {
+                        spawnAction.Invoke(request);
+                        return default;
+                    },
+                refillAndForceNextFaceAction,
+                warningAction,
+                eventBudget)
+        {
+        }
+
+        public DiceFaceActivation(
+            int face,
+            DiceFaceConfigurationSnapshot configuration,
+            Vector3 origin,
+            Vector3 direction,
+            Action<float, Action> scheduleAction,
+            Func<ProjectileSpawnRequest, ProjectileHandle> spawnAction,
             Func<int, bool> refillAndForceNextFaceAction,
             Action<string> warningAction,
             int eventBudget = DefaultEventBudget)
@@ -64,6 +93,7 @@ namespace DiceRevolver.Prototype
         public Vector3 Origin { get; }
         public Vector3 Direction { get; }
         public ProjectileDefinition PrimaryProjectileDefinition { get; private set; }
+        public ProjectileHandle PrimaryProjectile { get; private set; }
         public int RemainingEventBudget => remainingEventBudget;
 
         public bool TryConsumeEventBudget()
@@ -117,12 +147,17 @@ namespace DiceRevolver.Prototype
             }
 
             bool canTriggerHitEffects = isPrimary || ResolveAttackEffect(definition, attackEffectOverride);
-            spawnAction.Invoke(new ProjectileSpawnRequest(
+            ProjectileHandle handle = spawnAction.Invoke(new ProjectileSpawnRequest(
                 definition,
                 origin,
                 NormalizeDirection(direction),
                 isPrimary,
                 canTriggerHitEffects));
+            if (isPrimary)
+            {
+                PrimaryProjectile = handle;
+            }
+
             return true;
         }
 

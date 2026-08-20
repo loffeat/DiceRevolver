@@ -6,7 +6,7 @@ namespace DiceRevolver.Prototype
     public sealed class DiceShotPipeline
     {
         private readonly Func<float> currentTime;
-        private readonly Action<DiceFaceActivation, ProjectileSpawnRequest> spawnProjectile;
+        private readonly Func<DiceFaceActivation, ProjectileSpawnRequest, ProjectileHandle> spawnProjectile;
         private readonly Func<int, bool> refillAndForceNextFace;
         private readonly Action<string> logWarning;
         private readonly Action<Exception, UnityEngine.Object> logException;
@@ -15,6 +15,27 @@ namespace DiceRevolver.Prototype
         public DiceShotPipeline(
             Func<float> currentTime,
             Action<DiceFaceActivation, ProjectileSpawnRequest> spawnProjectile,
+            Func<int, bool> refillAndForceNextFace,
+            Action<string> logWarning,
+            Action<Exception, UnityEngine.Object> logException)
+            : this(
+                currentTime,
+                spawnProjectile == null
+                    ? null
+                    : (activation, request) =>
+                    {
+                        spawnProjectile.Invoke(activation, request);
+                        return default;
+                    },
+                refillAndForceNextFace,
+                logWarning,
+                logException)
+        {
+        }
+
+        public DiceShotPipeline(
+            Func<float> currentTime,
+            Func<DiceFaceActivation, ProjectileSpawnRequest, ProjectileHandle> spawnProjectile,
             Func<int, bool> refillAndForceNextFace,
             Action<string> logWarning,
             Action<Exception, UnityEngine.Object> logException)
@@ -42,7 +63,9 @@ namespace DiceRevolver.Prototype
                 origin,
                 direction,
                 (delay, callback) => scheduler.Schedule(currentTime.Invoke(), delay, callback),
-                request => spawnProjectile?.Invoke(activation, request),
+                request => spawnProjectile != null
+                    ? spawnProjectile.Invoke(activation, request)
+                    : default,
                 refillAndForceNextFace,
                 logWarning,
                 eventBudget);
@@ -65,6 +88,7 @@ namespace DiceRevolver.Prototype
 
             fireStarted?.Invoke(faceTrigger);
             TriggerEffect(configuration.GetEffect(DiceFaceSlotType.Base), eventContext);
+            TickScheduledEvents(currentTime.Invoke());
             TriggerEffect(configuration.GetEffect(DiceFaceSlotType.OnFire), eventContext);
             fireEnded?.Invoke(faceTrigger);
             TriggerEffect(configuration.GetEffect(DiceFaceSlotType.OnFireEnd), eventContext);
@@ -92,9 +116,7 @@ namespace DiceRevolver.Prototype
 
         public void Tick(float currentTime)
         {
-            scheduler.Tick(
-                currentTime,
-                exception => logException?.Invoke(exception, null));
+            TickScheduledEvents(currentTime);
         }
 
         public void Clear()
@@ -119,6 +141,13 @@ namespace DiceRevolver.Prototype
             {
                 logException?.Invoke(exception, effect);
             }
+        }
+
+        private void TickScheduledEvents(float time)
+        {
+            scheduler.Tick(
+                time,
+                exception => logException?.Invoke(exception, null));
         }
     }
 }
