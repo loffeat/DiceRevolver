@@ -107,9 +107,9 @@ namespace DiceRevolver.Tests
                 snapshot,
                 Vector3.zero,
                 Vector3.forward,
-                null,
-                null,
                 (_, _) => { },
+                _ => { },
+                _ => false,
                 _ => { });
 
             Assert.That(
@@ -120,19 +120,45 @@ namespace DiceRevolver.Tests
             Object.DestroyImmediate(onHitEffect);
         }
 
+        [Test]
+        public void ActivationClampsBudgetToAtLeastOneAndWarnsOnce()
+        {
+            List<string> warnings = new List<string>();
+            DiceFaceActivation activation = CreateActivation(
+                eventBudget: 0,
+                warningAction: warnings.Add);
+
+            Assert.That(activation.RemainingEventBudget, Is.EqualTo(1));
+            Assert.That(activation.TryConsumeEventBudget(), Is.True);
+            Assert.That(activation.TryConsumeEventBudget(), Is.False);
+            Assert.That(activation.TryConsumeEventBudget(), Is.False);
+            Assert.That(warnings, Has.Count.EqualTo(1));
+        }
+
+        [Test]
+        public void ActivationAndEventContextDoNotExposeGunOrChamber()
+        {
+            Assert.That(typeof(DiceFaceActivation).GetProperty("Gun"), Is.Null);
+            Assert.That(typeof(DiceFaceActivation).GetProperty("Chamber"), Is.Null);
+            Assert.That(typeof(BulletEventContext).GetProperty("Gun"), Is.Null);
+            Assert.That(typeof(BulletEventContext).GetProperty("Chamber"), Is.Null);
+        }
+
         private static DiceFaceActivation CreateActivation(
-            ICollection<ProjectileSpawnRequest> requests,
-            int eventBudget)
+            ICollection<ProjectileSpawnRequest> requests = null,
+            int eventBudget = DiceFaceActivation.DefaultEventBudget,
+            System.Func<int, bool> refillAndForceNextFaceAction = null,
+            System.Action<string> warningAction = null)
         {
             return new DiceFaceActivation(
                 2,
                 default,
                 Vector3.zero,
                 Vector3.forward,
-                null,
-                null,
                 (_, _) => { },
-                request => requests.Add(request),
+                request => requests?.Add(request),
+                refillAndForceNextFaceAction,
+                warningAction,
                 eventBudget);
         }
 

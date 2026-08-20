@@ -9,21 +9,19 @@ namespace DiceRevolver.Tests
     public sealed class BulletEventEffectTests
     {
         [Test]
-        public void ForceFaceFourRefillsMissingFourAndForcesNextDraw()
+        public void ForceFaceFourUsesOnlyBoundedCapability()
         {
-            DiceChamber chamber = new DiceChamber(6);
-            while (chamber.ContainsFace(4))
-            {
-                chamber.TryDrawFace(out _);
-            }
-
+            int requestedFace = 0;
+            DiceFaceActivation activation = CreateActivation(
+                refillAndForceNextFaceAction: face =>
+                {
+                    requestedFace = face;
+                    return true;
+                });
             ForceFaceFourOnFireEndEffect effect = ScriptableObject.CreateInstance<ForceFaceFourOnFireEndEffect>();
-            DiceFaceActivation activation = CreateActivation(chamber);
             effect.Trigger(new BulletEventContext(activation, null, null, Vector3.zero));
 
-            chamber.TryDrawFace(out int face);
-
-            Assert.That(face, Is.EqualTo(4));
+            Assert.That(requestedFace, Is.EqualTo(4));
 
             Object.DestroyImmediate(effect);
         }
@@ -204,7 +202,7 @@ namespace DiceRevolver.Tests
         }
 
         private static DiceFaceActivation CreateActivation(
-            DiceChamber chamber,
+            System.Func<int, bool> refillAndForceNextFaceAction = null,
             System.Action<float, System.Action> schedule = null,
             System.Action<ProjectileSpawnRequest> spawn = null)
         {
@@ -213,10 +211,10 @@ namespace DiceRevolver.Tests
                 default,
                 Vector3.zero,
                 Vector3.forward,
-                null,
-                chamber,
                 schedule,
-                spawn ?? (_ => { }));
+                spawn ?? (_ => { }),
+                refillAndForceNextFaceAction,
+                null);
         }
     }
 }

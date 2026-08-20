@@ -7,16 +7,7 @@ namespace DiceRevolver.Prototype
     {
         public override void Trigger(BulletEventContext context)
         {
-            DiceChamber chamber = context.Chamber;
-            if (chamber == null || chamber.ContainsFace(4))
-            {
-                return;
-            }
-
-            if (chamber.TryRefillFace(4))
-            {
-                chamber.TryForceNextFace(4);
-            }
+            context.RequestRefillAndForceNextFace(4);
         }
     }
 }

@@ -32,6 +32,8 @@ namespace DiceRevolver.Prototype
 
         private readonly Action<float, Action> scheduleAction;
         private readonly Action<ProjectileSpawnRequest> spawnAction;
+        private readonly Func<int, bool> refillAndForceNextFaceAction;
+        private readonly Action<string> warningAction;
         private int remainingEventBudget;
         private bool budgetWarningIssued;
 
@@ -40,29 +42,27 @@ namespace DiceRevolver.Prototype
             DiceFaceConfigurationSnapshot configuration,
             Vector3 origin,
             Vector3 direction,
-            DiceRevolverGun gun,
-            DiceChamber chamber,
             Action<float, Action> scheduleAction,
             Action<ProjectileSpawnRequest> spawnAction,
+            Func<int, bool> refillAndForceNextFaceAction,
+            Action<string> warningAction,
             int eventBudget = DefaultEventBudget)
         {
             Face = face;
             Configuration = configuration;
             Origin = origin;
             Direction = NormalizeDirection(direction);
-            Gun = gun;
-            Chamber = chamber;
             this.scheduleAction = scheduleAction;
             this.spawnAction = spawnAction;
-            remainingEventBudget = Mathf.Max(0, eventBudget);
+            this.refillAndForceNextFaceAction = refillAndForceNextFaceAction;
+            this.warningAction = warningAction;
+            remainingEventBudget = Mathf.Max(1, eventBudget);
         }
 
         public int Face { get; }
         public DiceFaceConfigurationSnapshot Configuration { get; }
         public Vector3 Origin { get; }
         public Vector3 Direction { get; }
-        public DiceRevolverGun Gun { get; }
-        public DiceChamber Chamber { get; }
         public ProjectileDefinition PrimaryProjectileDefinition { get; private set; }
         public int RemainingEventBudget => remainingEventBudget;
 
@@ -77,10 +77,15 @@ namespace DiceRevolver.Prototype
             if (!budgetWarningIssued)
             {
                 budgetWarningIssued = true;
-                Debug.LogWarning($"Dice face {Face} stopped because its event budget was exhausted.");
+                warningAction?.Invoke($"Dice face {Face} stopped because its event budget was exhausted.");
             }
 
             return false;
+        }
+
+        public bool RequestRefillAndForceNextFace(int face)
+        {
+            return refillAndForceNextFaceAction != null && refillAndForceNextFaceAction.Invoke(face);
         }
 
         public bool Schedule(float delaySeconds, Action callback)

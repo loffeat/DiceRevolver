@@ -230,9 +230,9 @@ namespace DiceRevolver.Tests
                     default,
                     Vector3.zero,
                     Vector3.forward,
-                    gun,
-                    null,
                     (delay, callback) => scheduler.Schedule(0f, delay, callback),
+                    _ => { },
+                    _ => false,
                     _ => { });
                 MethodInfo createEventContext = typeof(DiceRevolverGun).GetMethod(
                     "CreateEventContext",
@@ -294,12 +294,12 @@ namespace DiceRevolver.Tests
                     default,
                     new Vector3(40f, 5f, 40f),
                     Vector3.forward,
-                    gun,
-                    null,
                     (delay, callback) => scheduler.Schedule(0f, delay, callback),
                     request => spawned = (Projectile)spawnActivationProjectile.Invoke(
                         gun,
-                        new object[] { activation, request }));
+                        new object[] { activation, request }),
+                    _ => false,
+                    _ => { });
 
                 spawnEffect.Trigger(new BulletEventContext(activation, null, null, Vector3.zero));
                 scheduler.Tick(0f);
@@ -489,9 +489,9 @@ namespace DiceRevolver.Tests
                 DiceFaceConfigurationSnapshot.FromEntry(entry),
                 Vector3.zero,
                 Vector3.forward,
-                gun,
-                null,
                 (_, callback) => callback.Invoke(),
+                _ => { },
+                _ => false,
                 _ => { });
             DiceRevolverShotContext shot = new DiceRevolverShotContext(
                 3,

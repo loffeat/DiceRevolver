@@ -18,8 +18,6 @@ namespace DiceRevolver.Prototype
         }
 
         public DiceFaceActivation Activation { get; }
-        public DiceRevolverGun Gun => Activation?.Gun;
-        public DiceChamber Chamber => Activation?.Chamber;
         public DiceRevolverShotContext Shot { get; }
         public Collider HitCollider { get; }
         public Vector3 HitPosition { get; }
@@ -70,6 +68,11 @@ namespace DiceRevolver.Prototype
             return Activation.Schedule(
                 delaySeconds,
                 () => callback.Invoke(scheduledContext));
+        }
+
+        public bool RequestRefillAndForceNextFace(int face)
+        {
+            return Activation != null && Activation.RequestRefillAndForceNextFace(face);
         }
     }
 }

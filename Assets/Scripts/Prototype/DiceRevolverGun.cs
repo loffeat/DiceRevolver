@@ -182,11 +182,19 @@ namespace DiceRevolver.Prototype
                 configuration,
                 shotOrigin,
                 shotDirection,
-                this,
-                chamber,
                 (delaySeconds, callback) =>
                     eventTimeScheduler.Schedule(Time.time, delaySeconds, callback),
-                request => SpawnActivationProjectile(activation, request));
+                request => SpawnActivationProjectile(activation, request),
+                requestedFace =>
+                {
+                    if (requestedFace != 4 || chamber == null || chamber.ContainsFace(4))
+                    {
+                        return false;
+                    }
+
+                    return chamber.TryRefillFace(4) && chamber.TryForceNextFace(4);
+                },
+                Debug.LogWarning);
 
             DiceRevolverShotContext faceTrigger = new DiceRevolverShotContext(
                 face,
