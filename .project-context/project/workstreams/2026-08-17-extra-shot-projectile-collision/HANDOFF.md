@@ -21,7 +21,7 @@
 - [工作流状态](STATE.md)
 - [DiceRevolverGun.cs](../../../../Assets/Scripts/Prototype/DiceRevolverGun.cs)
 - [Projectile.cs](../../../../Assets/Scripts/Prototype/Projectile.cs)
-- [ProjectileHitReporter.cs](../../../../Assets/Scripts/Prototype/ProjectileHitReporter.cs)
+- `ProjectileHitReporter.cs`（后续核心重构已移除）
 
 ## 必须保护
 

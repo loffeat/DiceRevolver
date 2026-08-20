@@ -557,12 +557,11 @@ MonoBehaviour:
   holdDistance: 0.85
   holdHeight: 0.72
   driveWeaponPose: 0
-  faceCount: 6
   shotsPerSecond: 2
   reloadDuration: 2
   automaticReloadWhenEmpty: 1
   allowManualReload: 1
-  reloadDropDistance: 0.22
+  eventBudgetPerActivation: 32
   reloadBlinkSpeed: 8
   reloadDimColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
 --- !u!1 &4081973253548597210

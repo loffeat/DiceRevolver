@@ -72,7 +72,6 @@ namespace DiceRevolver.Editor
                 body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
 
                 root.AddComponent<Projectile>();
-                root.AddComponent<ProjectileHitReporter>();
                 ProjectileVisualWrapper wrapper = root.AddComponent<ProjectileVisualWrapper>();
                 SerializedObject wrapperData = new SerializedObject(wrapper);
                 wrapperData.FindProperty("visualPrefab").objectReferenceValue = fireVisual;
@@ -181,7 +180,7 @@ namespace DiceRevolver.Editor
 
                 SerializedObject serialized = new SerializedObject(loadout);
                 SerializedProperty baseEffects = serialized.FindProperty("baseEffects");
-                baseEffects.arraySize = 6;
+                baseEffects.arraySize = DiceRevolverRules.FaceCount;
                 for (int i = 0; i < baseEffects.arraySize; i++)
                 {
                     SerializedProperty slot = baseEffects.GetArrayElementAtIndex(i);

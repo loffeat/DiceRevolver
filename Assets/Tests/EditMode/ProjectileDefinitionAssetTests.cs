@@ -46,7 +46,8 @@ namespace DiceRevolver.Tests
 
             Assert.That(projectilePrefab, Is.Not.Null);
             Assert.That(projectilePrefab.GetComponent<Projectile>(), Is.Not.Null);
-            Assert.That(projectilePrefab.GetComponent<ProjectileHitReporter>(), Is.Not.Null);
+            Assert.That(typeof(Projectile).GetEvent(nameof(Projectile.Hit)), Is.Not.Null);
+            Assert.That(projectilePrefab.GetComponents<Component>(), Has.None.Null);
             Assert.That(projectilePrefab.GetComponent<SphereCollider>()?.isTrigger, Is.True);
             Assert.That(projectilePrefab.GetComponent<Rigidbody>()?.isKinematic, Is.True);
 

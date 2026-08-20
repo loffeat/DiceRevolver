@@ -108,7 +108,6 @@ public static class TopDownPrototypeSceneBuilder
         body.isKinematic = true;
 
         bullet.AddComponent<Projectile>();
-        bullet.AddComponent<ProjectileHitReporter>();
 
         prefab = PrefabUtility.SaveAsPrefabAsset(bullet, ProjectilePrefabPath);
         Object.DestroyImmediate(bullet);
@@ -143,11 +142,6 @@ public static class TopDownPrototypeSceneBuilder
         if (prefab.GetComponent<Projectile>() == null)
         {
             prefab.AddComponent<Projectile>();
-        }
-
-        if (prefab.GetComponent<ProjectileHitReporter>() == null)
-        {
-            prefab.AddComponent<ProjectileHitReporter>();
         }
 
         EditorUtility.SetDirty(prefab);
@@ -232,9 +226,10 @@ public static class TopDownPrototypeSceneBuilder
         serializedGun.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
         serializedGun.FindProperty("ownerCollider").objectReferenceValue = controller;
         serializedGun.FindProperty("driveWeaponPose").boolValue = false;
-        serializedGun.FindProperty("faceCount").intValue = DiceRevolverRules.FaceCount;
         serializedGun.FindProperty("shotsPerSecond").floatValue = 5f;
         serializedGun.FindProperty("reloadDuration").floatValue = 1.8f;
+        serializedGun.FindProperty("eventBudgetPerActivation").intValue =
+            DiceFaceActivation.DefaultEventBudget;
         serializedGun.ApplyModifiedPropertiesWithoutUndo();
 
         GameObject prefab = PrefabUtility.SaveAsPrefabAsset(player, PlayerPrefabPath);

@@ -189,6 +189,10 @@ namespace DiceRevolver.Editor
                 SetBoolean(gun, "driveWeaponPose", false);
                 SetFloat(gun, "shotsPerSecond", 2f);
                 SetFloat(gun, "reloadDuration", 2f);
+                SerializedObject serializedGun = new SerializedObject(gun);
+                serializedGun.FindProperty("eventBudgetPerActivation").intValue =
+                    DiceFaceActivation.DefaultEventBudget;
+                serializedGun.ApplyModifiedPropertiesWithoutUndo();
 
                 GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, RobotPrefabPath);
                 return saved;
