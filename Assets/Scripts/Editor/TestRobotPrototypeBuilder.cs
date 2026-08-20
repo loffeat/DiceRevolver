@@ -158,7 +158,7 @@ namespace DiceRevolver.Editor
                 TestRobotController robot = root.AddComponent<TestRobotController>();
                 ConfigureRobotPresentationAndRhythm(robot);
                 DiceFaceLoadout loadout = root.AddComponent<DiceFaceLoadout>();
-                for (int face = 1; face <= 6; face++)
+                for (int face = 1; face <= DiceRevolverRules.FaceCount; face++)
                 {
                     loadout.SetBaseEffect(face, robotEffect);
                 }

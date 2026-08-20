@@ -61,17 +61,17 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
-        public void EquipIgnoresFacesOutsideOneToSix()
+        public void LoadoutRejectsFacesOutsideTheFixedRule()
         {
             GameObject owner = new GameObject("LoadoutOwner");
             DiceFaceLoadout loadout = owner.AddComponent<DiceFaceLoadout>();
             DiceFaceEntry entry = ScriptableObject.CreateInstance<DiceFaceEntry>();
 
             loadout.Equip(0, entry);
-            loadout.Equip(7, entry);
+            loadout.Equip(DiceRevolverRules.FaceCount + 1, entry);
 
             Assert.That(loadout.GetEntry(0, DiceFaceSlotType.OnFire), Is.Null);
-            Assert.That(loadout.GetEntry(7, DiceFaceSlotType.OnFire), Is.Null);
+            Assert.That(loadout.GetEntry(DiceRevolverRules.FaceCount + 1, DiceFaceSlotType.OnFire), Is.Null);
 
             Object.DestroyImmediate(owner);
             Object.DestroyImmediate(entry);
@@ -132,9 +132,9 @@ namespace DiceRevolver.Tests
             FieldInfo entriesField = typeof(DiceFaceLoadout).GetField("entries", BindingFlags.Instance | BindingFlags.NonPublic);
             entriesField.SetValue(loadout, new DiceFaceEntry[1]);
 
-            loadout.Equip(6, entry);
+            loadout.Equip(DiceRevolverRules.FaceCount, entry);
 
-            Assert.That(loadout.GetEntry(6, DiceFaceSlotType.OnFire), Is.SameAs(entry));
+            Assert.That(loadout.GetEntry(DiceRevolverRules.FaceCount, DiceFaceSlotType.OnFire), Is.SameAs(entry));
 
             Object.DestroyImmediate(owner);
             DestroyAll(created);
@@ -149,11 +149,11 @@ namespace DiceRevolver.Tests
             TestBulletEventEffect faceSixEffect = ScriptableObject.CreateInstance<TestBulletEventEffect>();
 
             loadout.SetBaseEffect(2, faceTwoEffect);
-            loadout.SetBaseEffect(6, faceSixEffect);
+            loadout.SetBaseEffect(DiceRevolverRules.FaceCount, faceSixEffect);
 
             Assert.That(loadout.GetBaseEffect(1), Is.Null);
             Assert.That(loadout.GetBaseEffect(2), Is.SameAs(faceTwoEffect));
-            Assert.That(loadout.GetBaseEffect(6), Is.SameAs(faceSixEffect));
+            Assert.That(loadout.GetBaseEffect(DiceRevolverRules.FaceCount), Is.SameAs(faceSixEffect));
 
             Object.DestroyImmediate(owner);
             Object.DestroyImmediate(faceTwoEffect);
@@ -171,9 +171,9 @@ namespace DiceRevolver.Tests
                 BindingFlags.Instance | BindingFlags.NonPublic);
             field.SetValue(loadout, new BulletEventEffect[1]);
 
-            loadout.SetBaseEffect(6, effect);
+            loadout.SetBaseEffect(DiceRevolverRules.FaceCount, effect);
 
-            Assert.That(loadout.GetBaseEffect(6), Is.SameAs(effect));
+            Assert.That(loadout.GetBaseEffect(DiceRevolverRules.FaceCount), Is.SameAs(effect));
 
             Object.DestroyImmediate(owner);
             Object.DestroyImmediate(effect);

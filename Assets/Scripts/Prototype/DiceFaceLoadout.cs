@@ -5,16 +5,16 @@ namespace DiceRevolver.Prototype
 {
     public sealed class DiceFaceLoadout : MonoBehaviour
     {
-        [SerializeField, InspectorName("六面四槽位配置")] private DiceFaceConfiguration[] faceConfigurations = new DiceFaceConfiguration[6];
+        [SerializeField, InspectorName("六面四槽位配置")] private DiceFaceConfiguration[] faceConfigurations = new DiceFaceConfiguration[DiceRevolverRules.FaceCount];
 
-        [SerializeField, HideInInspector, InspectorName("六面装备")] private DiceFaceEntry[] entries = new DiceFaceEntry[6];
-        [SerializeField, HideInInspector, InspectorName("六面基础事件")] private BulletEventEffect[] baseEffects = new BulletEventEffect[6];
+        [SerializeField, HideInInspector, InspectorName("六面装备")] private DiceFaceEntry[] entries = new DiceFaceEntry[DiceRevolverRules.FaceCount];
+        [SerializeField, HideInInspector, InspectorName("六面基础事件")] private BulletEventEffect[] baseEffects = new BulletEventEffect[DiceRevolverRules.FaceCount];
 
         public event Action<int, DiceFaceSlotType, DiceFaceEntry> SlotChanged;
 
         public void Equip(int face, DiceFaceEntry entry)
         {
-            if (face < 1 || face > 6)
+            if (face < 1 || face > DiceRevolverRules.FaceCount)
             {
                 return;
             }
@@ -49,7 +49,7 @@ namespace DiceRevolver.Prototype
 
         public void SetBaseEffect(int face, BulletEventEffect effect)
         {
-            if (face < 1 || face > 6)
+            if (face < 1 || face > DiceRevolverRules.FaceCount)
             {
                 return;
             }
@@ -60,7 +60,7 @@ namespace DiceRevolver.Prototype
 
         public BulletEventEffect GetBaseEffect(int face)
         {
-            if (face < 1 || face > 6)
+            if (face < 1 || face > DiceRevolverRules.FaceCount)
             {
                 return null;
             }
@@ -70,7 +70,7 @@ namespace DiceRevolver.Prototype
 
         private DiceFaceConfiguration GetOrCreateConfiguration(int face)
         {
-            if (face < 1 || face > 6)
+            if (face < 1 || face > DiceRevolverRules.FaceCount)
             {
                 return null;
             }
@@ -95,19 +95,19 @@ namespace DiceRevolver.Prototype
 
         private void EnsureEntrySlots()
         {
-            if (entries == null || entries.Length != 6)
+            if (entries == null || entries.Length != DiceRevolverRules.FaceCount)
             {
-                Array.Resize(ref entries, 6);
+                Array.Resize(ref entries, DiceRevolverRules.FaceCount);
             }
 
-            if (baseEffects == null || baseEffects.Length != 6)
+            if (baseEffects == null || baseEffects.Length != DiceRevolverRules.FaceCount)
             {
-                Array.Resize(ref baseEffects, 6);
+                Array.Resize(ref baseEffects, DiceRevolverRules.FaceCount);
             }
 
-            if (faceConfigurations == null || faceConfigurations.Length != 6)
+            if (faceConfigurations == null || faceConfigurations.Length != DiceRevolverRules.FaceCount)
             {
-                Array.Resize(ref faceConfigurations, 6);
+                Array.Resize(ref faceConfigurations, DiceRevolverRules.FaceCount);
             }
         }
     }

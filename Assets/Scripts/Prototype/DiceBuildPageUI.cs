@@ -124,7 +124,7 @@ namespace DiceRevolver.Prototype
             }
 
             DiceBuildFaceSlotUI[] existingSlots = faceSlotParent.GetComponentsInChildren<DiceBuildFaceSlotUI>(true);
-            for (int face = 1; face <= 6; face++)
+            for (int face = 1; face <= DiceRevolverRules.FaceCount; face++)
             {
                 DiceBuildFaceSlotUI slot = face <= existingSlots.Length ? existingSlots[face - 1] : CreateFaceSlot(face);
                 if (slot == null)

@@ -85,7 +85,7 @@ namespace DiceRevolver.Tests
             Assert.That(effects.Effects, Does.Contain(effect));
 
             DiceFaceLoadout loadout = prefab.GetComponent<DiceFaceLoadout>();
-            for (int face = 1; face <= 6; face++)
+            for (int face = 1; face <= DiceRevolverRules.FaceCount; face++)
             {
                 Assert.That(loadout.GetBaseEffect(face), Is.SameAs(effect), $"Face {face}");
             }

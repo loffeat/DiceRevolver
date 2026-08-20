@@ -73,7 +73,7 @@ namespace DiceRevolver.Prototype
             SetAnchors(faceSlotRect, new Vector2(0.16f, 0.18f), new Vector2(0.84f, 0.78f));
             faceSlotRect.pivot = new Vector2(0f, 1f);
 
-            for (int face = 1; face <= 6; face++)
+            for (int face = 1; face <= DiceRevolverRules.FaceCount; face++)
             {
                 CreateFaceSlot(face, faceSlotParent.transform);
             }

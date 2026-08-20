@@ -163,7 +163,7 @@ namespace DiceRevolver.Tests
 
             DiceFaceLoadout loadout = playerPrefab.GetComponent<DiceFaceLoadout>();
             Assert.That(loadout, Is.Not.Null);
-            for (int face = 1; face <= 6; face++)
+            for (int face = 1; face <= DiceRevolverRules.FaceCount; face++)
             {
                 Assert.That(loadout.GetBaseEffect(face), Is.SameAs(spawnEffect), $"Face {face}");
             }

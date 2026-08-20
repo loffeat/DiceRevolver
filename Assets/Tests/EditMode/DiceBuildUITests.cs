@@ -179,7 +179,7 @@ namespace DiceRevolver.Tests
             DiceBuildFaceSlotUI[] slots = page.GetComponentsInChildren<DiceBuildFaceSlotUI>(true);
             DiceBuildEntryButtonUI[] entries = page.GetComponentsInChildren<DiceBuildEntryButtonUI>(true);
 
-            Assert.That(slots, Has.Length.EqualTo(6));
+            Assert.That(slots, Has.Length.EqualTo(DiceRevolverRules.FaceCount));
             Assert.That(entries, Has.Length.EqualTo(4));
 
             for (int i = 0; i < entries.Length; i++)

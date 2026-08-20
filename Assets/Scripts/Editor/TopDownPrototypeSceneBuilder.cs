@@ -232,7 +232,7 @@ public static class TopDownPrototypeSceneBuilder
         serializedGun.FindProperty("projectilePrefab").objectReferenceValue = projectilePrefab;
         serializedGun.FindProperty("ownerCollider").objectReferenceValue = controller;
         serializedGun.FindProperty("driveWeaponPose").boolValue = false;
-        serializedGun.FindProperty("faceCount").intValue = 6;
+        serializedGun.FindProperty("faceCount").intValue = DiceRevolverRules.FaceCount;
         serializedGun.FindProperty("shotsPerSecond").floatValue = 5f;
         serializedGun.FindProperty("reloadDuration").floatValue = 1.8f;
         serializedGun.ApplyModifiedPropertiesWithoutUndo();
@@ -325,7 +325,7 @@ public static class TopDownPrototypeSceneBuilder
         CreateAmmoFace(panelRect, 3, 1, 1, cellSize, gap, font);
         CreateAmmoFace(panelRect, 4, 2, 1, cellSize, gap, font);
         CreateAmmoFace(panelRect, 5, 3, 1, cellSize, gap, font);
-        CreateAmmoFace(panelRect, 6, 1, 2, cellSize, gap, font);
+        CreateAmmoFace(panelRect, DiceRevolverRules.FaceCount, 1, 2, cellSize, gap, font);
     }
 
     private static void CreateAmmoFace(RectTransform parent, int face, int column, int row, float cellSize, float gap, Font font)
