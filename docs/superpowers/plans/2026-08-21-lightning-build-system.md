@@ -383,21 +383,21 @@ git commit -m "feat: add tesla passive damage growth"
 - `ElectromagneticResonanceEffect` consumes only the primary handle and Registry query interface.
 - `LightningChainExecutor` consumes ordered node positions, owner transform, definition, and target layer mask.
 
-- [ ] **Step 1: Write failing selection and damage tests**
+- [x] **Step 1: Write failing selection and damage tests**
 
 Test no-op without Lightning primary, same-Gun selection only, radius `6`, no duplicate node, maximum `3`, deterministic injected random, dead-node skip, whole-chain receiver dedupe, owner immunity, and direct damage `1`.
 
-- [ ] **Step 2: Write a test proving chains do not publish hit effects**
+- [x] **Step 2: Write a test proving chains do not publish hit effects**
 
 Subscribe to Pipeline OnHit observation, execute a chain through a dummy, and assert direct damage occurs while OnHit count remains zero.
 
-- [ ] **Step 3: Run resonance/chain filters and verify RED**
+- [x] **Step 3: Run resonance/chain filters and verify RED**
 
-- [ ] **Step 4: Implement selection and executor modules**
+- [x] **Step 4: Implement selection and executor modules**
 
 Use ordered random sampling without replacement. Build segment damage with capsule-equivalent distance-to-segment checks over `Physics.OverlapSphere` broad-phase results, dedupe by `IDamageReceiver`, and render all valid segments for `0.2` seconds.
 
-- [ ] **Step 5: Run focused tests and verify GREEN**
+- [x] **Step 5: Run focused tests and verify GREEN**
 
 - [ ] **Step 6: Commit Task 6**
 

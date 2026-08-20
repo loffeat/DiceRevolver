@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DiceRevolver.Prototype
@@ -34,6 +35,8 @@ namespace DiceRevolver.Prototype
         private readonly Func<ProjectileSpawnRequest, ProjectileHandle> spawnAction;
         private readonly Func<int, bool> refillAndForceNextFaceAction;
         private readonly Action<string> warningAction;
+        private Func<ProjectileHandle, IReadOnlyList<ProjectileHandle>, LightningChainDefinition, bool>
+            lightningChainAction;
         private int remainingEventBudget;
         private bool budgetWarningIssued;
 
@@ -94,6 +97,7 @@ namespace DiceRevolver.Prototype
         public Vector3 Direction { get; }
         public ProjectileDefinition PrimaryProjectileDefinition { get; private set; }
         public ProjectileHandle PrimaryProjectile { get; private set; }
+        public OwnedProjectileRegistry OwnedProjectiles { get; private set; }
         public int RemainingEventBudget => remainingEventBudget;
 
         public bool TryConsumeEventBudget()
@@ -116,6 +120,28 @@ namespace DiceRevolver.Prototype
         public bool RequestRefillAndForceNextFace(int face)
         {
             return refillAndForceNextFaceAction != null && refillAndForceNextFaceAction.Invoke(face);
+        }
+
+        public void ConfigureLightningServices(
+            OwnedProjectileRegistry ownedProjectiles,
+            Func<ProjectileHandle, IReadOnlyList<ProjectileHandle>, LightningChainDefinition, bool>
+                requestLightningChain)
+        {
+            OwnedProjectiles = ownedProjectiles;
+            lightningChainAction = requestLightningChain;
+        }
+
+        public bool RequestLightningChain(
+            ProjectileHandle origin,
+            IReadOnlyList<ProjectileHandle> targets,
+            LightningChainDefinition definition)
+        {
+            return lightningChainAction != null &&
+                origin.IsAlive &&
+                definition != null &&
+                targets != null &&
+                targets.Count > 0 &&
+                lightningChainAction.Invoke(origin, targets, definition);
         }
 
         public bool Schedule(float delaySeconds, Action callback)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DiceRevolver.Prototype
@@ -11,6 +12,9 @@ namespace DiceRevolver.Prototype
         private readonly Action<string> logWarning;
         private readonly Action<Exception, UnityEngine.Object> logException;
         private readonly BulletEventTimeScheduler scheduler = new BulletEventTimeScheduler();
+        private OwnedProjectileRegistry ownedProjectiles;
+        private Func<ProjectileHandle, IReadOnlyList<ProjectileHandle>, LightningChainDefinition, bool>
+            requestLightningChain;
 
         public DiceShotPipeline(
             Func<float> currentTime,
@@ -69,6 +73,7 @@ namespace DiceRevolver.Prototype
                 refillAndForceNextFace,
                 logWarning,
                 eventBudget);
+            activation.ConfigureLightningServices(ownedProjectiles, requestLightningChain);
             DiceRevolverShotContext faceTrigger = new DiceRevolverShotContext(
                 face,
                 origin,
@@ -94,6 +99,15 @@ namespace DiceRevolver.Prototype
             TriggerEffect(configuration.GetEffect(DiceFaceSlotType.OnFireEnd), eventContext);
 
             return activation;
+        }
+
+        public void ConfigureLightningServices(
+            OwnedProjectileRegistry registry,
+            Func<ProjectileHandle, IReadOnlyList<ProjectileHandle>, LightningChainDefinition, bool>
+                chainRequest)
+        {
+            ownedProjectiles = registry;
+            requestLightningChain = chainRequest;
         }
 
         public void HandleHit(

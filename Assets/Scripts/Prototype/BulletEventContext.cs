@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DiceRevolver.Prototype
@@ -75,6 +76,15 @@ namespace DiceRevolver.Prototype
         public bool RequestRefillAndForceNextFace(int face)
         {
             return Activation != null && Activation.RequestRefillAndForceNextFace(face);
+        }
+
+        public bool RequestLightningChain(
+            ProjectileHandle origin,
+            IReadOnlyList<ProjectileHandle> targets,
+            LightningChainDefinition definition)
+        {
+            return Activation != null &&
+                Activation.RequestLightningChain(origin, targets, definition);
         }
     }
 }

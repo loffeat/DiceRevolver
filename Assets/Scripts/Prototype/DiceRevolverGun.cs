@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace DiceRevolver.Prototype
@@ -74,6 +75,9 @@ namespace DiceRevolver.Prototype
                 runtime.TryRefillAndForceNextFace,
                 message => Debug.LogWarning(message),
                 (exception, context) => Debug.LogException(exception, context));
+            shotPipeline.ConfigureLightningServices(
+                ownedProjectiles,
+                ExecuteLightningChain);
 
             if (loadout == null)
             {
@@ -291,6 +295,50 @@ namespace DiceRevolver.Prototype
                     hitPosition,
                     hit => ProjectileHit?.Invoke(hit));
             return handle;
+        }
+
+        private bool ExecuteLightningChain(
+            ProjectileHandle origin,
+            IReadOnlyList<ProjectileHandle> targets,
+            LightningChainDefinition definition)
+        {
+            if (!origin.IsAlive || definition == null || targets == null || targets.Count == 0)
+            {
+                return false;
+            }
+
+            List<Vector3> nodes = new List<Vector3> { origin.Position };
+            for (int index = 0; index < targets.Count; index++)
+            {
+                if (targets[index].IsAlive)
+                {
+                    nodes.Add(targets[index].Position);
+                }
+            }
+
+            if (nodes.Count < 2)
+            {
+                return false;
+            }
+
+            LightningChainExecutor executor;
+            if (definition.ExecutorPrefab != null)
+            {
+                executor = Instantiate(
+                    definition.ExecutorPrefab,
+                    Vector3.zero,
+                    Quaternion.identity);
+            }
+            else
+            {
+                executor = new GameObject("Lightning Chain").AddComponent<LightningChainExecutor>();
+            }
+
+            Transform owner = ownerCollider != null
+                ? ownerCollider.transform
+                : player != null ? player.transform : null;
+            executor.Execute(nodes, owner, definition);
+            return true;
         }
 
         private static Quaternion GetShotRotation(Vector3 direction, Quaternion fallback)
