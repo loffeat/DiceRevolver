@@ -20,7 +20,7 @@ namespace DiceRevolver.Tests
                 faces.Add(result.Face);
             }
 
-            Assert.That(faces, Has.Count.EqualTo(DiceRevolverRules.FaceCount));
+            Assert.That(faces, Is.EquivalentTo(new[] { 1, 2, 3, 4, 5, 6 }));
             Assert.That(runtime.RemainingRounds, Is.Zero);
         }
 

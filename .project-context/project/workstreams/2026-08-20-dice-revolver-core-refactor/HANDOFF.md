@@ -2,44 +2,46 @@
 
 ## 当前状态
 
-- Task 1-6 已完成：固定六面规则、Runtime、Pipeline、Projectile.Hit 与 Gun Unity 适配路径已落地。
-- Gun 联合聚焦测试 `70/70`；完整 EditMode 只有已知 Ground Y 豁免失败。
+- 自动化结构重构已完成：固定六面 Runtime、四阶段 Pipeline、Gun Unity 适配器和 Projectile 命中广播路径均已落地。
+- 最终分层聚焦 EditMode `56/56`；完整 EditMode `169/170`，唯一失败为用户明确豁免的 Ground Y 既有契约差异，没有新增失败。
+- 可见 PlayMode 战斗流程和手感仍为 `[not-run]`，不得声称已人工验收。
 
 ## 尚未完成
 
-- Task 7 Prefab/Reporter 迁移，以及最终完整验证与上下文收尾。
+- 人工确认玩家与机器人六发不重复射击、空膛换弹、手动换弹、DoubleTap 延迟、BlastRound 直击加爆炸、LoadedFour 下一发固定为 4。
+- 雷电构筑仍是独立 planned 工作流，没有在本次重构中实现。
 
 ## 当前方案及原因
 
-- 用 Runtime 管理左轮机械状态，用 Pipeline 管理骰面事件生命周期，Gun 只承担 Unity 适配职责。
+- `DiceRevolverRuntime` 管理左轮机械状态，`DiceShotPipeline` 管理骰面事件生命周期，`DiceRevolverGun` 只承担 Unity 适配职责。
 - 固定六面使用统一规则常量，不保留虚假配置能力。
-- Projectile 自己广播命中；Reporter 类型与 Prefab 组件暂留，待 Task 7 精确删除。
+- Projectile 自己广播命中，Pipeline 处理合格 OnHit，Projectile 随后提交直接伤害。
 - 事件预算由每把枪配置，并在开火时固化到激活上下文。
 
 ## 下一步首个动作
 
-- 读取 Task 7 简报，先写 Prefab/Builder/Reporter 迁移契约 RED，再只修改允许的资源与 Builder。
+- 读取[雷电构筑待办](../2026-08-20-lightning-build-backlog/STATE.md)，提醒用户该工作流仍为 `planned`，并在实现前确认其中列出的设计边界。
 
 ## 必须保护
 
-- 重构保持玩法行为不变。
-- 只允许 Player/TestRobot Prefab 删除 `faceCount`、`reloadDropDistance` 并新增默认事件预算；其他配置不得改变。
-- 不实现任何雷电构筑内容。
+- 不修改 Ground `-0.01` 或其既有失败测试；这是用户明确豁免项。
+- 继续保护六面不放回、事件阶段顺序、LoadedFour 自动换弹时机、命中顺序、事件预算与异常隔离。
+- 不把 `[not-run]` 的 PlayMode 人工验收表述为已通过。
 
 ## 风险与不可假定事项
 
-- 自动换弹必须在开火后事件执行完成后判断，否则会破坏 LoadedFour。
-- 命中广播、直接伤害和 OnHit 的相对顺序必须通过现有行为测试锁定。
-- Task 6 没有修改 Prefab、场景、Builder 或 Reporter；这些仍属于 Task 7。
+- 完整回归不是全绿：真实状态必须保持 `[failed] 169/170`，唯一失败为 `RenderingLayerContractTests.PrototypeSceneUsesZeroHeightSpriteGroundAndEntities`。
+- 雷电构筑的抽面约束、临时快照、元素反应和重复触发语义尚需设计确认。
 
 ## 最近验证
 
-- [passed] Task 6 RED `43/48`，失败来自新预算/Runtime/Projectile.Hit 适配契约缺失。
-- [passed] Task 6 Gun/Runtime/Pipeline/Inspector 联合测试 `70/70`。
-- [failed] 完整 EditMode `165/166`；唯一失败为已知 Ground Y `-0.01` 豁免项。
+- [failed] 抽面边界 mutation `0/1`，按预期捕获 `0..5` 错误集合；恢复后 `1/1` 通过。
+- [passed] Task 8 分层聚焦 EditMode `56/56`，0 失败、0 跳过。
+- [failed] 完整 EditMode `169/170`，0 跳过；唯一失败为已知 Ground Y `-0.01` 豁免项，没有新增失败。
+- [not-run] 可见 PlayMode 战斗流程与手感人工验收。
 
 ## 首先读取
 
-- [设计规格](../../../../docs/superpowers/specs/2026-08-20-dice-revolver-core-refactor-design.md)
-- [实施计划](../../../../docs/superpowers/plans/2026-08-20-dice-revolver-core-refactor.md)
-- [工作流状态](STATE.md)
+- [雷电构筑待办](../2026-08-20-lightning-build-backlog/STATE.md)
+- [项目状态](../../STATUS.md)
+- [本工作流状态](STATE.md)

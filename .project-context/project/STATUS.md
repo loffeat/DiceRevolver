@@ -31,11 +31,11 @@
 
 ## 活跃工作流
 
-- [左轮核心底层重构](workstreams/2026-08-20-dice-revolver-core-refactor/STATE.md)（`active`；Runtime/Pipeline/Gun 迁移完成，待 Prefab 与 Reporter 清理）
 - [雷电构筑与左轮底层重构待办](workstreams/2026-08-20-lightning-build-backlog/STATE.md)（`planned`；下次同步时提醒用户）
 
 ## 完成历史
 
+- [2026-08-20 左轮核心底层重构](workstreams/2026-08-20-dice-revolver-core-refactor/STATE.md)（`completed`；自动化结构重构完成，PlayMode 手感待人工验收）
 - [2026-08-20 命中范围爆炸](workstreams/2026-08-20-area-explosion-on-hit/STATE.md)（`completed`）
 - [2026-08-19 死代码清理与碰撞过滤收敛](workstreams/2026-08-19-dead-code-cleanup/STATE.md)（`completed`）
 - [2026-08-19 测试机器人战斗节奏与站立姿态](workstreams/2026-08-19-test-robot-combat-rhythm/STATE.md)（`completed`）
@@ -62,6 +62,9 @@
 
 ## 最近项目级验证
 
+- [passed] `2026-08-20`：左轮核心重构分层聚焦 EditMode `56/56`，0 失败、0 跳过。
+- [failed] `2026-08-20`：完整 EditMode `169/170`，0 跳过；唯一失败为已获用户豁免的 `RenderingLayerContractTests.PrototypeSceneUsesZeroHeightSpriteGroundAndEntities`（Ground `-0.01`，测试期望 `0`），没有新增失败。
+- [not-run] `2026-08-20`：左轮核心重构的可见 PlayMode 六发抽取、换弹、DoubleTap、BlastRound 与 LoadedFour 手感尚未人工验收。
 - [passed] `2026-08-20`：左轮 Gun/Runtime/Pipeline/Inspector 联合测试 `70/70`，0 失败、0 跳过。
 - [failed] `2026-08-20`：完整 EditMode `165/166`；唯一失败为已知 Ground Y `-0.01` 契约差异，已获本任务豁免。
 - [passed] `2026-08-20`：范围爆炸运行时 `4/4`、资源绑定 `3/3`；完整 EditMode 回归 `139/139`，0 失败、0 跳过。

@@ -69,16 +69,17 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 玩家输入 -> TopDownPlayerController -> TopDownCharacterController
 目标位置 -> TestRobotCombatBrain -> TestRobotController -> TopDownCharacterController
 TopDownCharacterController -> 移动/瞄准/动画/DiceRevolverGun
-DiceRevolverRuntime 抽面 -> DiceFaceLoadout -> DiceFaceConfigurationSnapshot 四槽位快照
-DiceShotPipeline -> Base/OnFire/OnFireEnd + 延迟调度；Projectile.Hit -> OnHit
+DiceRevolverRuntime 抽面/换弹 -> DiceShotPipeline 激活四槽位 -> DiceRevolverGun Unity 适配
+DiceFaceLoadout -> DiceFaceConfigurationSnapshot 四槽位快照 -> DiceShotPipeline
 ProjectileSpawnEffect -> ProjectileDefinition -> ProjectileRuntimeStats + 弹丸 Prefab
 DiceFaceActivation -> 延迟生成、命中事件关系与连锁预算
 DiceBuildPageUI -> DiceFaceLoadout.Equip -> 只替换词条所属槽位 -> 后续射击读取新快照
-Projectile -> IDamageReceiver -> TargetDummy.DamageReceived -> WorldDamageNumberSpawner
+Projectile 命中广播 -> DiceShotPipeline OnHit -> Projectile 直接伤害
+Projectile 直接伤害 -> IDamageReceiver -> TargetDummy.DamageReceived -> WorldDamageNumberSpawner
 ExplosionOnHitEffect -> BlastExplosion ProjectileDefinition -> AreaExplosionProjectile -> 范围 IDamageReceiver
 ```
 
-额外射击通过事件上下文请求同属性弹丸，并禁止递归触发额外射击。`Projectile.Hit` 先经 Gun 转发公开命中事件和合格的 OnHit，再由 Projectile 提交直接伤害。
+额外射击通过事件上下文请求同属性弹丸，并禁止递归触发额外射击。`Projectile` 捕获命中后先广播，`DiceShotPipeline` 处理合格的 OnHit，再由 `Projectile` 提交直接伤害。
 需要延迟的事件通过 `BulletEventContext.Schedule` 登记回调，由 `DiceShotPipeline` 使用 Gun 提供的 `Time.time` 驱动；暂停游戏时延迟计时同步暂停。
 
 ## 明确非目标
