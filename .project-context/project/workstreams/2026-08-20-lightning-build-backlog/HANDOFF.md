@@ -2,11 +2,11 @@
 
 ## 当前状态
 
-- `active`，正式设计已获用户批准，正在进入实施计划与测试先行实现。
+- `active`，正式设计与实施计划已完成，下一步执行 Task 1 数据模型红绿循环。
 
 ## 尚未完成
 
-- 实施计划、运行时代码、资源、迁移、UI 和测试尚未完成。
+- 运行时代码、资源、迁移、UI 和测试尚未完成。
 
 ## 当前方案及原因
 
@@ -22,7 +22,7 @@
 
 ## 下一步首个动作
 
-- 读取[正式设计规格](../../../../docs/superpowers/specs/2026-08-20-lightning-build-system-design.md)，编写测试先行的实施计划。
+- 读取[实施计划](../../../../docs/superpowers/plans/2026-08-21-lightning-build-system.md)，从 Task 1 的失败测试开始。
 
 ## 必须保护
 
@@ -36,9 +36,11 @@
 ## 最近验证
 
 - [passed] 设计规格完成占位符、内部一致性、范围和歧义自审。
+- [passed] 实施计划完成规格覆盖、占位符和接口一致性自审。
 - [not-run] 雷电构筑实现与 Unity 测试尚未开始。
 
 ## 首先读取
 
 - [正式设计规格](../../../../docs/superpowers/specs/2026-08-20-lightning-build-system-design.md)
+- [实施计划](../../../../docs/superpowers/plans/2026-08-21-lightning-build-system.md)
 - [工作流状态](STATE.md)
