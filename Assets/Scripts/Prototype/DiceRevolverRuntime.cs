@@ -150,6 +150,7 @@ namespace DiceRevolver.Prototype
             }
 
             IsReloading = false;
+            nextShotTime = currentTime;
             forcedNextFace = null;
             RefillAllFaces();
             return true;

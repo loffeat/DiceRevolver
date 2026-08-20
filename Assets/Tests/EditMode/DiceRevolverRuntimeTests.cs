@@ -97,12 +97,12 @@ namespace DiceRevolver.Tests
         [Test]
         public void ShotCanBeginAtTheSameTimeReloadCompletes()
         {
-            DiceRevolverRuntime runtime = new(5f, 2f, true, true);
+            DiceRevolverRuntime runtime = new(0.1f, 0.05f, true, true);
             runtime.TryBeginShot(0f);
             runtime.Tick(0f, true);
 
-            Assert.That(runtime.Tick(2f, false).ReloadCompleted, Is.True);
-            Assert.That(runtime.TryBeginShot(2f).Status, Is.EqualTo(DiceRevolverDrawStatus.Fired));
+            Assert.That(runtime.Tick(0.05f, false).ReloadCompleted, Is.True);
+            Assert.That(runtime.TryBeginShot(0.05f).Status, Is.EqualTo(DiceRevolverDrawStatus.Fired));
         }
 
         [Test]
