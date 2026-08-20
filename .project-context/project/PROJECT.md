@@ -8,7 +8,7 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 
 1. 玩家用 `WASD` 移动，鼠标指向地面完成瞄准。
 2. 按住鼠标左键射击；左轮从剩余骰面中随机抽取一个面并移除。
-3. 抽中的骰面生成四槽位配置快照，依次解析基础、开火时、命中时和开火后效果。
+3. 抽中的骰面生成五槽位配置快照，依次解析基础、开火时、命中时和开火后效果；被动槽由独立 Runtime 持续监听。
 4. 六面耗尽后自动换弹并重置骰池；`R` 可以手动换弹。
 5. `E` 打开构筑页，先选词条再选骰面以修改装备。
 
@@ -32,7 +32,7 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 - [Assets/Scripts/Prototype](../../Assets/Scripts/Prototype)：运行时玩家、左轮、弹丸、事件与 UI。
 - [Assets/Scripts/Editor](../../Assets/Scripts/Editor)：原型场景和骰面资源生成工具。
 - [Assets/Tests/EditMode](../../Assets/Tests/EditMode)：左轮运行时、装备、弹丸、效果、UI 和瞄准测试。
-- [Assets/Resources/DiceFacePrototype](../../Assets/Resources/DiceFacePrototype)：四个示例词条、弹丸定义及事件资源。
+- [Assets/Resources/DiceFacePrototype](../../Assets/Resources/DiceFacePrototype)：骰面词条、弹丸定义、类型/标签、被动和雷电构筑资源。
 - [docs/superpowers](../../docs/superpowers)：已批准的设计规格和实施计划。
 - [.superpowers/sdd](../../.superpowers/sdd)：既有骰面构筑任务的执行与复核证据。
 
@@ -45,12 +45,15 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 - [TestRobotCombatBrain.cs](../../Assets/Scripts/Prototype/TestRobotCombatBrain.cs)：按近/远阈值输出接近、后退或横移，在移动爆发与站定攻击间循环，并持续提供瞄准与开火意图。
 - [TopDownAimHandRig.cs](../../Assets/Scripts/Prototype/TopDownAimHandRig.cs)：处理手臂镜像、枪口姿态和近距离稳定瞄准。
 - [DiceRevolverRuntime.cs](../../Assets/Scripts/Prototype/DiceRevolverRuntime.cs)：维护固定六面骰池、射击冷却与换弹机械状态。
-- [DiceShotPipeline.cs](../../Assets/Scripts/Prototype/DiceShotPipeline.cs)：执行四阶段骰面事件、延迟调度、命中效果与事件预算。
+- [DiceShotPipeline.cs](../../Assets/Scripts/Prototype/DiceShotPipeline.cs)：执行四阶段活动事件、延迟调度、命中效果、骰面覆盖与共享事件预算。
 - [DiceRevolverGun.cs](../../Assets/Scripts/Prototype/DiceRevolverGun.cs)：把角色输入、Unity 时间、姿态、弹丸实例化和公开事件适配到 Runtime/Pipeline。
-- [DiceFaceLoadout.cs](../../Assets/Scripts/Prototype/DiceFaceLoadout.cs)：保存六个骰面的四槽位运行时装备，并兼容读取旧序列化数据。
-- [DiceFaceConfiguration.cs](../../Assets/Scripts/Prototype/DiceFaceConfiguration.cs)：保存单面四槽位配置并生成单次激活快照。
+- [DicePassiveRuntime.cs](../../Assets/Scripts/Prototype/DicePassiveRuntime.cs)：管理每枪每面的独立被动实例、抽面约束、属性修正和生命周期通知。
+- [DiceFaceLoadout.cs](../../Assets/Scripts/Prototype/DiceFaceLoadout.cs)：保存六个骰面的五槽位运行时装备，并兼容读取旧序列化数据。
+- [DiceFaceConfiguration.cs](../../Assets/Scripts/Prototype/DiceFaceConfiguration.cs)：保存单面五槽位配置、活动槽临时覆盖并生成单次激活快照。
 - [DiceFaceEntry.cs](../../Assets/Scripts/Prototype/DiceFaceEntry.cs)：单槽位 ScriptableObject 构筑词条，绑定一个槽位类型和一个事件效果。
-- [ProjectileDefinition.cs](../../Assets/Scripts/Prototype/ProjectileDefinition.cs)：拥有弹丸 Prefab、运行时属性、默认攻击特效与扩展端口。
+- [ProjectileDefinition.cs](../../Assets/Scripts/Prototype/ProjectileDefinition.cs)：拥有弹丸 Prefab、类型/标签、运行时属性、默认攻击特效与扩展端口。
+- [OwnedProjectileRegistry.cs](../../Assets/Scripts/Prototype/OwnedProjectileRegistry.cs)：按 Gun 隔离并查询仍存活的已生成弹丸。
+- [LightningChainExecutor.cs](../../Assets/Scripts/Prototype/LightningChainExecutor.cs)：沿雷电球节点渲染闪电链，并对链路范围内目标去重结算直接伤害。
 - [DiceFaceActivation.cs](../../Assets/Scripts/Prototype/DiceFaceActivation.cs)：保存单次骰面激活快照、弹丸生成请求、命中关系和事件预算。
 - [ProjectileSpawnEffect.cs](../../Assets/Scripts/Prototype/ProjectileSpawnEffect.cs)：按弹丸定义、延迟、主弹身份和攻击特效覆盖策略请求生成弹丸。
 - [BulletEventEffect.cs](../../Assets/Scripts/Prototype/BulletEventEffect.cs)：开火、命中和开火结束效果的扩展基类。
@@ -69,10 +72,12 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 玩家输入 -> TopDownPlayerController -> TopDownCharacterController
 目标位置 -> TestRobotCombatBrain -> TestRobotController -> TopDownCharacterController
 TopDownCharacterController -> 移动/瞄准/动画/DiceRevolverGun
-DiceRevolverRuntime 抽面/换弹 -> DiceShotPipeline 激活四槽位 -> DiceRevolverGun Unity 适配
-DiceFaceLoadout -> DiceFaceConfigurationSnapshot 四槽位快照 -> DiceShotPipeline
+DiceRevolverRuntime 抽面/换弹 -> DicePassiveRuntime 抽面约束/被动状态 -> DiceShotPipeline 激活四个活动槽 -> DiceRevolverGun Unity 适配
+DiceFaceLoadout -> DiceFaceConfigurationSnapshot 五槽位快照 -> DiceShotPipeline + DicePassiveRuntime
 ProjectileSpawnEffect -> ProjectileDefinition -> ProjectileRuntimeStats + 弹丸 Prefab
-DiceFaceActivation -> 延迟生成、命中事件关系与连锁预算
+DiceFaceActivation -> 延迟生成、命中事件关系、临时活动槽覆盖与共享连锁预算
+弹丸生成 -> OwnedProjectileRegistry -> 电磁共鸣选点 -> LightningChainExecutor 直接链路伤害
+同类弹丸命中 -> 呼应协同 -> 同帧带自然散布的奖励骰面激活
 DiceBuildPageUI -> DiceFaceLoadout.Equip -> 只替换词条所属槽位 -> 后续射击读取新快照
 Projectile 命中广播 -> DiceShotPipeline OnHit -> Projectile 直接伤害
 Projectile 直接伤害 -> IDamageReceiver -> TargetDummy.DamageReceived -> WorldDamageNumberSpawner
@@ -84,7 +89,7 @@ ExplosionOnHitEffect -> BlastExplosion ProjectileDefinition -> AreaExplosionProj
 
 ## 明确非目标
 
-- 当前只有通用伤害投递和无限生命测试靶，没有正式敌人的有限生命、死亡和穿透消费系统。
+- 当前有通用伤害投递、弹丸穿透和无限生命测试靶，没有正式敌人的有限生命与死亡系统。
 - 当前不实现词条获取、商店、奖励、局内持久化或正式美术表现。
 - 上下文系统不修改 Unity 运行时代码、资源、Prefab、场景或项目设置。
 
@@ -92,9 +97,11 @@ ExplosionOnHitEffect -> BlastExplosion ProjectileDefinition -> AreaExplosionProj
 
 - 骰池：`DiceRevolverRuntime` 中尚未被抽出的固定六面集合。
 - 骰面词条：绑定一个事件阶段、可装备到对应槽位的 `DiceFaceEntry` 资源。
-- 四槽位：每个骰面独立拥有基础、开火时、命中时、开火后四个单事件槽位。
-- 装备：`DiceFaceLoadout` 中六个面到四槽位配置的映射。
+- 五槽位：每个骰面独立拥有基础、开火时、命中时、开火后四个活动槽，以及一个被动槽。
+- 装备：`DiceFaceLoadout` 中六个面到五槽位配置的映射。
 - 弹丸事件：由 `BulletEventEffect` 在开火、命中或开火结束时执行的扩展行为。
+- 被动事件：由 `PassiveEventEffect` 为每把枪、每个装备面创建独立运行时实例的持续规则。
+- 弹丸类型/标签：通过 ScriptableObject 身份比较的弹丸分类；一个弹丸拥有一个类型和多个标签。
 - 骰面激活：一次骰面被抽中后，从四阶段事件派发到其弹丸、命中与延迟连锁结束的独立攻击链。
 - 事件预算：一次骰面激活最多可消费的事件次数；预算在开火时固化，并由该激活的直接与延迟事件共享。
 - 工作流：`.project-context/project/workstreams/` 下一个独立事项的状态和交接记录。

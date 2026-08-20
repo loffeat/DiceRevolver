@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f9ce5ef10f4e144e8f026fbd13bcabb, type: 3}
+  m_Name: ChainReaction
+  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.DiceFaceEntry
+  displayName: "\u94FE\u5F0F\u53CD\u5E94"
+  description: "\u5F00\u706B\u540E\u628A\u672C\u9AB0\u9762\u7684\u975E\u7A7A\u4E3B\u52A8\u69FD\u8986\u76D6\u5230\u4E0B\u4E00\u6B21\u6B63\u5E38\u5C04\u51FB\u3002"
+  displayColor: {r: 0.94, g: 0.52, b: 0.84, a: 1}
+  slotType: 3
+  effect: {fileID: 11400000, guid: 21c1135d99fc4c149b12609c559cf844, type: 2}
+  passiveEffect: {fileID: 0}
+  onFireEffects: []
+  onHitEffects: []
+  onFireEndEffects: []

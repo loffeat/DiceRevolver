@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8bc4015b2c59dcae80b375fc2946da2f, type: 3}
+  m_Name: LightningOrb
+  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.ProjectileDefinition
+  displayName: "\u96F7\u7535\u7403"
+  projectilePrefab: {fileID: 8646054926267820072, guid: f26ae006f21293e448b5c19c3e6cb7b7, type: 3}
+  projectileType: LightningOrb
+  projectileTag: Lightning
+  projectileTypeDefinition: {fileID: 11400000, guid: 1bed045ba23cf6d44b4de7a7f7d5e919, type: 2}
+  projectileTags:
+  - {fileID: 11400000, guid: f5cb132e37d53494685b2b54b6131a35, type: 2}
+  - {fileID: 11400000, guid: bc75aa6816b385543a6190435e72279a, type: 2}
+  damage: 1
+  flightDistance: 15
+  flightSpeed: 5
+  enemyPierceCount: 4
+  extensionPorts: []
+  defaultAttackEffect: 0

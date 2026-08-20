@@ -21,10 +21,13 @@ namespace DiceRevolver.Tests
             yield return Port<DiceFaceEntry>("displayName", "显示名称");
             yield return Port<DiceFaceEntry>("slotType", "槽位类型");
             yield return Port<DiceFaceEntry>("effect", "事件效果");
+            yield return Port<DiceFaceEntry>("passiveEffect", "被动效果");
 
             yield return Port<ProjectileDefinition>("projectilePrefab", "弹丸 Prefab");
             yield return Port<ProjectileDefinition>("projectileType", "弹幕类型");
             yield return Port<ProjectileDefinition>("projectileTag", "弹幕标签");
+            yield return Port<ProjectileDefinition>("projectileTypeDefinition", "弹幕类型资源");
+            yield return Port<ProjectileDefinition>("projectileTags", "弹幕标签资源");
             yield return Port<ProjectileDefinition>("damage", "弹幕伤害");
             yield return Port<ProjectileDefinition>("flightDistance", "飞行距离");
             yield return Port<ProjectileDefinition>("flightSpeed", "飞行速度");
@@ -47,7 +50,18 @@ namespace DiceRevolver.Tests
             yield return Port<DiceFaceLibrary>("entries", "骰面词条库");
             yield return Port<BulletEventLibrary>("effects", "子弹事件库");
             yield return Port<ProjectileDefinitionLibrary>("definitions", "弹丸定义库");
-            yield return Port<DiceFaceLoadout>("faceConfigurations", "六面四槽位配置");
+            yield return Port<ProjectileTypeLibrary>("types", "弹幕类型库");
+            yield return Port<ProjectileTagLibrary>("tags", "弹幕标签库");
+            yield return Port<TeslaPassiveEffect>("lightningTag", "雷电标签");
+            yield return Port<TeslaPassiveEffect>("damagePerStack", "每层伤害提升比例");
+            yield return Port<EchoSynergyPassiveEffect>("maximumTriggersPerChamber", "每轮最大呼应次数");
+            yield return Port<EchoSynergyPassiveEffect>("maximumSpreadAngle", "最大自然散布角度");
+            yield return Port<EchoSynergyPassiveEffect>("minimumSpreadSeparation", "同帧最小角度间隔");
+            yield return Port<ElectromagneticResonanceEffect>("searchRadius", "共鸣搜索半径");
+            yield return Port<ElectromagneticResonanceEffect>("maximumConnections", "最大连接数量");
+            yield return Port<LightningChainDefinition>("damage", "闪电链伤害");
+            yield return Port<LightningChainDefinition>("chainWidth", "闪电链宽度");
+            yield return Port<DiceFaceLoadout>("faceConfigurations", "六面五槽位配置");
         }
 
         [TestCaseSource(nameof(CoreCombatPorts))]

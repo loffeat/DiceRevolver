@@ -178,7 +178,7 @@ Use a `HashSet<IDamageReceiver>` and `remainingEnemyPierces`. Ignore already-hit
 
 Expected: new piercing tests and existing collision-order tests pass.
 
-- [ ] **Step 5: Commit Task 2**
+- [x] **Step 5: Commit Task 2**
 
 ```powershell
 git add Assets/Scripts/Prototype/Projectile.cs Assets/Tests/EditMode
@@ -258,7 +258,7 @@ Only Passive slot changes rebuild an instance. Existing active slot edits do not
 
 Expected: passive isolation, immediate replacement, Finisher ordering, multiple Finishers, forced waiting, fallback, and existing six-face tests pass.
 
-- [ ] **Step 7: Commit Task 3**
+- [x] **Step 7: Commit Task 3**
 
 ```powershell
 git add Assets/Scripts/Prototype Assets/Tests/EditMode
@@ -314,7 +314,7 @@ Each Gun owns one Registry and registers every successful spawn. Do not use a st
 
 Assert type LightningOrb, tags Lightning and Elemental, damage `1`, speed `5`, distance `15`, pierce `4`, attack effect false, and collider radius `0.35`.
 
-- [ ] **Step 5: Commit Task 4 runtime changes**
+- [x] **Step 5: Commit Task 4 runtime changes**
 
 ```powershell
 git add Assets/Scripts/Prototype Assets/Tests/EditMode
@@ -358,7 +358,7 @@ Tesla runtime stores `stackCount`. `ModifyProjectileStats` applies `1f + stackCo
 
 - [x] **Step 4: Run Tesla and pipeline regressions and verify GREEN**
 
-- [ ] **Step 5: Commit Task 5**
+- [x] **Step 5: Commit Task 5**
 
 ```powershell
 git add Assets/Scripts/Prototype Assets/Tests/EditMode
@@ -399,7 +399,7 @@ Use ordered random sampling without replacement. Build segment damage with capsu
 
 - [x] **Step 5: Run focused tests and verify GREEN**
 
-- [ ] **Step 6: Commit Task 6**
+- [x] **Step 6: Commit Task 6**
 
 ```powershell
 git add Assets/Scripts/Prototype Assets/Tests/EditMode
@@ -439,7 +439,7 @@ Do not queue through time. Handle the bonus request in the same frame through Pi
 
 - [x] **Step 5: Run focused tests and verify GREEN**
 
-- [ ] **Step 6: Commit Task 7**
+- [x] **Step 6: Commit Task 7**
 
 ```powershell
 git add Assets/Scripts/Prototype Assets/Tests/EditMode
@@ -478,7 +478,7 @@ The effect builds the overlay after excluding its own OnFireEnd entry. Pipeline 
 
 - [x] **Step 4: Run focused tests and verify GREEN**
 
-- [ ] **Step 5: Commit Task 8**
+- [x] **Step 5: Commit Task 8**
 
 ```powershell
 git add Assets/Scripts/Prototype Assets/Tests/EditMode
@@ -521,33 +521,33 @@ git commit -m "feat: add chain reaction shot overlays"
 - Builder entry: `DiceRevolver.Editor.LightningBuildPrototypeBuilder.Build`.
 - Builder is idempotent: existing non-null fields and tuned values are never overwritten.
 
-- [ ] **Step 1: Record protected hashes and gun values**
+- [x] **Step 1: Record protected hashes and gun values**
 
 Record SHA256 for Player, TargetDummy, TestRobot and serialize current Player `shotsPerSecond`, `reloadDuration`, `holdDistance`, `holdHeight` before any Builder execution.
 
-- [ ] **Step 2: Write failing asset and localization tests**
+- [x] **Step 2: Write failing asset and localization tests**
 
 Assert all new assets, default values, type/tag references, prefab components, projectile sorting, fifth UI row, six Library entries, and Chinese Inspector names. Assert Player/TestRobot do not reference new entries.
 
-- [ ] **Step 3: Run asset filters and verify RED**
+- [x] **Step 3: Run asset filters and verify RED**
 
-- [ ] **Step 4: Implement and run only the targeted Builder**
+- [x] **Step 4: Implement and run only the targeted Builder**
 
 Existing assets return unchanged. New assets receive approved defaults. Library arrays append only missing references. Do not invoke `TopDownPrototypeSceneBuilder`.
 
-- [ ] **Step 5: Run all affected focused tests**
+- [x] **Step 5: Run all affected focused tests**
 
 Run all new test classes plus existing Runtime, Pipeline, Gun integration, loadout, UI, projectile collision, explosion, robot asset, and rendering-layer tests. Expected: all focused feature tests pass; the separately identified Ground contract remains the only allowed failure when included.
 
-- [ ] **Step 6: Run the full EditMode suite**
+- [x] **Step 6: Run the full EditMode suite**
 
 Expected: no new failures. If Ground `Y=-0.01` remains the sole failure, record exact total/pass/fail counts and test identity without calling the suite green.
 
-- [ ] **Step 7: Recheck protected assets and project context**
+- [x] **Step 7: Recheck protected assets and project context**
 
 Hashes and gun values must match Step 1. Run context checker and `git diff --check`.
 
-- [ ] **Step 8: Update context and commit final integration**
+- [x] **Step 8: Update context and commit final integration**
 
 Update workstream STATE/HANDOFF, PROJECT, STATUS, ENVIRONMENT when facts changed, and record PlayMode as `not-run` unless visibly tested.
 

@@ -5,7 +5,7 @@ namespace DiceRevolver.Prototype
 {
     public sealed class DiceFaceLoadout : MonoBehaviour
     {
-        [SerializeField, InspectorName("六面四槽位配置")] private DiceFaceConfiguration[] faceConfigurations = new DiceFaceConfiguration[DiceRevolverRules.FaceCount];
+        [SerializeField, InspectorName("六面五槽位配置")] private DiceFaceConfiguration[] faceConfigurations = new DiceFaceConfiguration[DiceRevolverRules.FaceCount];
 
         [SerializeField, HideInInspector, InspectorName("六面装备")] private DiceFaceEntry[] entries = new DiceFaceEntry[DiceRevolverRules.FaceCount];
         [SerializeField, HideInInspector, InspectorName("六面基础事件")] private BulletEventEffect[] baseEffects = new BulletEventEffect[DiceRevolverRules.FaceCount];

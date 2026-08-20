@@ -1,5 +1,6 @@
 using DiceRevolver.Prototype;
 using NUnit.Framework;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -207,12 +208,26 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
-        public void PrototypeResourceLibraryContainsFourEntries()
+        public void PrototypeResourceLibraryRetainsOriginalAndLightningEntries()
         {
             DiceFaceLibrary library = Resources.Load<DiceFaceLibrary>("DiceFacePrototype/DiceFaceLibrary");
 
             Assert.That(library, Is.Not.Null);
-            Assert.That(library.Entries.Count, Is.EqualTo(4));
+            Assert.That(
+                library.Entries.Select(entry => entry.name),
+                Is.SupersetOf(new[]
+                {
+                    "BasicShot",
+                    "DoubleTap",
+                    "BlastRound",
+                    "LoadedFour",
+                    "LightningOrb",
+                    "Finisher",
+                    "ElectromagneticResonance",
+                    "Tesla",
+                    "EchoSynergy",
+                    "ChainReaction"
+                }));
         }
 
         private static Text CreateText(string name, Transform parent)

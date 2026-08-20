@@ -2,13 +2,16 @@
 
 ## 当前阶段
 
-- 可玩原型阶段；命中范围爆炸、测试机器人、四槽位骰面构筑和模块化弹丸事件管线均已完成当前自动化范围。
+- 可玩原型阶段；命中范围爆炸、测试机器人、五槽位骰面构筑、被动 Runtime 和雷电连锁构筑均已完成当前自动化范围。
 
 ## 全局有效状态
 
-- `main` 的当前工作树包含顶视角移动、骰子左轮、弹药 HUD、运行时构筑页和四个示例词条。
-- 每个骰面现拥有基础、开火时、命中时、开火后四个互不占用的单事件槽位；抽面时生成不可变配置快照供延迟和命中事件继续使用。
-- 构筑页会显示每面的四行槽位摘要；选择词条后点击骰面只替换该词条对应槽位。示例库包含基础射击、DoubleTap、BlastRound 和 LoadedFour 四类词条。
+- 当前实现包含顶视角移动、骰子左轮、弹药 HUD、运行时构筑页、既有四个示例词条和六个雷电构筑词条。
+- 每个骰面现拥有基础、开火时、命中时、开火后和被动五个互不占用的单事件槽位；活动事件使用不可变激活快照，被动事件使用每枪每面的独立 Runtime。
+- 构筑页会显示每面的五行槽位摘要；选择词条后点击骰面只替换该词条对应槽位。新词条只进入资源库，没有自动装备到 Player 或 TestRobot。
+- 弹丸支持 ScriptableObject 类型和多标签身份、按不同受伤对象计算的通用穿透，以及按 Gun 隔离的存活弹丸 Registry。
+- 雷电构筑已实现雷电球、收尾者、电磁共鸣、特斯拉、呼应协同和链式反应；所有参数通过对应 ScriptableObject 或 Prefab 暴露。
+- 闪电链不视为攻击特效且不广播命中事件；呼应协同奖励弹允许同帧生成并带自然散布；链式反应不复制被动槽和空活动槽。
 - 构筑页可在场景加载后自动创建，按 `E` 打开或关闭；瞄准系统使用镜像虚拟枪口、近距离稳定解算和开火前同帧姿态刷新。
 - 子弹事件可通过 `BulletEventContext.Schedule` 使用轻量游戏时间调度；双重射击默认在第一发后 `0.25` 秒生成第二发。
 - 弹丸运行时属性已迁移到 `ProjectileDefinition`；每次骰面触发使用独立 `DiceFaceActivation`，并以默认 `32` 次事件预算限制连锁。
@@ -31,10 +34,11 @@
 
 ## 活跃工作流
 
-- [雷电构筑系统](workstreams/2026-08-20-lightning-build-backlog/STATE.md)（`active`；设计已批准，进入实施）
+- 无。
 
 ## 完成历史
 
+- [2026-08-21 雷电构筑系统](workstreams/2026-08-20-lightning-build-backlog/STATE.md)（`completed`；自动化实现完成，PlayMode 视觉与手感待人工验收）
 - [2026-08-20 左轮核心底层重构](workstreams/2026-08-20-dice-revolver-core-refactor/STATE.md)（`completed`；自动化结构重构完成，PlayMode 手感待人工验收）
 - [2026-08-20 命中范围爆炸](workstreams/2026-08-20-area-explosion-on-hit/STATE.md)（`completed`）
 - [2026-08-19 死代码清理与碰撞过滤收敛](workstreams/2026-08-19-dead-code-cleanup/STATE.md)（`completed`）
@@ -58,10 +62,15 @@
 - 尚未执行完整 PlayMode 战斗流程验证。
 - 测试机器人距离阈值、横移换向周期和视觉手感尚未在可见 Play Mode 中人工验收。
 - 范围爆炸的圆环颜色、半径和持续时间尚未在可见 Play Mode 中人工验收。
+- 雷电球尺寸、闪电链可读性、呼应协同同帧散布和六发构筑节奏尚未在可见 Play Mode 中人工验收。
 - 当前设备的 Git LFS clean filter 无法写入 `.git/lfs/tmp`，导致部分全仓库 Git 状态或 diff 检查失败。
 
 ## 最近项目级验证
 
+- [passed] `2026-08-21`：雷电资源、中文 Inspector、五槽位和 UI 联合 EditMode `65/65`，0 失败、0 跳过。
+- [failed] `2026-08-21`：雷电构筑完成后的完整 EditMode 为 `233/234`，0 跳过；唯一失败为已获豁免的 `RenderingLayerContractTests.PrototypeSceneUsesZeroHeightSpriteGroundAndEntities`（Ground `-0.01`，测试期望 `0`），没有新增失败。
+- [passed] `2026-08-21`：Player、TargetDummy、TestRobot Prefab SHA256 与实施前一致；Player 的持枪距离、持枪高度、射速、换弹时间保持 `0.85`、`0.72`、`2`、`2`。
+- [not-run] `2026-08-21`：雷电球、闪电链、呼应协同散布和链式反应的可见 PlayMode 人工验收。
 - [passed] `2026-08-20`：左轮核心重构终审修复后分层聚焦 EditMode `58/58`，0 失败、0 跳过。
 - [failed] `2026-08-20`：终审修复并 fast-forward 合并到本地 `main` 后，完整 EditMode 复验为 `171/172`，0 跳过；唯一失败为已获用户豁免的 `RenderingLayerContractTests.PrototypeSceneUsesZeroHeightSpriteGroundAndEntities`（Ground `-0.01`，测试期望 `0`），没有新增失败。
 - [not-run] `2026-08-20`：左轮核心重构的可见 PlayMode 六发抽取、换弹、DoubleTap、BlastRound 与 LoadedFour 手感尚未人工验收。
