@@ -32,7 +32,7 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 - [Assets/Scripts/Prototype](../../Assets/Scripts/Prototype)：运行时玩家、左轮、弹丸、事件与 UI。
 - [Assets/Scripts/Editor](../../Assets/Scripts/Editor)：原型场景和骰面资源生成工具。
 - [Assets/Tests/EditMode](../../Assets/Tests/EditMode)：弹巢、装备、弹丸、效果、UI 和瞄准测试。
-- [Assets/Resources/DiceFacePrototype](../../Assets/Resources/DiceFacePrototype)：三个示例词条及事件资源。
+- [Assets/Resources/DiceFacePrototype](../../Assets/Resources/DiceFacePrototype)：四个示例词条、弹丸定义及事件资源。
 - [docs/superpowers](../../docs/superpowers)：已批准的设计规格和实施计划。
 - [.superpowers/sdd](../../.superpowers/sdd)：既有骰面构筑任务的执行与复核证据。
 
