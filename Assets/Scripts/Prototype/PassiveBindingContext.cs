@@ -8,12 +8,30 @@ namespace DiceRevolver.Prototype
             long suppressedPassiveInstanceId,
             float maximumSpreadAngle,
             float minimumSpreadSeparation)
+            : this(
+                face,
+                eventBudget,
+                suppressedPassiveInstanceId,
+                maximumSpreadAngle,
+                minimumSpreadSeparation,
+                null)
+        {
+        }
+
+        public BonusDiceActivationRequest(
+            int face,
+            DiceEventBudget eventBudget,
+            long suppressedPassiveInstanceId,
+            float maximumSpreadAngle,
+            float minimumSpreadSeparation,
+            DiceFaceActivation sourceActivation)
         {
             Face = face;
             EventBudget = eventBudget;
             SuppressedPassiveInstanceId = suppressedPassiveInstanceId;
             MaximumSpreadAngle = maximumSpreadAngle;
             MinimumSpreadSeparation = minimumSpreadSeparation;
+            SourceActivation = sourceActivation;
         }
 
         public int Face { get; }
@@ -21,6 +39,7 @@ namespace DiceRevolver.Prototype
         public long SuppressedPassiveInstanceId { get; }
         public float MaximumSpreadAngle { get; }
         public float MinimumSpreadSeparation { get; }
+        public DiceFaceActivation SourceActivation { get; }
     }
 
     public readonly struct PassiveBindingContext
@@ -61,6 +80,19 @@ namespace DiceRevolver.Prototype
             float maximumSpreadAngle,
             float minimumSpreadSeparation)
         {
+            return RequestBonusActivation(
+                eventBudget,
+                maximumSpreadAngle,
+                minimumSpreadSeparation,
+                null);
+        }
+
+        public bool RequestBonusActivation(
+            DiceEventBudget eventBudget,
+            float maximumSpreadAngle,
+            float minimumSpreadSeparation,
+            DiceFaceActivation sourceActivation)
+        {
             return eventBudget != null &&
                 bonusActivationRequest != null &&
                 bonusActivationRequest.Invoke(new BonusDiceActivationRequest(
@@ -68,7 +100,8 @@ namespace DiceRevolver.Prototype
                     eventBudget,
                     InstanceId,
                     maximumSpreadAngle,
-                    minimumSpreadSeparation));
+                    minimumSpreadSeparation,
+                    sourceActivation));
         }
     }
 }

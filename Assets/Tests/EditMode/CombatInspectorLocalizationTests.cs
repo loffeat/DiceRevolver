@@ -61,6 +61,12 @@ namespace DiceRevolver.Tests
             yield return Port<ElectromagneticResonanceEffect>("maximumConnections", "最大连接数量");
             yield return Port<LightningChainDefinition>("damage", "闪电链伤害");
             yield return Port<LightningChainDefinition>("chainWidth", "闪电链宽度");
+            yield return Port<CombatDebugSettings>("debugEnabled", "启用战斗事件 Debug");
+            yield return Port<CombatDebugSettings>("maximumLines", "最大显示行数");
+            yield return Port<CombatDebugSettings>("lineLifetime", "文本停留时间（秒）");
+            yield return Port<CombatDebugSettings>("fontSize", "字体大小");
+            yield return Port<CombatDebugSettings>("panelWidth", "面板宽度");
+            yield return Port<CombatDebugSettings>("panelHeight", "面板高度");
             yield return Port<DiceFaceLoadout>("faceConfigurations", "六面五槽位配置");
         }
 

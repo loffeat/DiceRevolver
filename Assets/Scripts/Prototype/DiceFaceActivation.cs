@@ -38,6 +38,8 @@ namespace DiceRevolver.Prototype
         private Func<ProjectileHandle, IReadOnlyList<ProjectileHandle>, LightningChainDefinition, bool>
             lightningChainAction;
         private Action<DiceFaceActiveOverlay> queueNextShotOverlayAction;
+        private CombatDebugTrace debugTrace;
+        private Func<float> debugTime;
 
         public DiceFaceActivation(
             int face,
@@ -129,7 +131,18 @@ namespace DiceRevolver.Prototype
         public DiceEventBudget EventBudget { get; }
         public bool IsBonusActivation { get; }
         public long SuppressedPassiveInstanceId { get; }
+        public CombatDebugScope DebugScope { get; private set; }
         public int RemainingEventBudget => EventBudget.Remaining;
+
+        public void ConfigureDebugScope(
+            CombatDebugTrace trace,
+            CombatDebugScope scope,
+            Func<float> currentTime)
+        {
+            debugTrace = trace;
+            DebugScope = scope;
+            debugTime = currentTime;
+        }
 
         public bool TryConsumeEventBudget()
         {
@@ -139,7 +152,13 @@ namespace DiceRevolver.Prototype
 
         public bool RequestRefillAndForceNextFace(int face)
         {
-            return refillAndForceNextFaceAction != null && refillAndForceNextFaceAction.Invoke(face);
+            bool applied = refillAndForceNextFaceAction != null && refillAndForceNextFaceAction.Invoke(face);
+            if (applied)
+            {
+                RecordDebug(CombatDebugEventType.Result, "结果", "检索骰面", $"骰面 {face}", 2);
+            }
+
+            return applied;
         }
 
         public void ConfigureLightningServices(
@@ -156,12 +175,23 @@ namespace DiceRevolver.Prototype
             IReadOnlyList<ProjectileHandle> targets,
             LightningChainDefinition definition)
         {
-            return lightningChainAction != null &&
+            bool created = lightningChainAction != null &&
                 origin.IsAlive &&
                 definition != null &&
                 targets != null &&
                 targets.Count > 0 &&
                 lightningChainAction.Invoke(origin, targets, definition);
+            if (created)
+            {
+                RecordDebug(
+                    CombatDebugEventType.Result,
+                    "结果",
+                    "生成闪电链",
+                    $"连接 {targets.Count} 个雷电球",
+                    2);
+            }
+
+            return created;
         }
 
         public void ConfigureOverlayService(Action<DiceFaceActiveOverlay> queueOverlay)
@@ -177,6 +207,7 @@ namespace DiceRevolver.Prototype
             }
 
             queueNextShotOverlayAction.Invoke(overlay);
+            RecordDebug(CombatDebugEventType.Result, "结果", "覆盖下一骰面", null, 2);
             return true;
         }
 
@@ -187,7 +218,18 @@ namespace DiceRevolver.Prototype
                 return false;
             }
 
-            scheduleAction.Invoke(Mathf.Max(0f, delaySeconds), callback);
+            float delay = Mathf.Max(0f, delaySeconds);
+            RecordDebug(
+                CombatDebugEventType.Result,
+                "延迟",
+                "安排延迟事件",
+                $"{delay:0.##} 秒后",
+                2);
+            scheduleAction.Invoke(delay, () =>
+            {
+                RecordDebug(CombatDebugEventType.Result, "延迟", "执行延迟事件", null, 2);
+                callback.Invoke();
+            });
             return true;
         }
 
@@ -220,7 +262,36 @@ namespace DiceRevolver.Prototype
                 PrimaryProjectile = handle;
             }
 
+            RecordDebug(
+                CombatDebugEventType.Result,
+                "结果",
+                "生成弹丸",
+                definition.name,
+                2);
+
             return true;
+        }
+
+        public void RecordDebug(
+            CombatDebugEventType eventType,
+            string phase,
+            string name,
+            string detail,
+            int additionalDepth)
+        {
+            if (debugTrace == null || !DebugScope.IsValid)
+            {
+                return;
+            }
+
+            debugTrace.Record(
+                DebugScope,
+                eventType,
+                phase,
+                name,
+                detail,
+                additionalDepth,
+                debugTime != null ? debugTime.Invoke() : 0f);
         }
 
         private static bool ResolveAttackEffect(

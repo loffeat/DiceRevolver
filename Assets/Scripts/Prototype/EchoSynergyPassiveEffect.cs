@@ -68,7 +68,8 @@ namespace DiceRevolver.Prototype
                 if (context.RequestBonusActivation(
                     shot.Activation.EventBudget,
                     maximumSpreadAngle,
-                    minimumSpreadSeparation))
+                    minimumSpreadSeparation,
+                    shot.Activation))
                 {
                     remainingTriggers--;
                 }

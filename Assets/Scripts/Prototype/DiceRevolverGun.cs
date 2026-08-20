@@ -37,6 +37,7 @@ namespace DiceRevolver.Prototype
         private DicePassiveRuntime passiveRuntime;
         private readonly OwnedProjectileRegistry ownedProjectiles = new OwnedProjectileRegistry();
         private readonly BonusShotSpreadAllocator bonusShotSpread = new BonusShotSpreadAllocator();
+        private readonly CombatDebugTrace debugTrace = new CombatDebugTrace();
         private SpriteRenderer reloadBlinkRenderer;
         private Color reloadBlinkDefaultColor = Color.white;
         private TopDownAimHandRig aimRig;
@@ -50,6 +51,7 @@ namespace DiceRevolver.Prototype
         public int RemainingRounds => runtime?.RemainingRounds ?? 0;
         public bool IsReloading => runtime?.IsReloading ?? false;
         public OwnedProjectileRegistry OwnedProjectiles => ownedProjectiles;
+        public CombatDebugTrace DebugTrace => debugTrace;
         public float ReloadDuration
         {
             get => runtime?.ReloadDuration ?? reloadDuration;
@@ -79,6 +81,7 @@ namespace DiceRevolver.Prototype
             shotPipeline.ConfigureLightningServices(
                 ownedProjectiles,
                 ExecuteLightningChain);
+            shotPipeline.ConfigureDebugTrace(debugTrace);
 
             if (loadout == null)
             {
@@ -145,6 +148,12 @@ namespace DiceRevolver.Prototype
             {
                 passiveRuntime?.NotifyReloadCompleted();
                 ResetVisualRoot();
+                debugTrace.RecordStandalone(
+                    CombatDebugEventType.ReloadCompleted,
+                    "换弹",
+                    "换弹完成",
+                    null,
+                    Time.time);
                 ReloadCompleted?.Invoke();
             }
 
@@ -341,6 +350,17 @@ namespace DiceRevolver.Prototype
                 request.MaximumSpreadAngle,
                 request.MinimumSpreadSeparation);
             direction = Quaternion.AngleAxis(spreadAngle, Vector3.up) * direction;
+            if (request.SourceActivation != null && request.SourceActivation.DebugScope.IsValid)
+            {
+                debugTrace.Record(
+                    request.SourceActivation.DebugScope,
+                    CombatDebugEventType.PassiveTriggered,
+                    "被动",
+                    "呼应协同",
+                    $"触发骰面 {request.Face} 奖励射击",
+                    1,
+                    Time.time);
+            }
             shotPipeline.ExecuteBonusShot(
                 request.Face,
                 loadout.GetSnapshot(request.Face),
@@ -348,6 +368,7 @@ namespace DiceRevolver.Prototype
                 direction,
                 request.EventBudget,
                 request.SuppressedPassiveInstanceId,
+                request.SourceActivation,
                 shot => FireStarted?.Invoke(shot),
                 shot => FireEnded?.Invoke(shot));
             return true;
@@ -412,6 +433,12 @@ namespace DiceRevolver.Prototype
         {
             shotPipeline?.ClearForReload();
             passiveRuntime?.NotifyReloadStarted();
+            debugTrace.RecordStandalone(
+                CombatDebugEventType.ReloadStarted,
+                "换弹",
+                "开始换弹",
+                null,
+                Time.time);
             ReloadStarted?.Invoke();
         }
 

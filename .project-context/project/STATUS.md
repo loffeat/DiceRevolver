@@ -12,6 +12,8 @@
 - 弹丸支持 ScriptableObject 类型和多标签身份、按不同受伤对象计算的通用穿透，以及按 Gun 隔离的存活弹丸 Registry。
 - 雷电构筑已实现雷电球、收尾者、电磁共鸣、特斯拉、呼应协同和链式反应；所有参数通过对应 ScriptableObject 或 Prefab 暴露。
 - 闪电链不视为攻击特效且不广播命中事件；呼应协同奖励弹允许同帧生成并带自然散布；链式反应不复制被动槽和空活动槽。
+- 玩家 HUD 左上角会自动显示结构化战斗事件 Debug 文本，按真实执行顺序编号并用缩进表达普通射击、延迟结果和奖励射击的因果关系。
+- Debug 显示通过 `CombatDebugSettings.asset` 调整启用状态、最大行数、停留时间、字号和面板尺寸，不修改 Player Prefab。
 - 构筑页可在场景加载后自动创建，按 `E` 打开或关闭；瞄准系统使用镜像虚拟枪口、近距离稳定解算和开火前同帧姿态刷新。
 - 子弹事件可通过 `BulletEventContext.Schedule` 使用轻量游戏时间调度；双重射击默认在第一发后 `0.25` 秒生成第二发。
 - 弹丸运行时属性已迁移到 `ProjectileDefinition`；每次骰面触发使用独立 `DiceFaceActivation`，并以默认 `32` 次事件预算限制连锁。
@@ -38,6 +40,7 @@
 
 ## 完成历史
 
+- [2026-08-21 战斗事件因果 Debug](workstreams/2026-08-21-combat-debug-trace/STATE.md)（`completed`；自动化完成，PlayMode 排版待人工验收）
 - [2026-08-21 雷电构筑系统](workstreams/2026-08-20-lightning-build-backlog/STATE.md)（`completed`；自动化实现完成，PlayMode 视觉与手感待人工验收）
 - [2026-08-20 左轮核心底层重构](workstreams/2026-08-20-dice-revolver-core-refactor/STATE.md)（`completed`；自动化结构重构完成，PlayMode 手感待人工验收）
 - [2026-08-20 命中范围爆炸](workstreams/2026-08-20-area-explosion-on-hit/STATE.md)（`completed`）
@@ -67,6 +70,9 @@
 
 ## 最近项目级验证
 
+- [passed] `2026-08-21`：战斗 Debug、枪械事件管线、被动和 UI 聚焦 EditMode `107/107`。
+- [failed] `2026-08-21`：战斗 Debug 完成后的完整 EditMode 为 `249/250`；唯一失败仍为既有 Ground `Y=-0.01` 契约差异，没有新增失败。
+- [not-run] `2026-08-21`：左上角 Debug 文本的可见 PlayMode 排版与事件密度验收。
 - [passed] `2026-08-21`：雷电资源、中文 Inspector、五槽位和 UI 联合 EditMode `65/65`，0 失败、0 跳过。
 - [failed] `2026-08-21`：雷电构筑完成后的完整 EditMode 为 `233/234`，0 跳过；唯一失败为已获豁免的 `RenderingLayerContractTests.PrototypeSceneUsesZeroHeightSpriteGroundAndEntities`（Ground `-0.01`，测试期望 `0`），没有新增失败。
 - [passed] `2026-08-21`：Player、TargetDummy、TestRobot Prefab SHA256 与实施前一致；Player 的持枪距离、持枪高度、射速、换弹时间保持 `0.85`、`0.72`、`2`、`2`。

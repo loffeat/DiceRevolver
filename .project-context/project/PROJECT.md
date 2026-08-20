@@ -65,6 +65,9 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 - [WorldDamageNumberSpawner.cs](../../Assets/Scripts/Prototype/WorldDamageNumberSpawner.cs)：把测试靶受击事件转换为独立世界空间飘字。
 - [DiceBuildPageUI.cs](../../Assets/Scripts/Prototype/DiceBuildPageUI.cs)：编辑骰面装备。
 - [DiceBuildRuntimeView.cs](../../Assets/Scripts/Prototype/DiceBuildRuntimeView.cs)：场景加载后按需创建构筑 UI 和装备组件。
+- [CombatDebugTrace.cs](../../Assets/Scripts/Prototype/CombatDebugTrace.cs)：为每把枪记录递增顺序号、激活父子关系和结构化战斗事件。
+- [CombatDebugOverlay.cs](../../Assets/Scripts/Prototype/CombatDebugOverlay.cs)：在左上角按因果缩进显示最近事件并处理容量与过期。
+- [CombatDebugRuntimeView.cs](../../Assets/Scripts/Prototype/CombatDebugRuntimeView.cs)：场景加载后为玩家 HUD 自动创建 Debug 面板。
 
 ## 关键数据流
 
@@ -82,6 +85,7 @@ DiceBuildPageUI -> DiceFaceLoadout.Equip -> 只替换词条所属槽位 -> 后�
 Projectile 命中广播 -> DiceShotPipeline OnHit -> Projectile 直接伤害
 Projectile 直接伤害 -> IDamageReceiver -> TargetDummy.DamageReceived -> WorldDamageNumberSpawner
 ExplosionOnHitEffect -> BlastExplosion ProjectileDefinition -> AreaExplosionProjectile -> 范围 IDamageReceiver
+DiceShotPipeline / DiceFaceActivation / 被动奖励射击 -> CombatDebugTrace -> CombatDebugOverlay
 ```
 
 额外射击通过事件上下文请求同属性弹丸，并禁止递归触发额外射击。`Projectile` 捕获命中后先广播，`DiceShotPipeline` 处理合格的 OnHit，再由 `Projectile` 提交直接伤害。
@@ -108,3 +112,4 @@ ExplosionOnHitEffect -> BlastExplosion ProjectileDefinition -> AreaExplosionProj
 - 控制意图：共享角色控制器暴露的移动、瞄准、开火和换弹状态；来源可以是玩家输入或机器人 AI。
 - 行动节奏：测试机器人默认移动 `0.7` 秒、站定攻击 `1.0` 秒，站定结束后重新判断战术移动方向。
 - 范围爆炸：由命中事件在命中点生成的独立爆炸弹丸；伤害取自弹丸定义，半径和圆环表现取自爆炸 Prefab。
+- 战斗 Debug 因果链：由一次普通射击建立根激活，延迟结果保持同一激活，奖励射击建立指向来源激活的子节点。

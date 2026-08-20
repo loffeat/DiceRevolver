@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52686aeb43de87149a5f0fba40b44548, type: 3}
+  m_Name: CombatDebugSettings
+  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.CombatDebugSettings
+  debugEnabled: 1
+  maximumLines: 14
+  lineLifetime: 10
+  fontSize: 16
+  panelWidth: 620
+  panelHeight: 420
