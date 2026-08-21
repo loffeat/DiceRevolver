@@ -88,7 +88,7 @@ DiceFaceActivation -> 延迟生成、命中事件关系、临时活动槽覆盖�
 DiceBuildPageUI -> DiceFaceLoadout.Equip -> 只替换词条所属槽位 -> 后续射击读取新快照
 Projectile 命中广播 -> DiceShotPipeline OnHit -> Projectile 直接伤害
 Projectile 直接伤害 -> IDamageReceiver -> TargetDummy.DamageReceived -> WorldDamageNumberSpawner
-ExplosionOnHitEffect -> BlastExplosion ProjectileDefinition -> AreaExplosionProjectile -> 范围 IDamageReceiver
+BlastRoundRule (命中时生成爆炸定义) -> AreaExplosionProjectile -> 范围 IDamageReceiver
 DiceShotPipeline / DiceFaceActivation / 被动奖励射击 -> CombatDebugTrace -> CombatDebugOverlay
 ```
 
