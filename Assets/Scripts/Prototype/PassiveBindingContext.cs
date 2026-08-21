@@ -25,6 +25,25 @@ namespace DiceRevolver.Prototype
             float maximumSpreadAngle,
             float minimumSpreadSeparation,
             DiceFaceActivation sourceActivation)
+            : this(
+                face,
+                eventBudget,
+                suppressedPassiveInstanceId,
+                maximumSpreadAngle,
+                minimumSpreadSeparation,
+                sourceActivation,
+                null)
+        {
+        }
+
+        public BonusDiceActivationRequest(
+            int face,
+            DiceEventBudget eventBudget,
+            long suppressedPassiveInstanceId,
+            float maximumSpreadAngle,
+            float minimumSpreadSeparation,
+            DiceFaceActivation sourceActivation,
+            EventRuleDefinition sourceRule)
         {
             Face = face;
             EventBudget = eventBudget;
@@ -32,6 +51,7 @@ namespace DiceRevolver.Prototype
             MaximumSpreadAngle = maximumSpreadAngle;
             MinimumSpreadSeparation = minimumSpreadSeparation;
             SourceActivation = sourceActivation;
+            SourceRule = sourceRule;
         }
 
         public int Face { get; }
@@ -40,6 +60,7 @@ namespace DiceRevolver.Prototype
         public float MaximumSpreadAngle { get; }
         public float MinimumSpreadSeparation { get; }
         public DiceFaceActivation SourceActivation { get; }
+        public EventRuleDefinition SourceRule { get; }
     }
 
     public readonly struct PassiveBindingContext

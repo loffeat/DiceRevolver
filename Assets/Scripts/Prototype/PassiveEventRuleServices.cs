@@ -66,7 +66,8 @@ namespace DiceRevolver.Prototype
                 0,
                 Mathf.Max(0f, maximumSpreadAngle),
                 Mathf.Max(0f, minimumSpreadSeparation),
-                signal.Activation));
+                signal.Activation,
+                sourceRule));
         }
 
         public bool RequestRefillAndForceNextFace(int face) => false;

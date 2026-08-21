@@ -2,11 +2,11 @@
 
 ## 当前状态
 
-- `active`，需求、正式设计稿、页面视觉方向和测试先行实施计划均已完成；已在 `codex/event-rule-editor` 隔离工作树启动 Subagent-Driven Development。
+- `active`，Task 1–9 已完成；核心与雷电构筑均已迁移到真实 Event Rule 资产，待 Task 10 做旧具体 Effect 的零引用审计、条件删除和最终回归。
 
 ## 下一步首个动作
 
-- 先读取本计划的 `.superpowers/sdd/2026-08-21-event-rule-editor/progress.md`，核对 Unity 基线与任务完成行；若 Task 1 尚未完成，则从规则数据模型、Signal、状态和受限服务上下文继续测试驱动实现。
+- 读取 `.superpowers/sdd/2026-08-21-event-rule-editor/progress.md` 与 Task 10 brief，然后先写引用/删除契约 RED；只有真实 AssetDatabase/GUID 扫描为零引用时才删除旧具体 Effect。
 
 ## 当前方案及原因
 
@@ -27,7 +27,7 @@
 
 ## 尚未完成
 
-- 尚未创建规则运行时、EditorWindow、兼容适配器或迁移资源。
+- Task 10 的旧具体 Effect 引用审计、条件删除、最终聚焦/全量回归与最终上下文收尾尚未完成。
 - 实施前完整 EditMode 基线为 `[failed] 251/252`、`0 skipped`；唯一失败为已批准的 Ground `Y=-0.01` 契约差异。
 - 尚未运行可见 Play Mode 验收。
 
@@ -46,8 +46,9 @@
 
 ## 最近验证
 
-- [passed] 战斗 Debug 与相关事件管线聚焦 EditMode `107/107`。
-- [passed] 特斯拉、收尾者与战斗 Debug 联合 EditMode `20/20`。
+- [passed] Task 9 核心迁移 EditMode `10/10`、`0 skipped`。
+- [passed] Task 9 指定十套联合 EditMode `41/41`、`0 skipped`。
+- [passed] Task 9 前后八个受保护文件 SHA256 与 Player/TestRobot 枪械参数完全一致。
 - [failed] 完整 EditMode `251/252`，唯一失败为已知 Ground `Y=-0.01` 契约差异。
 
 ## 首先读取

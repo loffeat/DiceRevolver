@@ -51,7 +51,7 @@ namespace DiceRevolver.Prototype
             EventSignal signal,
             EventRuleStateStore state,
             IEventRuleServices services)
-            : this(signal, state, services, null)
+            : this(signal, state, services, null, null)
         {
         }
 
@@ -59,17 +59,20 @@ namespace DiceRevolver.Prototype
             EventSignal signal,
             EventRuleStateStore state,
             IEventRuleServices services,
-            Func<float, IReadOnlyList<EventResultEntry>, bool> scheduleEntries)
+            Func<float, IReadOnlyList<EventResultEntry>, bool> scheduleEntries,
+            EventRuleDefinition sourceRule = null)
         {
             Signal = signal;
             State = state;
             Services = services;
+            SourceRule = sourceRule;
             this.scheduleEntries = scheduleEntries;
         }
 
         public EventSignal Signal { get; }
         public EventRuleStateStore State { get; }
         public IEventRuleServices Services { get; }
+        public EventRuleDefinition SourceRule { get; }
 
         public bool ScheduleEntries(float delaySeconds, IReadOnlyList<EventResultEntry> entries)
         {

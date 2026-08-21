@@ -45,7 +45,7 @@ namespace DiceRevolver.Prototype
                     context.Signal.EquippedFace,
                     maximumSpreadAngle,
                     minimumSpreadSeparation,
-                    null);
+                    context.SourceRule);
             }
             catch
             {

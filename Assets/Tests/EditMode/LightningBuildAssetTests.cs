@@ -89,15 +89,12 @@ namespace DiceRevolver.Tests
         [Test]
         public void LightningEntriesUseApprovedIndependentSlots()
         {
-            AssertEntry("LightningOrb", DiceFaceSlotType.Base, typeof(ProjectileSpawnEffect));
-            AssertEntry("Finisher", DiceFaceSlotType.Passive, typeof(FinisherPassiveEffect));
-            AssertEntry("ElectromagneticResonance", DiceFaceSlotType.OnFire,
-                typeof(ElectromagneticResonanceEffect));
-            AssertEntry("Tesla", DiceFaceSlotType.Passive, typeof(TeslaPassiveEffect));
-            AssertEntry("EchoSynergy", DiceFaceSlotType.Passive,
-                typeof(EchoSynergyPassiveEffect));
-            AssertEntry("ChainReaction", DiceFaceSlotType.OnFireEnd,
-                typeof(ChainReactionOnFireEndEffect));
+            AssertEntry("LightningOrb", DiceFaceSlotType.Base);
+            AssertEntry("Finisher", DiceFaceSlotType.Passive);
+            AssertEntry("ElectromagneticResonance", DiceFaceSlotType.OnFire);
+            AssertEntry("Tesla", DiceFaceSlotType.Passive);
+            AssertEntry("EchoSynergy", DiceFaceSlotType.Passive);
+            AssertEntry("ChainReaction", DiceFaceSlotType.OnFireEnd);
         }
 
         [Test]
@@ -143,17 +140,16 @@ namespace DiceRevolver.Tests
 
         private static void AssertEntry(
             string name,
-            DiceFaceSlotType expectedSlot,
-            System.Type expectedEffectType)
+            DiceFaceSlotType expectedSlot)
         {
             DiceFaceEntry entry = AssetDatabase.LoadAssetAtPath<DiceFaceEntry>(
                 $"{Root}/DiceFaces/{name}.asset");
             Assert.That(entry, Is.Not.Null);
             Assert.That(entry.SlotType, Is.EqualTo(expectedSlot));
-            Object effect = expectedSlot == DiceFaceSlotType.Passive
-                ? entry.PassiveEffect
-                : entry.Effect;
-            Assert.That(effect, Is.TypeOf(expectedEffectType));
+            Assert.That(entry.Rule, Is.Not.Null);
+            Assert.That(entry.Rule.AllowsSlot(expectedSlot), Is.True);
+            Assert.That(entry.Effect, Is.Null);
+            Assert.That(entry.PassiveEffect, Is.Null);
         }
     }
 }

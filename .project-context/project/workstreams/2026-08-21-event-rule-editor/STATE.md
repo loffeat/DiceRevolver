@@ -36,12 +36,12 @@
 
 ## 当前正在进行
 
-- 已在隔离工作树 `codex/event-rule-editor` 启动 Subagent-Driven Development；实施前 Unity 基线已完成，随后实施 Task 1。
+- Task 9 已完成六个雷电构筑 Rule 资产、迁移与联合回归；下一步执行 Task 10 的旧具体 Effect 引用审计、条件删除和最终回归。
 
 ## 下一步
 
-1. 从 Task 1 纯 C# 规则数据模型、信号、状态和受限服务上下文开始测试驱动实施。
-2. 每个任务完成实现、规格与质量审查后再推进下一任务。
+1. 执行 Task 10，先用真实 AssetDatabase/GUID 引用证明哪些旧具体 Effect 可以删除。
+2. 完成最终聚焦/全量回归、人工验收记录和上下文同步。
 
 ## 已完成
 
@@ -50,6 +50,8 @@
 - 战斗事件因果 Debug 已可作为编辑器 Play Mode 调试区的数据来源。
 - 完成 10 个独立验收任务、69 个细分步骤的测试先行实施计划，并明确受保护 Prefab、旧 Effect 兼容和 Ground Y 豁免边界。
 - 用户选择 Subagent-Driven Development；已建立 `codex/event-rule-editor` 隔离工作树并通过上下文检查。
+- Task 1–8 已完成并提交；Task 9 已将雷电球、电磁共鸣、特斯拉、呼应协同、链式反应和收尾者迁移为 Rule-backed 资源。
+- Task 9 十套联合 EditMode 回归为 `[passed] 41/41`、`0 skipped`，八个受保护文件哈希与 Player/TestRobot 枪械参数保持不变。
 
 ## 阻塞
 

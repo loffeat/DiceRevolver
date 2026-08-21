@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using DiceRevolver.Prototype;
 using UnityEditor;
 using UnityEngine;
@@ -8,534 +10,511 @@ namespace DiceRevolver.Editor
     public static class LightningBuildPrototypeBuilder
     {
         private const string Root = "Assets/Resources/DiceFacePrototype";
-        private const string FireVisualPath = "Assets/Art/Effect/perfab/fire_1.prefab";
-        private const string OrbPrefabPath = "Assets/Prefab/Projectiles/LightningOrb.prefab";
-        private const string ChainPrefabPath = "Assets/Prefab/Effects/LightningChain.prefab";
-        private const string ChainMaterialPath =
-            "Assets/Prefab/Effects/LightningChainMaterial.mat";
+        private const string RuleFolder = Root + "/EventRules/Lightning";
+        private const string StacksKey = "stacks";
+        private const string EchoCounterKey = "bonusActivationTriggers";
+        private const string EchoConsumedKey = "consumed";
 
         [MenuItem("Dice Revolver/Build Lightning Prototype Content")]
         public static void Build()
         {
-            GameObject fireVisual = AssetDatabase.LoadAssetAtPath<GameObject>(FireVisualPath);
-            if (fireVisual == null || fireVisual.GetComponentInChildren<ParticleSystem>(true) == null)
-            {
-                throw new InvalidOperationException(
-                    $"{FireVisualPath} is missing or is not a usable particle visual.");
-            }
+            EnsureFolder(Root, "EventRules");
+            EnsureFolder(Root + "/EventRules", "Lightning");
 
-            EnsureFolders();
+            ProjectileDefinition orb = LoadRequired<ProjectileDefinition>(
+                Root + "/Projectiles/LightningOrb.asset");
+            ProjectileTagDefinition lightning = LoadRequired<ProjectileTagDefinition>(
+                Root + "/ProjectileTags/Lightning.asset");
+            LightningChainDefinition chain = LoadRequired<LightningChainDefinition>(
+                Root + "/Lightning/LightningChainDefinition.asset");
+            ProjectileSpawnEffect legacyOrb = LoadRequired<ProjectileSpawnEffect>(
+                Root + "/BulletEvents/FireLightningOrbProjectile.asset");
+            ElectromagneticResonanceEffect legacyResonance =
+                LoadRequired<ElectromagneticResonanceEffect>(
+                    Root + "/BulletEvents/ElectromagneticResonanceEffect.asset");
+            TeslaPassiveEffect legacyTesla = LoadRequired<TeslaPassiveEffect>(
+                Root + "/BulletEvents/TeslaPassiveEffect.asset");
+            EchoSynergyPassiveEffect legacyEcho = LoadRequired<EchoSynergyPassiveEffect>(
+                Root + "/BulletEvents/EchoSynergyPassiveEffect.asset");
+            ChainReactionOnFireEndEffect legacyReaction =
+                LoadRequired<ChainReactionOnFireEndEffect>(
+                    Root + "/BulletEvents/ChainReactionOnFireEndEffect.asset");
+            FinisherPassiveEffect legacyFinisher = LoadRequired<FinisherPassiveEffect>(
+                Root + "/BulletEvents/FinisherPassiveEffect.asset");
 
-            ProjectileTypeDefinition orbType = CreateNamed<ProjectileTypeDefinition>(
-                Root + "/ProjectileTypes/LightningOrb.asset",
-                "displayName",
-                LightningProjectileDefaults.ProjectileTypeName);
-            ProjectileTypeDefinition chainType = CreateNamed<ProjectileTypeDefinition>(
-                Root + "/ProjectileTypes/LightningChain.asset",
-                "displayName",
-                "LightningChain");
-            ProjectileTagDefinition lightningTag = CreateNamed<ProjectileTagDefinition>(
-                Root + "/ProjectileTags/Lightning.asset",
-                "displayName",
-                LightningProjectileDefaults.LightningTagName);
-            ProjectileTagDefinition elementalTag = CreateNamed<ProjectileTagDefinition>(
-                Root + "/ProjectileTags/Elemental.asset",
-                "displayName",
-                LightningProjectileDefaults.ElementalTagName);
-
-            Projectile orbPrefab = LoadOrCreateOrbPrefab(fireVisual);
-            Material chainMaterial = LoadOrCreateChainMaterial();
-            LightningChainExecutor chainPrefab = LoadOrCreateChainPrefab(chainMaterial);
-            LightningChainDefinition chainDefinition = LoadOrCreateChainDefinition(chainPrefab);
-            ProjectileDefinition orbDefinition = LoadOrCreateOrbDefinition(
-                orbPrefab,
-                orbType,
-                lightningTag,
-                elementalTag);
-
-            ProjectileSpawnEffect spawnOrb = LoadOrCreateSpawnEffect(orbDefinition);
-            FinisherPassiveEffect finisher = LoadOrCreate<FinisherPassiveEffect>(
-                Root + "/BulletEvents/FinisherPassiveEffect.asset",
-                out _);
-            ElectromagneticResonanceEffect resonance = LoadOrCreateResonance(
-                lightningTag,
-                chainDefinition);
-            TeslaPassiveEffect tesla = LoadOrCreateTesla(lightningTag);
-            EchoSynergyPassiveEffect echo = LoadOrCreate<EchoSynergyPassiveEffect>(
-                Root + "/BulletEvents/EchoSynergyPassiveEffect.asset",
-                out _);
-            ChainReactionOnFireEndEffect chainReaction =
-                LoadOrCreate<ChainReactionOnFireEndEffect>(
-                    Root + "/BulletEvents/ChainReactionOnFireEndEffect.asset",
-                    out _);
-
-            DiceFaceEntry orbEntry = LoadOrCreateEntry(
-                "LightningOrb",
-                "雷电球",
-                "发射一颗缓慢飞行、可穿透敌人的雷电球。",
-                new Color(0.28f, 0.78f, 1f, 1f),
-                DiceFaceSlotType.Base,
-                spawnOrb,
-                null);
-            DiceFaceEntry finisherEntry = LoadOrCreateEntry(
-                "Finisher",
-                "收尾者",
-                "该骰面会等待普通骰面消耗后再进入抽取池。",
-                new Color(0.94f, 0.32f, 0.28f, 1f),
-                DiceFaceSlotType.Passive,
-                null,
-                finisher);
-            DiceFaceEntry resonanceEntry = LoadOrCreateEntry(
-                "ElectromagneticResonance",
-                "电磁共鸣",
-                "开火时让主雷电球与附近同枪雷电球形成闪电链。",
-                new Color(0.22f, 0.88f, 0.75f, 1f),
-                DiceFaceSlotType.OnFire,
-                resonance,
-                null);
-            DiceFaceEntry teslaEntry = LoadOrCreateEntry(
-                "Tesla",
-                "特斯拉",
-                "本轮每生成一颗雷电弹幕，所属骰面的基础伤害提高 5%。",
-                new Color(1f, 0.83f, 0.22f, 1f),
-                DiceFaceSlotType.Passive,
-                null,
-                tesla);
-            DiceFaceEntry echoEntry = LoadOrCreateEntry(
-                "EchoSynergy",
-                "呼应协同",
-                "同类型弹幕命中时立即额外激活该骰面，每轮最多四次。",
-                new Color(0.48f, 0.64f, 1f, 1f),
-                DiceFaceSlotType.Passive,
-                null,
-                echo);
-            DiceFaceEntry chainReactionEntry = LoadOrCreateEntry(
-                "ChainReaction",
-                "链式反应",
-                "开火后把本骰面的非空主动槽覆盖到下一次正常射击。",
-                new Color(0.94f, 0.52f, 0.84f, 1f),
-                DiceFaceSlotType.OnFireEnd,
-                chainReaction,
-                null);
-
-            ProjectileTypeLibrary typeLibrary = LoadOrCreate<ProjectileTypeLibrary>(
-                Root + "/ProjectileTypes/ProjectileTypeLibrary.asset",
-                out _);
-            AppendMissing(typeLibrary, "types", orbType, chainType);
-            ProjectileTagLibrary tagLibrary = LoadOrCreate<ProjectileTagLibrary>(
-                Root + "/ProjectileTags/ProjectileTagLibrary.asset",
-                out _);
-            AppendMissing(tagLibrary, "tags", lightningTag, elementalTag);
-
-            ProjectileDefinitionLibrary projectileLibrary =
-                AssetDatabase.LoadAssetAtPath<ProjectileDefinitionLibrary>(
-                    Root + "/Projectiles/ProjectileDefinitionLibrary.asset");
-            AppendMissing(projectileLibrary, "definitions", orbDefinition);
-            DiceFaceLibrary faceLibrary = AssetDatabase.LoadAssetAtPath<DiceFaceLibrary>(
-                Root + "/DiceFaceLibrary.asset");
-            AppendMissing(
-                faceLibrary,
-                "entries",
-                orbEntry,
-                finisherEntry,
-                resonanceEntry,
-                teslaEntry,
-                echoEntry,
-                chainReactionEntry);
-            BulletEventLibrary eventLibrary = AssetDatabase.LoadAssetAtPath<BulletEventLibrary>(
-                Root + "/BulletEventLibrary.asset");
-            AppendMissing(eventLibrary, "effects", spawnOrb, resonance, chainReaction);
-
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-            Debug.Log("Lightning build prototype content is ready.");
+            MigrateLightningOrb(legacyOrb, orb);
+            MigrateResonance(legacyResonance, lightning, chain);
+            MigrateTesla(legacyTesla, lightning);
+            MigrateEcho(legacyEcho);
+            MigrateChainReaction(legacyReaction);
+            MigrateFinisher(legacyFinisher);
+            Debug.Log("Lightning Event Rules are ready.");
         }
 
-        private static Projectile LoadOrCreateOrbPrefab(GameObject fireVisual)
+        private static void MigrateLightningOrb(
+            ProjectileSpawnEffect legacy,
+            ProjectileDefinition orb)
         {
-            GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(OrbPrefabPath);
-            if (existing != null)
-            {
-                Projectile projectile = existing.GetComponent<Projectile>();
-                if (projectile == null)
+            EventRuleMigrationUtility.MigrateRule(
+                EntryPath("LightningOrb"), RulePath("LightningOrb"),
+                DiceFaceSlotType.Base, EventSignalMask.Base, legacy,
+                rule => EnsureSingleResult<SpawnProjectileResultModule>(rule, result =>
                 {
-                    throw new InvalidOperationException(
-                        $"{OrbPrefabPath} exists without a Projectile component.");
-                }
-
-                return projectile;
-            }
-
-            GameObject root = new GameObject("LightningOrb");
-            try
-            {
-                SphereCollider collider = root.AddComponent<SphereCollider>();
-                collider.isTrigger = true;
-                collider.radius = LightningProjectileDefaults.ColliderRadius;
-                Rigidbody body = root.AddComponent<Rigidbody>();
-                body.useGravity = false;
-                body.isKinematic = true;
-                body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
-                root.AddComponent<Projectile>();
-                ProjectileVisualWrapper wrapper = root.AddComponent<ProjectileVisualWrapper>();
-                SerializedObject wrapperData = new SerializedObject(wrapper);
-                wrapperData.FindProperty("visualPrefab").objectReferenceValue = fireVisual;
-                wrapperData.FindProperty("localEulerAngles").vector3Value = new Vector3(0f, 90f, 0f);
-                wrapperData.FindProperty("visualScale").floatValue = 0.8f;
-                wrapperData.ApplyModifiedPropertiesWithoutUndo();
-                GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, OrbPrefabPath);
-                return saved.GetComponent<Projectile>();
-            }
-            finally
-            {
-                UnityEngine.Object.DestroyImmediate(root);
-            }
+                    Set(result, "projectileDefinition", orb);
+                    Set(result, "delaySeconds", 0f);
+                    Set(result, "attackEffectOverride", AttackEffectOverride.UseProjectileDefault);
+                    Set(result, "primaryProjectile", true);
+                }),
+                rule => rule.Conditions.Count == 0 &&
+                    TrySingleResult(rule, out SpawnProjectileResultModule spawn) &&
+                    Read<UnityEngine.Object>(spawn, "projectileDefinition") == orb &&
+                    Mathf.Approximately(Read<float>(spawn, "delaySeconds"), 0f) &&
+                    Read<AttackEffectOverride>(spawn, "attackEffectOverride") ==
+                        AttackEffectOverride.UseProjectileDefault &&
+                    Read<bool>(spawn, "primaryProjectile"));
         }
 
-        private static Material LoadOrCreateChainMaterial()
-        {
-            Material material = AssetDatabase.LoadAssetAtPath<Material>(ChainMaterialPath);
-            if (material != null)
-            {
-                return material;
-            }
-
-            Shader shader = Shader.Find("Universal Render Pipeline/Unlit") ??
-                Shader.Find("Sprites/Default");
-            if (shader == null)
-            {
-                throw new InvalidOperationException(
-                    "No compatible unlit shader was found for the lightning chain material.");
-            }
-
-            material = new Material(shader)
-            {
-                name = "LightningChainMaterial"
-            };
-            AssetDatabase.CreateAsset(material, ChainMaterialPath);
-            return material;
-        }
-
-        private static LightningChainExecutor LoadOrCreateChainPrefab(Material material)
-        {
-            GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(ChainPrefabPath);
-            if (existing != null)
-            {
-                LightningChainExecutor executor = existing.GetComponent<LightningChainExecutor>();
-                if (executor == null)
-                {
-                    throw new InvalidOperationException(
-                        $"{ChainPrefabPath} exists without a LightningChainExecutor component.");
-                }
-
-                LineRenderer existingLine = existing.GetComponent<LineRenderer>();
-                if (existingLine != null && existingLine.sharedMaterial == null && material != null)
-                {
-                    GameObject contents = PrefabUtility.LoadPrefabContents(ChainPrefabPath);
-                    try
-                    {
-                        LineRenderer line = contents.GetComponent<LineRenderer>();
-                        line.sharedMaterial = material;
-                        PrefabUtility.SaveAsPrefabAsset(contents, ChainPrefabPath);
-                    }
-                    finally
-                    {
-                        PrefabUtility.UnloadPrefabContents(contents);
-                    }
-
-                    existing = AssetDatabase.LoadAssetAtPath<GameObject>(ChainPrefabPath);
-                    executor = existing.GetComponent<LightningChainExecutor>();
-                }
-
-                return executor;
-            }
-
-            GameObject root = new GameObject("LightningChain");
-            try
-            {
-                LineRenderer line = root.AddComponent<LineRenderer>();
-                line.useWorldSpace = true;
-                line.positionCount = 2;
-                line.widthMultiplier = 0.25f;
-                line.sharedMaterial = material;
-                LightningChainExecutor executor = root.AddComponent<LightningChainExecutor>();
-                SerializedObject data = new SerializedObject(executor);
-                data.FindProperty("lineRenderer").objectReferenceValue = line;
-                data.ApplyModifiedPropertiesWithoutUndo();
-                GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, ChainPrefabPath);
-                return saved.GetComponent<LightningChainExecutor>();
-            }
-            finally
-            {
-                UnityEngine.Object.DestroyImmediate(root);
-            }
-        }
-
-        private static LightningChainDefinition LoadOrCreateChainDefinition(
-            LightningChainExecutor executorPrefab)
-        {
-            LightningChainDefinition definition = LoadOrCreate<LightningChainDefinition>(
-                Root + "/Lightning/LightningChainDefinition.asset",
-                out bool created);
-            if (!created)
-            {
-                SetReferenceIfNull(definition, "executorPrefab", executorPrefab);
-                return definition;
-            }
-
-            SerializedObject data = new SerializedObject(definition);
-            data.FindProperty("executorPrefab").objectReferenceValue = executorPrefab;
-            data.FindProperty("damage").floatValue = 1f;
-            data.FindProperty("chainWidth").floatValue = 0.25f;
-            data.FindProperty("visualDuration").floatValue = 0.2f;
-            data.FindProperty("targetLayers").intValue = ~0;
-            data.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(definition);
-            return definition;
-        }
-
-        private static ProjectileDefinition LoadOrCreateOrbDefinition(
-            Projectile prefab,
-            ProjectileTypeDefinition type,
-            ProjectileTagDefinition lightning,
-            ProjectileTagDefinition elemental)
-        {
-            ProjectileDefinition definition = LoadOrCreate<ProjectileDefinition>(
-                Root + "/Projectiles/LightningOrb.asset",
-                out bool created);
-            if (!created)
-            {
-                SetReferenceIfNull(definition, "projectilePrefab", prefab);
-                SetReferenceIfNull(definition, "projectileTypeDefinition", type);
-                return definition;
-            }
-
-            SerializedObject data = new SerializedObject(definition);
-            data.FindProperty("displayName").stringValue = "雷电球";
-            data.FindProperty("projectilePrefab").objectReferenceValue = prefab;
-            data.FindProperty("projectileType").stringValue =
-                LightningProjectileDefaults.ProjectileTypeName;
-            data.FindProperty("projectileTag").stringValue =
-                LightningProjectileDefaults.LightningTagName;
-            data.FindProperty("projectileTypeDefinition").objectReferenceValue = type;
-            SetObjectArray(data.FindProperty("projectileTags"), lightning, elemental);
-            data.FindProperty("damage").floatValue = LightningProjectileDefaults.Damage;
-            data.FindProperty("flightDistance").floatValue = LightningProjectileDefaults.FlightDistance;
-            data.FindProperty("flightSpeed").floatValue = LightningProjectileDefaults.FlightSpeed;
-            data.FindProperty("enemyPierceCount").intValue =
-                LightningProjectileDefaults.EnemyPierceCount;
-            data.FindProperty("defaultAttackEffect").boolValue =
-                LightningProjectileDefaults.DefaultAttackEffect;
-            data.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(definition);
-            return definition;
-        }
-
-        private static ProjectileSpawnEffect LoadOrCreateSpawnEffect(
-            ProjectileDefinition definition)
-        {
-            ProjectileSpawnEffect effect = LoadOrCreate<ProjectileSpawnEffect>(
-                Root + "/BulletEvents/FireLightningOrbProjectile.asset",
-                out bool created);
-            if (!created)
-            {
-                SetReferenceIfNull(effect, "projectileDefinition", definition);
-                return effect;
-            }
-
-            SerializedObject data = new SerializedObject(effect);
-            data.FindProperty("projectileDefinition").objectReferenceValue = definition;
-            data.FindProperty("delaySeconds").floatValue = 0f;
-            data.FindProperty("attackEffectOverride").enumValueIndex =
-                (int)AttackEffectOverride.UseProjectileDefault;
-            data.FindProperty("primaryProjectile").boolValue = true;
-            data.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(effect);
-            return effect;
-        }
-
-        private static ElectromagneticResonanceEffect LoadOrCreateResonance(
+        private static void MigrateResonance(
+            ElectromagneticResonanceEffect legacy,
             ProjectileTagDefinition lightning,
             LightningChainDefinition chain)
         {
-            ElectromagneticResonanceEffect effect =
-                LoadOrCreate<ElectromagneticResonanceEffect>(
-                    Root + "/BulletEvents/ElectromagneticResonanceEffect.asset",
-                    out bool created);
-            if (!created)
-            {
-                SetReferenceIfNull(effect, "lightningTag", lightning);
-                SetReferenceIfNull(effect, "chainDefinition", chain);
-                return effect;
-            }
-
-            SerializedObject data = new SerializedObject(effect);
-            data.FindProperty("lightningTag").objectReferenceValue = lightning;
-            data.FindProperty("chainDefinition").objectReferenceValue = chain;
-            data.FindProperty("searchRadius").floatValue = 6f;
-            data.FindProperty("maximumConnections").intValue = 3;
-            data.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(effect);
-            return effect;
-        }
-
-        private static TeslaPassiveEffect LoadOrCreateTesla(ProjectileTagDefinition lightning)
-        {
-            TeslaPassiveEffect effect = LoadOrCreate<TeslaPassiveEffect>(
-                Root + "/BulletEvents/TeslaPassiveEffect.asset",
-                out bool created);
-            if (!created)
-            {
-                SetReferenceIfNull(effect, "lightningTag", lightning);
-                return effect;
-            }
-
-            SerializedObject data = new SerializedObject(effect);
-            data.FindProperty("lightningTag").objectReferenceValue = lightning;
-            data.FindProperty("damagePerStack").floatValue = 0.05f;
-            data.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(effect);
-            return effect;
-        }
-
-        private static DiceFaceEntry LoadOrCreateEntry(
-            string assetName,
-            string displayName,
-            string description,
-            Color color,
-            DiceFaceSlotType slot,
-            BulletEventEffect activeEffect,
-            PassiveEventEffect passiveEffect)
-        {
-            DiceFaceEntry entry = LoadOrCreate<DiceFaceEntry>(
-                Root + "/DiceFaces/" + assetName + ".asset",
-                out bool created);
-            if (!created)
-            {
-                return entry;
-            }
-
-            SerializedObject data = new SerializedObject(entry);
-            data.FindProperty("displayName").stringValue = displayName;
-            data.FindProperty("description").stringValue = description;
-            data.FindProperty("displayColor").colorValue = color;
-            data.FindProperty("slotType").enumValueIndex = (int)slot;
-            data.FindProperty("effect").objectReferenceValue = activeEffect;
-            data.FindProperty("passiveEffect").objectReferenceValue = passiveEffect;
-            data.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(entry);
-            return entry;
-        }
-
-        private static T CreateNamed<T>(string path, string property, string value)
-            where T : ScriptableObject
-        {
-            T asset = LoadOrCreate<T>(path, out bool created);
-            if (created)
-            {
-                SerializedObject data = new SerializedObject(asset);
-                data.FindProperty(property).stringValue = value;
-                data.ApplyModifiedPropertiesWithoutUndo();
-                EditorUtility.SetDirty(asset);
-            }
-
-            return asset;
-        }
-
-        private static T LoadOrCreate<T>(string path, out bool created)
-            where T : ScriptableObject
-        {
-            T asset = AssetDatabase.LoadAssetAtPath<T>(path);
-            if (asset != null)
-            {
-                created = false;
-                return asset;
-            }
-
-            asset = ScriptableObject.CreateInstance<T>();
-            AssetDatabase.CreateAsset(asset, path);
-            created = true;
-            return asset;
-        }
-
-        private static void AppendMissing(
-            UnityEngine.Object target,
-            string propertyName,
-            params UnityEngine.Object[] values)
-        {
-            if (target == null)
-            {
-                throw new InvalidOperationException(
-                    $"Required library for property '{propertyName}' is missing.");
-            }
-
-            SerializedObject data = new SerializedObject(target);
-            SerializedProperty property = data.FindProperty(propertyName);
-            for (int valueIndex = 0; valueIndex < values.Length; valueIndex++)
-            {
-                UnityEngine.Object value = values[valueIndex];
-                if (value == null || Contains(property, value))
+            EventRuleMigrationUtility.MigrateRule(
+                EntryPath("ElectromagneticResonance"), RulePath("ElectromagneticResonance"),
+                DiceFaceSlotType.OnFire, EventSignalMask.OnFire, legacy,
+                rule =>
                 {
-                    continue;
-                }
-
-                int index = property.arraySize;
-                property.arraySize++;
-                property.GetArrayElementAtIndex(index).objectReferenceValue = value;
-            }
-
-            data.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(target);
+                    EnsureSingleRuleCondition<ProjectileTagConditionModule>(
+                        rule, condition => Set(condition, "projectileTag", lightning));
+                    EnsureSingleResult<CreateLightningChainResultModule>(rule, result =>
+                    {
+                        Set(result, "lightningTag", lightning);
+                        Set(result, "chainDefinition", chain);
+                        Set(result, "searchRadius", 6f);
+                        Set(result, "maximumConnections", 3);
+                    });
+                },
+                rule => rule.Conditions.Count == 1 &&
+                    rule.Conditions[0] is ProjectileTagConditionModule tag &&
+                    Read<UnityEngine.Object>(tag, "projectileTag") == lightning &&
+                    TrySingleResult(rule, out CreateLightningChainResultModule result) &&
+                    Read<UnityEngine.Object>(result, "lightningTag") == lightning &&
+                    Read<UnityEngine.Object>(result, "chainDefinition") == chain &&
+                    Mathf.Approximately(Read<float>(result, "searchRadius"), 6f) &&
+                    Read<int>(result, "maximumConnections") == 3);
         }
 
-        private static bool Contains(SerializedProperty property, UnityEngine.Object value)
+        private static void MigrateTesla(
+            TeslaPassiveEffect legacy,
+            ProjectileTagDefinition lightning)
         {
-            for (int index = 0; index < property.arraySize; index++)
-            {
-                if (property.GetArrayElementAtIndex(index).objectReferenceValue == value)
+            EventRuleMigrationUtility.MigrateRule(
+                EntryPath("Tesla"), RulePath("Tesla"),
+                DiceFaceSlotType.Passive,
+                EventSignalMask.ProjectileSpawned |
+                EventSignalMask.BeforeProjectileStats |
+                EventSignalMask.ReloadStarted,
+                legacy,
+                rule => EnsureTeslaResults(rule, lightning),
+                rule => HasTeslaParity(rule, lightning));
+        }
+
+        private static void MigrateEcho(EchoSynergyPassiveEffect legacy)
+        {
+            EventRuleMigrationUtility.MigrateRule(
+                EntryPath("EchoSynergy"), RulePath("EchoSynergy"),
+                DiceFaceSlotType.Passive,
+                EventSignalMask.ProjectileHit |
+                EventSignalMask.FaceConsumed |
+                EventSignalMask.ReloadStarted,
+                legacy, EnsureEchoResults, HasEchoParity);
+        }
+
+        private static void MigrateChainReaction(ChainReactionOnFireEndEffect legacy)
+        {
+            EventRuleMigrationUtility.MigrateRule(
+                EntryPath("ChainReaction"), RulePath("ChainReaction"),
+                DiceFaceSlotType.OnFireEnd, EventSignalMask.OnFireEnd, legacy,
+                rule => EnsureSingleResult<QueueActiveOverlayResultModule>(rule, _ => { }),
+                rule => rule.Conditions.Count == 0 &&
+                    TrySingleResult(rule, out QueueActiveOverlayResultModule _));
+        }
+
+        private static void MigrateFinisher(FinisherPassiveEffect legacy)
+        {
+            EventRuleMigrationUtility.MigrateRule(
+                EntryPath("Finisher"), RulePath("Finisher"),
+                DiceFaceSlotType.Passive, EventSignalMask.DrawCandidate, legacy,
+                rule =>
                 {
-                    return true;
-                }
-            }
-
-            return false;
+                    if (rule.Results.Count == 0)
+                    {
+                        EnsureSingleResult(
+                            rule,
+                            CreateCondition<SourceFaceConditionModule>(rule, _ => { }),
+                            CreateResult<SetDrawPriorityResultModule>(rule,
+                                result => Set(result, "priority", 1)));
+                    }
+                },
+                rule => rule.Conditions.Count == 0 && rule.Results.Count == 1 &&
+                    HasConditions<SourceFaceConditionModule>(rule.Results[0]) &&
+                    rule.Results[0].Result is SetDrawPriorityResultModule priority &&
+                    Read<int>(priority, "priority") == 1);
         }
 
-        private static void SetReferenceIfNull(
-            UnityEngine.Object target,
-            string propertyName,
-            UnityEngine.Object value)
+        private static void EnsureTeslaResults(
+            EventRuleDefinition rule,
+            ProjectileTagDefinition lightning)
         {
-            SerializedObject data = new SerializedObject(target);
-            SerializedProperty property = data.FindProperty(propertyName);
-            if (property.objectReferenceValue != null || value == null)
+            if (rule.Results.Count != 0)
             {
                 return;
             }
 
-            property.objectReferenceValue = value;
-            data.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(target);
+            SerializedObject serialized = new(rule);
+            SerializedProperty results = serialized.FindProperty("results");
+            AppendResult(results,
+                CreateResult<IncrementCounterResultModule>(rule, result =>
+                {
+                    Set(result, "counterKey", StacksKey);
+                    Set(result, "amount", 1);
+                }),
+                CreateSignalCondition(rule, EventSignalMask.ProjectileSpawned),
+                CreateCondition<ProjectileTagConditionModule>(rule,
+                    condition => Set(condition, "projectileTag", lightning)));
+            AppendResult(results,
+                CreateResult<MultiplyProjectileDamageFromCounterResultModule>(rule, result =>
+                {
+                    Set(result, "counterKey", StacksKey);
+                    Set(result, "damagePerStack", 0.05f);
+                }),
+                CreateSignalCondition(rule, EventSignalMask.BeforeProjectileStats),
+                CreateCondition<SourceFaceConditionModule>(rule, _ => { }),
+                CreateCondition<SameProjectileTypeConditionModule>(rule, _ => { }));
+            AppendResult(results,
+                CreateResult<ResetCounterResultModule>(rule,
+                    result => Set(result, "counterKey", StacksKey)),
+                CreateSignalCondition(rule, EventSignalMask.ReloadStarted));
+            serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        private static void SetObjectArray(
-            SerializedProperty property,
-            params UnityEngine.Object[] values)
+        private static bool HasTeslaParity(
+            EventRuleDefinition rule,
+            ProjectileTagDefinition lightning)
         {
-            property.arraySize = values.Length;
-            for (int index = 0; index < values.Length; index++)
+            if (rule.Conditions.Count != 0 || rule.Results.Count != 3)
             {
-                property.GetArrayElementAtIndex(index).objectReferenceValue = values[index];
+                return false;
             }
+
+            EventResultEntry incrementEntry = rule.Results[0];
+            EventResultEntry damageEntry = rule.Results[1];
+            EventResultEntry resetEntry = rule.Results[2];
+            return HasConditions<SignalTypeConditionModule, ProjectileTagConditionModule>(
+                       incrementEntry) &&
+                   Read<EventSignalMask>(incrementEntry.Conditions[0], "signals") ==
+                       EventSignalMask.ProjectileSpawned &&
+                   Read<UnityEngine.Object>(incrementEntry.Conditions[1], "projectileTag") ==
+                       lightning &&
+                   incrementEntry.Result is IncrementCounterResultModule increment &&
+                   Read<string>(increment, "counterKey") == StacksKey &&
+                   Read<int>(increment, "amount") == 1 &&
+                   HasConditions<SignalTypeConditionModule, SourceFaceConditionModule,
+                       SameProjectileTypeConditionModule>(damageEntry) &&
+                   Read<EventSignalMask>(damageEntry.Conditions[0], "signals") ==
+                       EventSignalMask.BeforeProjectileStats &&
+                   damageEntry.Result is MultiplyProjectileDamageFromCounterResultModule damage &&
+                   Read<string>(damage, "counterKey") == StacksKey &&
+                   Mathf.Approximately(Read<float>(damage, "damagePerStack"), 0.05f) &&
+                   HasConditions<SignalTypeConditionModule>(resetEntry) &&
+                   Read<EventSignalMask>(resetEntry.Conditions[0], "signals") ==
+                       EventSignalMask.ReloadStarted &&
+                   resetEntry.Result is ResetCounterResultModule reset &&
+                   Read<string>(reset, "counterKey") == StacksKey;
         }
 
-        private static void EnsureFolders()
+        private static void EnsureEchoResults(EventRuleDefinition rule)
         {
-            EnsureFolder("Assets/Prefab", "Projectiles");
-            EnsureFolder("Assets/Prefab", "Effects");
-            EnsureFolder(Root, "ProjectileTypes");
-            EnsureFolder(Root, "ProjectileTags");
-            EnsureFolder(Root, "Lightning");
+            if (rule.Results.Count != 0)
+            {
+                return;
+            }
+
+            SerializedObject serialized = new(rule);
+            SerializedProperty results = serialized.FindProperty("results");
+            AppendResult(results,
+                CreateResult<RequestBonusActivationResultModule>(rule, result =>
+                {
+                    Set(result, "maximumTriggers", 4);
+                    Set(result, "maximumSpreadAngle", 8f);
+                    Set(result, "minimumSpreadSeparation", 2f);
+                    Set(result, "counterKey", EchoCounterKey);
+                }),
+                CreateSignalCondition(rule, EventSignalMask.ProjectileHit),
+                CreateCondition<SameProjectileTypeConditionModule>(rule, _ => { }),
+                CreateCondition<BooleanStateConditionModule>(rule, condition =>
+                {
+                    Set(condition, "stateKey", EchoConsumedKey);
+                    Set(condition, "expectedValue", false);
+                }));
+            AppendResult(results,
+                CreateResult<SetBooleanStateResultModule>(rule, result =>
+                {
+                    Set(result, "stateKey", EchoConsumedKey);
+                    Set(result, "value", true);
+                }),
+                CreateSignalCondition(rule, EventSignalMask.FaceConsumed),
+                CreateCondition<SourceFaceConditionModule>(rule, _ => { }));
+            AppendResult(results,
+                CreateResult<ResetCounterResultModule>(rule,
+                    result => Set(result, "counterKey", EchoCounterKey)),
+                CreateSignalCondition(rule, EventSignalMask.ReloadStarted));
+            AppendResult(results,
+                CreateResult<SetBooleanStateResultModule>(rule, result =>
+                {
+                    Set(result, "stateKey", EchoConsumedKey);
+                    Set(result, "value", false);
+                }),
+                CreateSignalCondition(rule, EventSignalMask.ReloadStarted));
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static bool HasEchoParity(EventRuleDefinition rule)
+        {
+            if (rule.Conditions.Count != 0 || rule.Results.Count != 4)
+            {
+                return false;
+            }
+
+            EventResultEntry bonusEntry = rule.Results[0];
+            EventResultEntry consumedEntry = rule.Results[1];
+            EventResultEntry resetEntry = rule.Results[2];
+            EventResultEntry reactivateEntry = rule.Results[3];
+            return HasConditions<SignalTypeConditionModule, SameProjectileTypeConditionModule,
+                       BooleanStateConditionModule>(bonusEntry) &&
+                   Read<EventSignalMask>(bonusEntry.Conditions[0], "signals") ==
+                       EventSignalMask.ProjectileHit &&
+                   Read<string>(bonusEntry.Conditions[2], "stateKey") == EchoConsumedKey &&
+                   !Read<bool>(bonusEntry.Conditions[2], "expectedValue") &&
+                   bonusEntry.Result is RequestBonusActivationResultModule bonus &&
+                   Read<int>(bonus, "maximumTriggers") == 4 &&
+                   Mathf.Approximately(Read<float>(bonus, "maximumSpreadAngle"), 8f) &&
+                   Mathf.Approximately(Read<float>(bonus, "minimumSpreadSeparation"), 2f) &&
+                   Read<string>(bonus, "counterKey") == EchoCounterKey &&
+                   HasConditions<SignalTypeConditionModule, SourceFaceConditionModule>(
+                       consumedEntry) &&
+                   Read<EventSignalMask>(consumedEntry.Conditions[0], "signals") ==
+                       EventSignalMask.FaceConsumed &&
+                   IsBooleanResult(consumedEntry, EchoConsumedKey, true) &&
+                   HasSignalReset(resetEntry, EchoCounterKey) &&
+                   HasConditions<SignalTypeConditionModule>(reactivateEntry) &&
+                   Read<EventSignalMask>(reactivateEntry.Conditions[0], "signals") ==
+                       EventSignalMask.ReloadStarted &&
+                   IsBooleanResult(reactivateEntry, EchoConsumedKey, false);
+        }
+
+        private static bool HasSignalReset(EventResultEntry entry, string key)
+        {
+            return HasConditions<SignalTypeConditionModule>(entry) &&
+                   Read<EventSignalMask>(entry.Conditions[0], "signals") ==
+                       EventSignalMask.ReloadStarted &&
+                   entry.Result is ResetCounterResultModule reset &&
+                   Read<string>(reset, "counterKey") == key;
+        }
+
+        private static bool IsBooleanResult(EventResultEntry entry, string key, bool value)
+        {
+            return entry.Result is SetBooleanStateResultModule set &&
+                   Read<string>(set, "stateKey") == key &&
+                   Read<bool>(set, "value") == value;
+        }
+
+        private static void EnsureSingleRuleCondition<T>(
+            EventRuleDefinition rule,
+            Action<T> configure)
+            where T : EventConditionModule
+        {
+            if (rule.Conditions.Count != 0)
+            {
+                return;
+            }
+
+            T condition = CreateCondition(rule, configure);
+            SerializedObject serialized = new(rule);
+            SerializedProperty conditions = serialized.FindProperty("conditions");
+            conditions.arraySize = 1;
+            conditions.GetArrayElementAtIndex(0).objectReferenceValue = condition;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void EnsureSingleResult<T>(
+            EventRuleDefinition rule,
+            Action<T> configure)
+            where T : EventResultModule
+        {
+            if (rule.Results.Count != 0)
+            {
+                return;
+            }
+
+            EnsureSingleResult(rule, Array.Empty<EventConditionModule>(),
+                CreateResult(rule, configure));
+        }
+
+        private static void EnsureSingleResult(
+            EventRuleDefinition rule,
+            EventConditionModule condition,
+            EventResultModule result)
+        {
+            EnsureSingleResult(rule, new[] { condition }, result);
+        }
+
+        private static void EnsureSingleResult(
+            EventRuleDefinition rule,
+            IReadOnlyList<EventConditionModule> conditions,
+            EventResultModule result)
+        {
+            if (rule.Results.Count != 0)
+            {
+                return;
+            }
+
+            SerializedObject serialized = new(rule);
+            AppendResult(serialized.FindProperty("results"), result, conditions.ToArray());
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void AppendResult(
+            SerializedProperty results,
+            EventResultModule result,
+            params EventConditionModule[] conditions)
+        {
+            int index = results.arraySize;
+            results.arraySize++;
+            SerializedProperty entry = results.GetArrayElementAtIndex(index);
+            SerializedProperty serializedConditions = entry.FindPropertyRelative("conditions");
+            serializedConditions.arraySize = conditions.Length;
+            for (int conditionIndex = 0; conditionIndex < conditions.Length; conditionIndex++)
+            {
+                serializedConditions.GetArrayElementAtIndex(conditionIndex).objectReferenceValue =
+                    conditions[conditionIndex];
+            }
+
+            entry.FindPropertyRelative("result").objectReferenceValue = result;
+        }
+
+        private static SignalTypeConditionModule CreateSignalCondition(
+            EventRuleDefinition rule,
+            EventSignalMask signals)
+        {
+            return CreateCondition<SignalTypeConditionModule>(
+                rule, condition => Set(condition, "signals", signals));
+        }
+
+        private static T CreateCondition<T>(EventRuleDefinition rule, Action<T> configure)
+            where T : EventConditionModule => CreateModule(rule, configure);
+
+        private static T CreateResult<T>(EventRuleDefinition rule, Action<T> configure)
+            where T : EventResultModule => CreateModule(rule, configure);
+
+        private static T CreateModule<T>(EventRuleDefinition rule, Action<T> configure)
+            where T : ScriptableObject
+        {
+            T module = ScriptableObject.CreateInstance<T>();
+            module.name = typeof(T).Name;
+            AssetDatabase.AddObjectToAsset(module, rule);
+            configure?.Invoke(module);
+            EditorUtility.SetDirty(module);
+            return module;
+        }
+
+        private static bool TrySingleResult<T>(EventRuleDefinition rule, out T result)
+            where T : EventResultModule
+        {
+            result = null;
+            if (rule.Results.Count != 1 || rule.Results[0].Conditions.Count != 0)
+            {
+                return false;
+            }
+
+            result = rule.Results[0].Result as T;
+            return result != null;
+        }
+
+        private static bool HasConditions<T1>(EventResultEntry entry) =>
+            HasConditionTypes(entry, typeof(T1));
+
+        private static bool HasConditions<T1, T2>(EventResultEntry entry) =>
+            HasConditionTypes(entry, typeof(T1), typeof(T2));
+
+        private static bool HasConditions<T1, T2, T3>(EventResultEntry entry) =>
+            HasConditionTypes(entry, typeof(T1), typeof(T2), typeof(T3));
+
+        private static bool HasConditionTypes(EventResultEntry entry, params Type[] types)
+        {
+            return entry != null && entry.Conditions.Count == types.Length &&
+                entry.Conditions.Select(condition => condition?.GetType()).SequenceEqual(types);
+        }
+
+        private static void Set(UnityEngine.Object target, string propertyName, object value)
+        {
+            SerializedObject serialized = new(target);
+            SerializedProperty property = serialized.FindProperty(propertyName);
+            switch (value)
+            {
+                case UnityEngine.Object reference:
+                    property.objectReferenceValue = reference;
+                    break;
+                case string text:
+                    property.stringValue = text;
+                    break;
+                case int number:
+                    property.intValue = number;
+                    break;
+                case float number:
+                    property.floatValue = number;
+                    break;
+                case bool flag:
+                    property.boolValue = flag;
+                    break;
+                case Enum enumValue:
+                    property.intValue = Convert.ToInt32(enumValue);
+                    break;
+                default:
+                    throw new InvalidOperationException(
+                        $"Unsupported serialized value for {propertyName}.");
+            }
+
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static T Read<T>(UnityEngine.Object target, string propertyName)
+        {
+            SerializedProperty property = new SerializedObject(target).FindProperty(propertyName);
+            object value = typeof(T) == typeof(string) ? property.stringValue :
+                typeof(T) == typeof(float) ? property.floatValue :
+                typeof(T) == typeof(bool) ? property.boolValue :
+                typeof(T) == typeof(int) ? property.intValue :
+                typeof(T).IsEnum ? Enum.ToObject(typeof(T), property.intValue) :
+                typeof(UnityEngine.Object).IsAssignableFrom(typeof(T))
+                    ? property.objectReferenceValue
+                    : throw new InvalidOperationException(
+                        $"Unsupported serialized read for {propertyName}.");
+            return (T)value;
+        }
+
+        private static string EntryPath(string name) => Root + "/DiceFaces/" + name + ".asset";
+        private static string RulePath(string name) => RuleFolder + "/" + name + "Rule.asset";
+
+        private static T LoadRequired<T>(string path) where T : UnityEngine.Object
+        {
+            T asset = AssetDatabase.LoadAssetAtPath<T>(path);
+            if (asset == null)
+            {
+                throw new InvalidOperationException($"Required lightning asset is missing: {path}");
+            }
+
+            return asset;
         }
 
         private static void EnsureFolder(string parent, string child)

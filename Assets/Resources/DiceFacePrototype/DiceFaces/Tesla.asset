@@ -17,8 +17,9 @@ MonoBehaviour:
     5%\u3002"
   displayColor: {r: 1, g: 0.83, b: 0.22, a: 1}
   slotType: 4
+  rule: {fileID: 11400000, guid: 311a917050509914e868629d5ac4ab76, type: 2}
   effect: {fileID: 0}
-  passiveEffect: {fileID: 11400000, guid: d4a6bee1f8d35864897a08263d161796, type: 2}
+  passiveEffect: {fileID: 0}
   onFireEffects: []
   onHitEffects: []
   onFireEndEffects: []

@@ -16,7 +16,8 @@ MonoBehaviour:
   description: "\u53D1\u5C04\u4E00\u9897\u7F13\u6162\u98DE\u884C\u3001\u53EF\u7A7F\u900F\u654C\u4EBA\u7684\u96F7\u7535\u7403\u3002"
   displayColor: {r: 0.28, g: 0.78, b: 1, a: 1}
   slotType: 0
-  effect: {fileID: 11400000, guid: 32b5dd30b7610c447a298db4bf247659, type: 2}
+  rule: {fileID: 11400000, guid: 111d332efa963cc428d036640258383f, type: 2}
+  effect: {fileID: 0}
   passiveEffect: {fileID: 0}
   onFireEffects: []
   onHitEffects: []

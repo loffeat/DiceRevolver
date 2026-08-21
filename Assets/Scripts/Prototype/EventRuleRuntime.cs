@@ -118,7 +118,9 @@ namespace DiceRevolver.Prototype
                     signal,
                     state,
                     services,
-                    (delaySeconds, scheduledEntries) => ScheduleEntries(signal, services, delaySeconds, scheduledEntries));
+                    (delaySeconds, scheduledEntries) => ScheduleEntries(
+                        signal, services, delaySeconds, scheduledEntries),
+                    rule);
                 EventResult result;
                 try
                 {
