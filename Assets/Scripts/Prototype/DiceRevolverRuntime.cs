@@ -64,6 +64,11 @@ namespace DiceRevolver.Prototype
         public int RemainingRounds => remainingFaces.Count;
         public bool IsReloading { get; private set; }
 
+        public IReadOnlyList<int> CreateRemainingFacesSnapshot()
+        {
+            return Array.AsReadOnly(remainingFaces.ToArray());
+        }
+
         public float ReloadDuration
         {
             get => reloadDuration;

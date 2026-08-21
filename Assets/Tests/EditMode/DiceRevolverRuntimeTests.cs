@@ -25,6 +25,30 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void RemainingFaceSnapshotsAreReadOnlyAndDetachedFromLaterChamberChanges()
+        {
+            DiceRevolverRuntime runtime = new DiceRevolverRuntime(
+                100f,
+                2f,
+                false,
+                true,
+                _ => 3);
+            IReadOnlyList<int> before = runtime.CreateRemainingFacesSnapshot();
+
+            DiceRevolverDrawResult draw = runtime.TryBeginShot(0f);
+            IReadOnlyList<int> after = runtime.CreateRemainingFacesSnapshot();
+
+            Assert.That(draw.Face, Is.EqualTo(4));
+            Assert.That(before, Is.EqualTo(new[] { 1, 2, 3, 4, 5, 6 }));
+            Assert.That(after, Is.EqualTo(new[] { 1, 2, 3, 5, 6 }));
+            Assert.That(before, Is.Not.SameAs(after));
+            Assert.That(before, Is.AssignableTo<IList<int>>());
+            Assert.Throws<System.NotSupportedException>(() => ((IList<int>)before)[0] = 6);
+            Assert.That(runtime.CreateRemainingFacesSnapshot(),
+                Is.EqualTo(new[] { 1, 2, 3, 5, 6 }));
+        }
+
+        [Test]
         public void TryBeginShotReturnsCoolingDownUntilShotIntervalElapses()
         {
             DiceRevolverRuntime runtime = new(5f, 1.8f, true, true);

@@ -200,6 +200,63 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void GunActiveSignalUsesRuntimeRemainingFacesForConditionBranches()
+        {
+            GameObject owner = Own(new GameObject("Rule Gun"));
+            DiceRevolverGun gun = owner.AddComponent<DiceRevolverGun>();
+            CountingResult result = Own(ScriptableObject.CreateInstance<CountingResult>());
+            FaceAvailableConditionModule condition = Own(
+                ScriptableObject.CreateInstance<FaceAvailableConditionModule>());
+            Set(condition, "face", 4);
+            EventRuleDefinition rule = CreateRule(result);
+            Set(rule, "conditions", new List<EventConditionModule> { condition });
+            DiceFaceConfigurationSnapshot snapshot = Snapshot(CreateEntry(
+                DiceFaceSlotType.OnFire,
+                rule));
+            InvokePrivate(gun, "Awake");
+            DiceRevolverRuntime runtime = new DiceRevolverRuntime(
+                100f,
+                2f,
+                false,
+                true,
+                _ => 3);
+            Set(gun, "runtime", runtime);
+            GetPrivate<DiceEventRuleRuntimeSet>(gun, "eventRuleRuntimes").RebuildFace(1, snapshot);
+            DiceFaceActivation activation = new DiceFaceActivation(
+                1,
+                snapshot,
+                Vector3.zero,
+                Vector3.forward,
+                null,
+                (Action<ProjectileSpawnRequest>)null,
+                null,
+                null);
+            BulletEventContext context = new BulletEventContext(activation, null, null, Vector3.zero);
+
+            Assert.That(InvokePrivate<bool>(
+                gun,
+                "ExecuteActiveRule",
+                1,
+                DiceFaceSlotType.OnFire,
+                rule,
+                context), Is.True);
+            Assert.That(result.ExecutionCount, Is.Zero,
+                "Face 4 is still in the real chamber and must stop later Results.");
+
+            DiceRevolverDrawResult consumed = runtime.TryBeginShot(0f);
+            Assert.That(consumed.Face, Is.EqualTo(4));
+            Assert.That(InvokePrivate<bool>(
+                gun,
+                "ExecuteActiveRule",
+                1,
+                DiceFaceSlotType.OnFire,
+                rule,
+                context), Is.True);
+            Assert.That(result.ExecutionCount, Is.EqualTo(1),
+                "After face 4 is consumed the condition must allow the later Result.");
+        }
+
+        [Test]
         public void RebuildFacePreservesSameDefinitionsAndDoesNotResetAnotherFace()
         {
             StatefulResult faceOneResult = Own(ScriptableObject.CreateInstance<StatefulResult>());
@@ -504,6 +561,27 @@ namespace DiceRevolver.Tests
                 BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(method, Is.Not.Null, $"Missing method {target.GetType().Name}.{methodName}");
             method.Invoke(target, null);
+        }
+
+        private static T InvokePrivate<T>(
+            object target,
+            string methodName,
+            params object[] arguments)
+        {
+            MethodInfo method = target.GetType().GetMethod(
+                methodName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(method, Is.Not.Null, $"Missing method {target.GetType().Name}.{methodName}");
+            return (T)method.Invoke(target, arguments);
+        }
+
+        private static T GetPrivate<T>(object target, string fieldName)
+        {
+            FieldInfo field = target.GetType().GetField(
+                fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, $"Missing field {target.GetType().Name}.{fieldName}");
+            return (T)field.GetValue(target);
         }
 
         private static void Set(object target, string fieldName, object value)

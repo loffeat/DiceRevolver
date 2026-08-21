@@ -146,11 +146,16 @@ namespace DiceRevolver.Prototype
 
         public ProjectileDefinition FindPrimaryProjectileDefinition()
         {
-            return FindPrimaryProjectileDefinition(results);
+            return FindPrimaryProjectileDefinition(
+                results,
+                new HashSet<DelayResultModule>(),
+                new HashSet<DelayResultModule>());
         }
 
         private static ProjectileDefinition FindPrimaryProjectileDefinition(
-            IReadOnlyList<EventResultEntry> entries)
+            IReadOnlyList<EventResultEntry> entries,
+            HashSet<DelayResultModule> visitedDelays,
+            HashSet<DelayResultModule> activeDelays)
         {
             if (entries == null)
             {
@@ -169,7 +174,17 @@ namespace DiceRevolver.Prototype
 
                 if (result is DelayResultModule delay)
                 {
-                    ProjectileDefinition nested = FindPrimaryProjectileDefinition(delay.Entries);
+                    if (activeDelays.Contains(delay) || !visitedDelays.Add(delay))
+                    {
+                        continue;
+                    }
+
+                    activeDelays.Add(delay);
+                    ProjectileDefinition nested = FindPrimaryProjectileDefinition(
+                        delay.Entries,
+                        visitedDelays,
+                        activeDelays);
+                    activeDelays.Remove(delay);
                     if (nested != null)
                     {
                         return nested;

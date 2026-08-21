@@ -445,7 +445,9 @@ namespace DiceRevolver.Prototype
                 context.PrimaryProjectile,
                 context.HitCollider,
                 context.HitPosition,
-                Array.Empty<int>(),
+                runtime != null
+                    ? runtime.CreateRemainingFacesSnapshot()
+                    : Array.AsReadOnly(Array.Empty<int>()),
                 0,
                 shot != null ? shot.Stats : default,
                 activation.EventBudget,

@@ -337,6 +337,127 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void CyclicDelayResultsAreRejectedBeforeScheduling()
+        {
+            DelayResultModule self = Own(ScriptableObject.CreateInstance<DelayResultModule>());
+            Set(self, "entries", new List<EventResultEntry>
+            {
+                new EventResultEntry(Array.Empty<EventConditionModule>(), self)
+            });
+            DelayResultModule first = Own(ScriptableObject.CreateInstance<DelayResultModule>());
+            DelayResultModule second = Own(ScriptableObject.CreateInstance<DelayResultModule>());
+            Set(first, "entries", new List<EventResultEntry>
+            {
+                new EventResultEntry(Array.Empty<EventConditionModule>(), second)
+            });
+            Set(second, "entries", new List<EventResultEntry>
+            {
+                new EventResultEntry(Array.Empty<EventConditionModule>(), first)
+            });
+            FakeServices selfServices = new FakeServices();
+            FakeServices mutualServices = new FakeServices();
+
+            EventResult selfResult = self.Execute(ExecutionContext(Signal(), selfServices));
+            EventResult mutualResult = first.Execute(ExecutionContext(Signal(), mutualServices));
+            new EventRuleRuntime(
+                OnFireRule(self),
+                2,
+                DiceFaceSlotType.OnFire).TryHandle(Signal(), selfServices);
+            new EventRuleRuntime(
+                OnFireRule(first),
+                2,
+                DiceFaceSlotType.OnFire).TryHandle(Signal(), mutualServices);
+
+            Assert.That(selfResult.Status, Is.Not.EqualTo(EventResultStatus.Success));
+            Assert.That(selfResult.Description, Does.Contain("循环"));
+            Assert.That(mutualResult.Status, Is.Not.EqualTo(EventResultStatus.Success));
+            Assert.That(mutualResult.Description, Does.Contain("循环"));
+            Assert.That(selfServices.ScheduleCallCount, Is.Zero);
+            Assert.That(mutualServices.ScheduleCallCount, Is.Zero);
+        }
+
+        [Test]
+        public void CyclicProviderTraversalAndValidationTerminateForSelfAndMutualReferences()
+        {
+            DelayResultModule self = Own(ScriptableObject.CreateInstance<DelayResultModule>());
+            Set(self, "entries", new List<EventResultEntry>
+            {
+                new EventResultEntry(Array.Empty<EventConditionModule>(), self)
+            });
+            DelayResultModule first = Own(ScriptableObject.CreateInstance<DelayResultModule>());
+            DelayResultModule second = Own(ScriptableObject.CreateInstance<DelayResultModule>());
+            Set(first, "entries", new List<EventResultEntry>
+            {
+                new EventResultEntry(Array.Empty<EventConditionModule>(), second)
+            });
+            Set(second, "entries", new List<EventResultEntry>
+            {
+                new EventResultEntry(Array.Empty<EventConditionModule>(), first)
+            });
+            EventRuleDefinition selfRule = OnFireRule(self);
+            EventRuleDefinition mutualRule = OnFireRule(first);
+
+            Assert.That(selfRule.FindPrimaryProjectileDefinition(), Is.Null);
+            Assert.That(mutualRule.FindPrimaryProjectileDefinition(), Is.Null);
+            Assert.That(selfRule.CollectValidationIssues(DiceFaceSlotType.OnFire).Any(
+                issue => issue.Code == "delayed-result-cycle"), Is.True);
+            Assert.That(mutualRule.CollectValidationIssues(DiceFaceSlotType.OnFire).Any(
+                issue => issue.Code == "delayed-result-cycle"), Is.True);
+        }
+
+        [Test]
+        public void SharedAcyclicDelaySubgraphRemainsValidAndProvidesItsPrimaryProjectile()
+        {
+            ProjectileDefinition definition = Own(ScriptableObject.CreateInstance<ProjectileDefinition>());
+            DelayResultModule shared = Own(ScriptableObject.CreateInstance<DelayResultModule>());
+            Set(shared, "entries", new List<EventResultEntry>
+            {
+                new EventResultEntry(Array.Empty<EventConditionModule>(), Spawn(definition, true))
+            });
+            DelayResultModule first = Own(ScriptableObject.CreateInstance<DelayResultModule>());
+            DelayResultModule second = Own(ScriptableObject.CreateInstance<DelayResultModule>());
+            Set(first, "entries", new List<EventResultEntry>
+            {
+                new EventResultEntry(Array.Empty<EventConditionModule>(), shared)
+            });
+            Set(second, "entries", new List<EventResultEntry>
+            {
+                new EventResultEntry(Array.Empty<EventConditionModule>(), shared)
+            });
+            DelayResultModule root = Own(ScriptableObject.CreateInstance<DelayResultModule>());
+            Set(root, "entries", new List<EventResultEntry>
+            {
+                new EventResultEntry(Array.Empty<EventConditionModule>(), first),
+                new EventResultEntry(Array.Empty<EventConditionModule>(), second)
+            });
+            EventRuleDefinition rule = OnFireRule(root);
+            FakeServices services = new FakeServices();
+
+            new EventRuleRuntime(rule, 2, DiceFaceSlotType.OnFire).TryHandle(Signal(), services);
+
+            Assert.That(services.ScheduleCallCount, Is.EqualTo(1));
+            Assert.That(rule.FindPrimaryProjectileDefinition(), Is.SameAs(definition));
+            Assert.That(rule.CollectValidationIssues(DiceFaceSlotType.OnFire).Any(
+                issue => issue.Code == "delayed-result-cycle"), Is.False);
+        }
+
+        [Test]
+        public void NestedEmptyDelayStillReportsItsMissingResults()
+        {
+            DelayResultModule empty = Own(ScriptableObject.CreateInstance<DelayResultModule>());
+            DelayResultModule root = Own(ScriptableObject.CreateInstance<DelayResultModule>());
+            Set(root, "entries", new List<EventResultEntry>
+            {
+                new EventResultEntry(Array.Empty<EventConditionModule>(), empty)
+            });
+
+            List<EventRuleValidationIssue> issues =
+                OnFireRule(root).CollectValidationIssues(DiceFaceSlotType.OnFire);
+
+            Assert.That(issues.Any(issue => issue.Code == "missing-delayed-results"), Is.True);
+        }
+
+        [Test]
         public void BaseRuleWithoutResolvablePrimaryProjectileReportsValidationError()
         {
             SignalTypeTriggerModule trigger = Own(ScriptableObject.CreateInstance<SignalTypeTriggerModule>());
@@ -438,6 +559,16 @@ namespace DiceRevolver.Tests
             Set(rule, "trigger", trigger);
             Set(rule, "results", entries.ToList());
             return rule;
+        }
+
+        private EventRuleDefinition OnFireRule(EventResultModule result)
+        {
+            SignalTypeTriggerModule trigger = Own(ScriptableObject.CreateInstance<SignalTypeTriggerModule>());
+            Set(trigger, "signals", EventSignalMask.OnFire);
+            return Rule(
+                DiceFaceSlotMask.OnFire,
+                trigger,
+                new EventResultEntry(Array.Empty<EventConditionModule>(), result));
         }
 
         private DiceFaceEntry Entry(DiceFaceSlotType slot)
@@ -608,6 +739,7 @@ namespace DiceRevolver.Tests
             public bool OverlayAccepted { get; set; }
             public float ScheduledDelay { get; private set; } = float.NaN;
             public Action ScheduledCallback { get; private set; }
+            public int ScheduleCallCount { get; private set; }
             public List<ProjectileRequest> ProjectileRequests { get; } = new();
             public List<int> ForcedFaces { get; } = new();
             public List<LightningRequest> LightningRequests { get; } = new();
@@ -631,6 +763,7 @@ namespace DiceRevolver.Tests
 
             public bool Schedule(float delaySeconds, Action callback)
             {
+                ScheduleCallCount++;
                 ScheduledDelay = delaySeconds;
                 ScheduledCallback = callback;
                 return callback != null;
