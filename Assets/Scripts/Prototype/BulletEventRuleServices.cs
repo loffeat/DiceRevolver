@@ -106,17 +106,33 @@ namespace DiceRevolver.Prototype
             string detail = string.IsNullOrWhiteSpace(description)
                 ? $"{stage}: {status}"
                 : $"{stage}: {status} - {description}";
+            bool verbose = stage != null &&
+                stage.IndexOf("condition", StringComparison.OrdinalIgnoreCase) >= 0;
             context.Activation.RecordDebug(
-                CombatDebugEventType.Result,
+                MapEventType(stage),
                 "规则",
                 ruleName,
                 detail,
-                2);
+                2,
+                verbose);
         }
 
         public void ReportException(Exception exception, ScriptableObject module)
         {
             reportException?.Invoke(exception, module);
+        }
+
+        private static CombatDebugEventType MapEventType(string stage)
+        {
+            if (string.Equals(stage, "trigger", StringComparison.OrdinalIgnoreCase))
+            {
+                return CombatDebugEventType.RuleTrigger;
+            }
+
+            return stage != null &&
+                   stage.IndexOf("condition", StringComparison.OrdinalIgnoreCase) >= 0
+                ? CombatDebugEventType.RuleCondition
+                : CombatDebugEventType.RuleResult;
         }
     }
 }

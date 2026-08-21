@@ -277,7 +277,8 @@ namespace DiceRevolver.Prototype
             string phase,
             string name,
             string detail,
-            int additionalDepth)
+            int additionalDepth,
+            bool verbose = false)
         {
             if (debugTrace == null || !DebugScope.IsValid)
             {
@@ -291,7 +292,8 @@ namespace DiceRevolver.Prototype
                 name,
                 detail,
                 additionalDepth,
-                debugTime != null ? debugTime.Invoke() : 0f);
+                debugTime != null ? debugTime.Invoke() : 0f,
+                verbose);
         }
 
         private static bool ResolveAttackEffect(

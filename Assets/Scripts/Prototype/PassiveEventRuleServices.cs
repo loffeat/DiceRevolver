@@ -12,6 +12,7 @@ namespace DiceRevolver.Prototype
         private readonly CombatDebugTrace debugTrace;
         private readonly Func<float> currentTime;
         private readonly Action<Exception, UnityEngine.Object> exceptionLogger;
+        private CombatDebugScope fallbackDebugScope;
 
         public PassiveEventRuleServices(
             EventSignal signal,
@@ -138,26 +139,56 @@ namespace DiceRevolver.Prototype
                 ? signal.DebugScope
                 : signal.Activation != null && signal.Activation.DebugScope.IsValid
                     ? signal.Activation.DebugScope
-                    : debugTrace.BeginActivation(signal.EquippedFace, false, default, time);
+                    : ResolveFallbackDebugScope(time);
             string ruleName = rule != null && !string.IsNullOrWhiteSpace(rule.DisplayName)
                 ? rule.DisplayName
                 : rule != null && !string.IsNullOrWhiteSpace(rule.name) ? rule.name : "事件规则";
             string detail = string.IsNullOrWhiteSpace(description)
                 ? $"{stage}: {status}"
                 : $"{stage}: {status} - {description}";
+            bool verbose = stage != null &&
+                stage.IndexOf("condition", StringComparison.OrdinalIgnoreCase) >= 0;
             debugTrace.Record(
                 scope,
-                CombatDebugEventType.Result,
+                MapEventType(stage),
                 "规则被动",
                 ruleName,
                 detail,
                 1,
-                time);
+                time,
+                verbose);
         }
 
         public void ReportException(Exception exception, ScriptableObject module)
         {
             exceptionLogger?.Invoke(exception, module);
+        }
+
+        private static CombatDebugEventType MapEventType(string stage)
+        {
+            if (string.Equals(stage, "trigger", StringComparison.OrdinalIgnoreCase))
+            {
+                return CombatDebugEventType.RuleTrigger;
+            }
+
+            return stage != null &&
+                   stage.IndexOf("condition", StringComparison.OrdinalIgnoreCase) >= 0
+                ? CombatDebugEventType.RuleCondition
+                : CombatDebugEventType.RuleResult;
+        }
+
+        private CombatDebugScope ResolveFallbackDebugScope(float time)
+        {
+            if (!fallbackDebugScope.IsValid)
+            {
+                fallbackDebugScope = debugTrace.BeginActivation(
+                    signal.EquippedFace,
+                    false,
+                    default,
+                    time);
+            }
+
+            return fallbackDebugScope;
         }
     }
 }

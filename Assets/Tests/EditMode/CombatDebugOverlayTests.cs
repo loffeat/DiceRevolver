@@ -50,6 +50,38 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void OverlayIgnoresVerboseConditionRecordsWithoutUsingTheirLineCapacity()
+        {
+            owner = new GameObject(
+                "CombatDebug",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Text),
+                typeof(CombatDebugOverlay));
+            Text label = owner.GetComponent<Text>();
+            CombatDebugOverlay overlay = owner.GetComponent<CombatDebugOverlay>();
+            CombatDebugTrace trace = new CombatDebugTrace(16);
+            overlay.Configure(label, trace, 2, 0f, 16);
+            CombatDebugScope scope = trace.BeginActivation(2, false, default, 0f);
+
+            trace.Record(scope, CombatDebugEventType.RuleResult, "规则", "第一条", null, 0, 0f);
+            trace.Record(
+                scope,
+                CombatDebugEventType.RuleCondition,
+                "规则",
+                "详细条件",
+                null,
+                1,
+                0f,
+                true);
+            trace.Record(scope, CombatDebugEventType.RuleResult, "规则", "第二条", null, 0, 0f);
+
+            Assert.That(label.text, Does.Contain("第一条"));
+            Assert.That(label.text, Does.Contain("第二条"));
+            Assert.That(label.text, Does.Not.Contain("详细条件"));
+        }
+
+        [Test]
         public void RuntimeViewAnchorsDebugPanelToTopLeft()
         {
             owner = new GameObject("Canvas", typeof(RectTransform), typeof(Canvas));

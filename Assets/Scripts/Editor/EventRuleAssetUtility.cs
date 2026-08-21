@@ -206,6 +206,113 @@ namespace DiceRevolver.Editor
             return true;
         }
 
+        public static EventResultModule AddResultEntry(
+            EventRuleDefinition rule,
+            Type resultModuleType)
+        {
+            EnsureSavedRule(rule);
+            ValidateModuleType(resultModuleType);
+            if (!typeof(EventResultModule).IsAssignableFrom(resultModuleType))
+            {
+                throw new ArgumentException(
+                    $"Type {resultModuleType.FullName} is not an Event Result module.",
+                    nameof(resultModuleType));
+            }
+
+            int undoGroup = BeginUndoGroup("Add Event Rule Result");
+            EventResultModule module = null;
+            try
+            {
+                Undo.RecordObject(rule, "Add Event Rule Result");
+                SerializedObject serializedRule = new SerializedObject(rule);
+                SerializedProperty results = serializedRule.FindProperty("results");
+                int index = results.arraySize;
+                results.InsertArrayElementAtIndex(index);
+                SerializedProperty entry = results.GetArrayElementAtIndex(index);
+                entry.FindPropertyRelative("conditions").arraySize = 0;
+                SerializedProperty result = entry.FindPropertyRelative("result");
+                result.objectReferenceValue = null;
+                module = (EventResultModule)CreateModuleSubAsset(
+                    rule,
+                    resultModuleType,
+                    "Add Event Rule Result");
+                result.objectReferenceValue = module;
+                serializedRule.ApplyModifiedProperties();
+                SaveChanged(rule, module);
+                Undo.CollapseUndoOperations(undoGroup);
+                return module;
+            }
+            catch
+            {
+                RollbackUndoGroup(undoGroup, new Object[] { module }, rule);
+                throw;
+            }
+        }
+
+        public static bool RemoveResultEntry(EventRuleDefinition rule, int index)
+        {
+            EnsureSavedRule(rule);
+            SerializedObject serializedRule = new SerializedObject(rule);
+            SerializedProperty results = serializedRule.FindProperty("results");
+            if (index < 0 || index >= results.arraySize)
+            {
+                return false;
+            }
+
+            SerializedProperty entry = results.GetArrayElementAtIndex(index);
+            HashSet<Object> removedClosure = new HashSet<Object>();
+            SerializedProperty conditions = entry.FindPropertyRelative("conditions");
+            for (int conditionIndex = 0; conditionIndex < conditions.arraySize; conditionIndex++)
+            {
+                AddClosure(
+                    conditions.GetArrayElementAtIndex(conditionIndex).objectReferenceValue,
+                    removedClosure);
+            }
+
+            AddClosure(entry.FindPropertyRelative("result").objectReferenceValue, removedClosure);
+
+            int undoGroup = BeginUndoGroup("Remove Event Rule Result");
+            Undo.RecordObject(rule, "Remove Event Rule Result");
+            results.DeleteArrayElementAtIndex(index);
+            serializedRule.ApplyModifiedProperties();
+            DestroyOwnedModuleClosureIfUnreferenced(rule, removedClosure.ToArray());
+            SaveChanged(rule);
+            Undo.CollapseUndoOperations(undoGroup);
+            return true;
+        }
+
+        public static bool RenameRule(EventRuleDefinition rule, string newName)
+        {
+            EnsureSavedRule(rule);
+            string trimmedName = newName?.Trim();
+            if (string.IsNullOrEmpty(trimmedName) ||
+                trimmedName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
+                trimmedName.Contains("/") || trimmedName.Contains("\\"))
+            {
+                return false;
+            }
+
+            string error = AssetDatabase.RenameAsset(AssetDatabase.GetAssetPath(rule), trimmedName);
+            if (!string.IsNullOrEmpty(error))
+            {
+                return false;
+            }
+
+            AssetDatabase.SaveAssets();
+            return true;
+        }
+
+        public static EventRuleDefinition PingRule(EventRuleDefinition rule)
+        {
+            if (rule == null)
+            {
+                return null;
+            }
+
+            EditorGUIUtility.PingObject(rule);
+            return rule;
+        }
+
         public static EventRuleDefinition DuplicateRule(
             EventRuleDefinition source,
             string destinationPath)
@@ -386,6 +493,15 @@ namespace DiceRevolver.Editor
             }
 
             return modules;
+        }
+
+        private static void AddClosure(Object root, HashSet<Object> destination)
+        {
+            IReadOnlyList<Object> closure = CollectReachableModules(root);
+            for (int index = 0; index < closure.Count; index++)
+            {
+                destination.Add(closure[index]);
+            }
         }
 
         private static void RemapObjectReferences(

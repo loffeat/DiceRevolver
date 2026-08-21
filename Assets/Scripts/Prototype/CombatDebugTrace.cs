@@ -13,7 +13,10 @@ namespace DiceRevolver.Prototype
         PassiveTriggered,
         ShotEnded,
         ReloadStarted,
-        ReloadCompleted
+        ReloadCompleted,
+        RuleTrigger,
+        RuleCondition,
+        RuleResult
     }
 
     public readonly struct CombatDebugScope
@@ -48,7 +51,8 @@ namespace DiceRevolver.Prototype
             string phase,
             string name,
             string detail,
-            float timestamp)
+            float timestamp,
+            bool verbose = false)
         {
             Sequence = sequence;
             ChainId = chainId;
@@ -61,6 +65,7 @@ namespace DiceRevolver.Prototype
             Name = name ?? string.Empty;
             Detail = detail ?? string.Empty;
             Timestamp = timestamp;
+            Verbose = verbose;
         }
 
         public long Sequence { get; }
@@ -74,6 +79,7 @@ namespace DiceRevolver.Prototype
         public string Name { get; }
         public string Detail { get; }
         public float Timestamp { get; }
+        public bool Verbose { get; }
     }
 
     public sealed class CombatDebugTrace
@@ -111,7 +117,8 @@ namespace DiceRevolver.Prototype
             string name,
             string detail,
             int additionalDepth,
-            float timestamp)
+            float timestamp,
+            bool verbose = false)
         {
             CombatDebugRecord record = new CombatDebugRecord(
                 nextSequence++,
@@ -124,7 +131,8 @@ namespace DiceRevolver.Prototype
                 phase,
                 name,
                 detail,
-                timestamp);
+                timestamp,
+                verbose);
             records.Add(record);
             if (records.Count > capacity)
             {
@@ -140,10 +148,11 @@ namespace DiceRevolver.Prototype
             string phase,
             string name,
             string detail,
-            float timestamp)
+            float timestamp,
+            bool verbose = false)
         {
             CombatDebugScope scope = BeginActivation(0, false, default, timestamp);
-            return Record(scope, eventType, phase, name, detail, 0, timestamp);
+            return Record(scope, eventType, phase, name, detail, 0, timestamp, verbose);
         }
     }
 }

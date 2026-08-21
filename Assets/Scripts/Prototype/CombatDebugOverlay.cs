@@ -70,6 +70,11 @@ namespace DiceRevolver.Prototype
 
         private void HandleRecordAdded(CombatDebugRecord record)
         {
+            if (record.Verbose)
+            {
+                return;
+            }
+
             visibleRecords.Add(record);
             while (visibleRecords.Count > maximumLines)
             {

@@ -172,7 +172,11 @@ namespace DiceRevolver.Prototype
                     return Failed("Condition threw an exception.");
                 }
 
-                if (!result.Passed)
+                if (result.Passed)
+                {
+                    RecordDebug(context.Services, stage, result.Description, EventResultStatus.Success);
+                }
+                else
                 {
                     RecordDebug(context.Services, stage, result.FailureReason ?? result.Description, EventResultStatus.Skipped);
                     return Skipped(result.FailureReason ?? result.Description);
