@@ -49,8 +49,8 @@ namespace DiceRevolver.Tests
                 new[] { 1, 2, 3 },
                 2);
 
-            Assert.That(filtered.Candidates, Is.EqualTo(new[] { 1 }),
-                "legacy-rejected face 2 must not re-enter and the highest Rule priority wins");
+            Assert.That(filtered.Candidates, Is.EqualTo(new[] { 3 }),
+                "legacy-rejected face 2 must not re-enter and lower-priority face 3 draws first");
             Assert.That(filtered.ForcedFaceEligible, Is.False);
 
             runtimes.RebuildFace(2, PassiveSnapshot(rejectRule));
@@ -89,17 +89,22 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
-        public void HighestRuleDrawPriorityKeepsTiesAndComputesForcedEligibilityFromSelection()
+        public void LowestCandidatePriorityKeepsTiesAndDefersForcedFinisherUntilAlone()
         {
             SetDrawPriorityResultModule firstPriority = Own(
                 ScriptableObject.CreateInstance<SetDrawPriorityResultModule>());
             SetDrawPriorityResultModule secondPriority = Own(
                 ScriptableObject.CreateInstance<SetDrawPriorityResultModule>());
-            Set(firstPriority, "priority", 1);
-            Set(secondPriority, "priority", 1);
+            SetDrawPriorityResultModule finisherPriority = Own(
+                ScriptableObject.CreateInstance<SetDrawPriorityResultModule>());
+            Set(firstPriority, "priority", 0);
+            Set(secondPriority, "priority", 0);
+            Set(finisherPriority, "priority", 1);
             SourceFaceConditionModule firstOwner = Own(
                 ScriptableObject.CreateInstance<SourceFaceConditionModule>());
             SourceFaceConditionModule secondOwner = Own(
+                ScriptableObject.CreateInstance<SourceFaceConditionModule>());
+            SourceFaceConditionModule finisherOwner = Own(
                 ScriptableObject.CreateInstance<SourceFaceConditionModule>());
             DiceEventRuleRuntimeSet runtimes = CreateRuntimeSet();
             runtimes.RebuildFace(1, PassiveSnapshot(CreateRule(
@@ -108,20 +113,69 @@ namespace DiceRevolver.Tests
             runtimes.RebuildFace(2, PassiveSnapshot(CreateRule(
                 secondPriority,
                 new EventConditionModule[] { secondOwner })));
+            runtimes.RebuildFace(3, PassiveSnapshot(CreateRule(
+                finisherPriority,
+                new EventConditionModule[] { finisherOwner })));
 
-            DiceDrawConstraintResult forcedSelected = runtimes.FilterDrawCandidates(
+            DiceDrawConstraintResult ordinaryForced = runtimes.FilterDrawCandidates(
                 new[] { 1, 2, 3 },
                 new[] { 1, 2, 3 },
                 2);
-            DiceDrawConstraintResult forcedExcluded = runtimes.FilterDrawCandidates(
+            DiceDrawConstraintResult finisherForced = runtimes.FilterDrawCandidates(
                 new[] { 1, 2, 3 },
                 new[] { 1, 2, 3 },
                 3);
+            DiceDrawConstraintResult finisherAlone = runtimes.FilterDrawCandidates(
+                new[] { 3 },
+                new[] { 3 },
+                3);
 
-            Assert.That(forcedSelected.Candidates, Is.EqualTo(new[] { 1, 2 }));
-            Assert.That(forcedSelected.ForcedFaceEligible, Is.True);
-            Assert.That(forcedExcluded.Candidates, Is.EqualTo(new[] { 1, 2 }));
-            Assert.That(forcedExcluded.ForcedFaceEligible, Is.False);
+            Assert.That(ordinaryForced.Candidates, Is.EqualTo(new[] { 1, 2 }));
+            Assert.That(ordinaryForced.ForcedFaceEligible, Is.True);
+            Assert.That(finisherForced.Candidates, Is.EqualTo(new[] { 1, 2 }));
+            Assert.That(finisherForced.ForcedFaceEligible, Is.False);
+            Assert.That(finisherAlone.Candidates, Is.EqualTo(new[] { 3 }));
+            Assert.That(finisherAlone.ForcedFaceEligible, Is.True);
+        }
+
+        [Test]
+        public void SameCandidateStillAccumulatesTheHighestPriorityAcrossRules()
+        {
+            EventSignal signal = Signal(EventSignalType.DrawCandidate);
+            PassiveEventRuleServices services = CreateServices(signal);
+
+            services.SetDrawPriority(2);
+            services.SetDrawPriority(1);
+
+            Assert.That(services.HighestDrawPriority, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void RuleFinisherPriorityMatchesLegacyFinisherForTheSameCandidates()
+        {
+            FinisherPassiveEffect legacyEffect = Own(
+                ScriptableObject.CreateInstance<FinisherPassiveEffect>());
+            using DicePassiveRuntime legacy = new DicePassiveRuntime();
+            legacy.RebuildFace(4, legacyEffect);
+            SetDrawPriorityResultModule priority = Own(
+                ScriptableObject.CreateInstance<SetDrawPriorityResultModule>());
+            Set(priority, "priority", 1);
+            SourceFaceConditionModule ownerFace = Own(
+                ScriptableObject.CreateInstance<SourceFaceConditionModule>());
+            DiceEventRuleRuntimeSet rules = CreateRuntimeSet();
+            rules.RebuildFace(4, PassiveSnapshot(CreateRule(
+                priority,
+                new EventConditionModule[] { ownerFace })));
+            int[] remaining = { 1, 4, 5 };
+
+            DiceDrawConstraintResult legacyResult = legacy.FilterDrawCandidates(remaining, null);
+            DiceDrawConstraintResult ruleResult = rules.FilterDrawCandidates(
+                remaining,
+                remaining,
+                null);
+
+            Assert.That(legacyResult.Candidates, Is.EqualTo(new[] { 1, 5 }));
+            Assert.That(ruleResult.Candidates, Is.EqualTo(new[] { 1, 5 }));
         }
 
         [Test]
@@ -151,8 +205,8 @@ namespace DiceRevolver.Tests
                 new[] { 1, 2, 3 },
                 null);
 
-            Assert.That(result.Candidates, Is.EqualTo(new[] { 1 }),
-                "face 2 was rejected by legacy and face 1 has the highest Rule priority");
+            Assert.That(result.Candidates, Is.EqualTo(new[] { 3 }),
+                "face 2 was rejected by legacy and lower-priority face 3 draws before face 1");
         }
 
         [Test]

@@ -104,16 +104,16 @@ namespace DiceRevolver.Prototype
 
             if (allowed.Count > 0)
             {
-                int maximumPriority = int.MinValue;
+                int minimumPriority = int.MaxValue;
                 for (int index = 0; index < priorities.Count; index++)
                 {
-                    maximumPriority = Math.Max(maximumPriority, priorities[index]);
+                    minimumPriority = Math.Min(minimumPriority, priorities[index]);
                 }
 
                 List<int> selected = new();
                 for (int index = 0; index < allowed.Count; index++)
                 {
-                    if (priorities[index] == maximumPriority)
+                    if (priorities[index] == minimumPriority)
                     {
                         selected.Add(allowed[index]);
                     }
