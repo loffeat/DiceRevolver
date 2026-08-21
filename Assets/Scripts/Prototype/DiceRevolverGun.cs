@@ -321,7 +321,11 @@ namespace DiceRevolver.Prototype
                     hitPosition,
                     activation.SuppressedPassiveInstanceId));
                 TryNotifyPassive(
-                    () => eventRuleRuntimes.NotifyProjectileHit(shot, hitCollider, hitPosition));
+                    () => eventRuleRuntimes.NotifyProjectileHit(
+                        shot,
+                        handle,
+                        hitCollider,
+                        hitPosition));
             };
             return handle;
         }

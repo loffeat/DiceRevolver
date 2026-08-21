@@ -49,8 +49,8 @@ namespace DiceRevolver.Tests
                 new[] { 1, 2, 3 },
                 2);
 
-            Assert.That(filtered.Candidates, Is.EqualTo(new[] { 3 }),
-                "legacy-rejected face 2 must not re-enter and face 1 has a later draw priority");
+            Assert.That(filtered.Candidates, Is.EqualTo(new[] { 1 }),
+                "legacy-rejected face 2 must not re-enter and the highest Rule priority wins");
             Assert.That(filtered.ForcedFaceEligible, Is.False);
 
             runtimes.RebuildFace(2, PassiveSnapshot(rejectRule));
@@ -67,6 +67,61 @@ namespace DiceRevolver.Tests
             Assert.That(secondFallback.Candidates, Is.EqualTo(new[] { 1, 2, 3 }));
             Assert.That(firstFallback.ForcedFaceEligible, Is.True);
             Assert.That(warnings, Has.Count.EqualTo(1));
+        }
+
+        [Test]
+        public void RuleDrawSignalsExposeOnlyLegacyAllowedFacesWhileFallbackUsesRealPool()
+        {
+            CaptureRemainingFacesResult capture = Own(
+                ScriptableObject.CreateInstance<CaptureRemainingFacesResult>());
+            DiceEventRuleRuntimeSet runtimes = CreateRuntimeSet();
+            runtimes.RebuildFace(6, PassiveSnapshot(CreateRule(capture)));
+
+            DiceDrawConstraintResult result = runtimes.FilterDrawCandidates(
+                new[] { 1, 3 },
+                new[] { 1, 2, 3 },
+                null);
+
+            Assert.That(result.Candidates, Is.EqualTo(new[] { 1, 3 }));
+            Assert.That(capture.Observed, Has.Count.EqualTo(2));
+            Assert.That(capture.Observed[0], Is.EqualTo(new[] { 1, 3 }));
+            Assert.That(capture.Observed[1], Is.EqualTo(new[] { 1, 3 }));
+        }
+
+        [Test]
+        public void HighestRuleDrawPriorityKeepsTiesAndComputesForcedEligibilityFromSelection()
+        {
+            SetDrawPriorityResultModule firstPriority = Own(
+                ScriptableObject.CreateInstance<SetDrawPriorityResultModule>());
+            SetDrawPriorityResultModule secondPriority = Own(
+                ScriptableObject.CreateInstance<SetDrawPriorityResultModule>());
+            Set(firstPriority, "priority", 1);
+            Set(secondPriority, "priority", 1);
+            SourceFaceConditionModule firstOwner = Own(
+                ScriptableObject.CreateInstance<SourceFaceConditionModule>());
+            SourceFaceConditionModule secondOwner = Own(
+                ScriptableObject.CreateInstance<SourceFaceConditionModule>());
+            DiceEventRuleRuntimeSet runtimes = CreateRuntimeSet();
+            runtimes.RebuildFace(1, PassiveSnapshot(CreateRule(
+                firstPriority,
+                new EventConditionModule[] { firstOwner })));
+            runtimes.RebuildFace(2, PassiveSnapshot(CreateRule(
+                secondPriority,
+                new EventConditionModule[] { secondOwner })));
+
+            DiceDrawConstraintResult forcedSelected = runtimes.FilterDrawCandidates(
+                new[] { 1, 2, 3 },
+                new[] { 1, 2, 3 },
+                2);
+            DiceDrawConstraintResult forcedExcluded = runtimes.FilterDrawCandidates(
+                new[] { 1, 2, 3 },
+                new[] { 1, 2, 3 },
+                3);
+
+            Assert.That(forcedSelected.Candidates, Is.EqualTo(new[] { 1, 2 }));
+            Assert.That(forcedSelected.ForcedFaceEligible, Is.True);
+            Assert.That(forcedExcluded.Candidates, Is.EqualTo(new[] { 1, 2 }));
+            Assert.That(forcedExcluded.ForcedFaceEligible, Is.False);
         }
 
         [Test]
@@ -96,8 +151,8 @@ namespace DiceRevolver.Tests
                 new[] { 1, 2, 3 },
                 null);
 
-            Assert.That(result.Candidates, Is.EqualTo(new[] { 3 }),
-                "face 2 was rejected by legacy and face 1 was deferred by Rule priority");
+            Assert.That(result.Candidates, Is.EqualTo(new[] { 1 }),
+                "face 2 was rejected by legacy and face 1 has the highest Rule priority");
         }
 
         [Test]
@@ -166,6 +221,56 @@ namespace DiceRevolver.Tests
                 EventSignalType.FaceConsumed
             }));
             Assert.That(active.Signals, Is.Empty);
+        }
+
+        [Test]
+        public void ProjectileHitSignalCarriesTheExactRegisteredProjectileHandle()
+        {
+            GameObject projectileObject = Own(new GameObject("Hit Signal Projectile"));
+            Projectile projectile = projectileObject.AddComponent<Projectile>();
+            ProjectileRuntimeStats stats = Stats(2f);
+            OwnedProjectileRegistry registry = new OwnedProjectileRegistry();
+            ProjectileHandle handle = registry.Register(projectile, stats);
+            DiceEventBudget budget = new DiceEventBudget(8);
+            DiceFaceActivation activation = new DiceFaceActivation(
+                2,
+                default,
+                Vector3.zero,
+                Vector3.forward,
+                null,
+                (Func<ProjectileSpawnRequest, ProjectileHandle>)null,
+                null,
+                null,
+                budget,
+                false,
+                0);
+            DiceRevolverShotContext shot = new DiceRevolverShotContext(
+                2,
+                Vector3.zero,
+                Vector3.forward,
+                projectile,
+                default,
+                stats,
+                null,
+                null,
+                activation,
+                true);
+            GameObject hitObject = Own(new GameObject("Hit Collider"));
+            Collider hitCollider = hitObject.AddComponent<BoxCollider>();
+            Vector3 hitPosition = new Vector3(2f, 0f, 5f);
+            CaptureHitPayloadResult capture = Own(
+                ScriptableObject.CreateInstance<CaptureHitPayloadResult>());
+            DiceEventRuleRuntimeSet runtimes = CreateRuntimeSet();
+            runtimes.RebuildFace(4, PassiveSnapshot(CreateRule(capture)));
+
+            runtimes.NotifyProjectileHit(shot, handle, hitCollider, hitPosition);
+
+            Assert.That(capture.Projectile.Projectile, Is.SameAs(projectile));
+            Assert.That(capture.Projectile.Stats.Damage, Is.EqualTo(2f));
+            Assert.That(capture.Shot, Is.SameAs(shot));
+            Assert.That(capture.Activation, Is.SameAs(activation));
+            Assert.That(capture.HitCollider, Is.SameAs(hitCollider));
+            Assert.That(capture.HitPosition, Is.EqualTo(hitPosition));
         }
 
         [Test]
@@ -342,6 +447,132 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void BonusActivationReservesCountBeforeSynchronousReentry()
+        {
+            DiceEventBudget budget = new DiceEventBudget(12);
+            DiceFaceActivation activation = new DiceFaceActivation(
+                3,
+                default,
+                Vector3.zero,
+                Vector3.forward,
+                null,
+                (Func<ProjectileSpawnRequest, ProjectileHandle>)null,
+                null,
+                null,
+                budget,
+                false,
+                0);
+            EventSignal signal = Signal(
+                EventSignalType.ProjectileHit,
+                equippedFace: 3,
+                sourceFace: 3,
+                activation: activation,
+                budget: budget);
+            RequestBonusActivationResultModule bonus = Own(
+                ScriptableObject.CreateInstance<RequestBonusActivationResultModule>());
+            Set(bonus, "maximumTriggers", 2);
+            Set(bonus, "maximumSpreadAngle", 8f);
+            Set(bonus, "minimumSpreadSeparation", 2f);
+            EventRuleStateStore state = new EventRuleStateStore();
+            EventExecutionContext context = default;
+            List<BonusDiceActivationRequest> requests = new();
+            int reentryDepth = 0;
+            PassiveEventRuleServices services = CreateServices(signal, request =>
+            {
+                requests.Add(request);
+                if (reentryDepth < 5)
+                {
+                    reentryDepth++;
+                    bonus.Execute(context);
+                    reentryDepth--;
+                }
+
+                return true;
+            });
+            context = new EventExecutionContext(signal, state, services);
+
+            EventResult result = bonus.Execute(context);
+
+            Assert.That(result.Status, Is.EqualTo(EventResultStatus.Success));
+            Assert.That(requests, Has.Count.EqualTo(2));
+            Assert.That(state.GetInt("bonusActivationTriggers"), Is.EqualTo(2));
+            Assert.That(requests.TrueForAll(request =>
+                request.EventBudget == budget && request.SourceActivation == activation), Is.True);
+        }
+
+        [Test]
+        public void RejectedOrThrownBonusReservationRollsBackWithoutNestedProgress()
+        {
+            DiceEventBudget budget = new DiceEventBudget(8);
+            DiceFaceActivation activation = CreateActivation(3, budget);
+            EventSignal signal = Signal(
+                EventSignalType.ProjectileHit,
+                equippedFace: 3,
+                sourceFace: 3,
+                activation: activation,
+                budget: budget);
+            RequestBonusActivationResultModule rejectedBonus = CreateBonusModule(2);
+            EventRuleStateStore rejectedState = new EventRuleStateStore();
+            EventExecutionContext rejectedContext = new EventExecutionContext(
+                signal,
+                rejectedState,
+                CreateServices(signal, _ => false));
+
+            Assert.That(rejectedBonus.Execute(rejectedContext).Status,
+                Is.EqualTo(EventResultStatus.Skipped));
+            Assert.That(rejectedState.GetInt("bonusActivationTriggers"), Is.Zero);
+
+            RequestBonusActivationResultModule throwingBonus = CreateBonusModule(2);
+            EventRuleStateStore throwingState = new EventRuleStateStore();
+            EventExecutionContext throwingContext = new EventExecutionContext(
+                signal,
+                throwingState,
+                CreateServices(signal, _ => throw new InvalidOperationException("expected")));
+
+            Assert.That(() => throwingBonus.Execute(throwingContext),
+                Throws.TypeOf<InvalidOperationException>());
+            Assert.That(throwingState.GetInt("bonusActivationTriggers"), Is.Zero);
+        }
+
+        [Test]
+        public void RejectedOuterBonusDoesNotEraseSynchronousNestedAcceptedCount()
+        {
+            DiceEventBudget budget = new DiceEventBudget(8);
+            DiceFaceActivation activation = CreateActivation(3, budget);
+            EventSignal signal = Signal(
+                EventSignalType.ProjectileHit,
+                equippedFace: 3,
+                sourceFace: 3,
+                activation: activation,
+                budget: budget);
+            RequestBonusActivationResultModule bonus = CreateBonusModule(2);
+            EventRuleStateStore state = new EventRuleStateStore();
+            EventExecutionContext context = default;
+            int requests = 0;
+            EventResult nestedResult = default;
+            PassiveEventRuleServices services = CreateServices(signal, _ =>
+            {
+                requests++;
+                if (requests == 1)
+                {
+                    nestedResult = bonus.Execute(context);
+                    return false;
+                }
+
+                return true;
+            });
+            context = new EventExecutionContext(signal, state, services);
+
+            EventResult outerResult = bonus.Execute(context);
+
+            Assert.That(outerResult.Status, Is.EqualTo(EventResultStatus.Skipped));
+            Assert.That(nestedResult.Status, Is.EqualTo(EventResultStatus.Success));
+            Assert.That(requests, Is.EqualTo(2));
+            Assert.That(state.GetInt("bonusActivationTriggers"), Is.EqualTo(2),
+                "outer rollback must not overwrite synchronous nested progress");
+        }
+
+        [Test]
         public void PassiveConditionsUseEquippedFaceBaseTypeAndSignalType()
         {
             ProjectileTypeDefinition type = Own(
@@ -511,6 +742,32 @@ namespace DiceRevolver.Tests
                 null);
         }
 
+        private RequestBonusActivationResultModule CreateBonusModule(int maximumTriggers)
+        {
+            RequestBonusActivationResultModule bonus = Own(
+                ScriptableObject.CreateInstance<RequestBonusActivationResultModule>());
+            Set(bonus, "maximumTriggers", maximumTriggers);
+            Set(bonus, "maximumSpreadAngle", 8f);
+            Set(bonus, "minimumSpreadSeparation", 2f);
+            return bonus;
+        }
+
+        private static DiceFaceActivation CreateActivation(int face, DiceEventBudget budget)
+        {
+            return new DiceFaceActivation(
+                face,
+                default,
+                Vector3.zero,
+                Vector3.forward,
+                null,
+                (Func<ProjectileSpawnRequest, ProjectileHandle>)null,
+                null,
+                null,
+                budget,
+                false,
+                0);
+        }
+
         private EventRuleDefinition CounterRule(ObserveEquippedFaceCounterResult observer)
         {
             IncrementCounterResultModule increment = Own(
@@ -643,6 +900,42 @@ namespace DiceRevolver.Tests
             {
                 context.Services.RejectDrawCandidate("test rejection");
                 return new EventResult(EventResultStatus.Success, "rejected");
+            }
+        }
+
+        private sealed class CaptureRemainingFacesResult : EventResultModule
+        {
+            public List<int[]> Observed { get; } = new();
+
+            public override EventResult Execute(EventExecutionContext context)
+            {
+                int[] snapshot = new int[context.Signal.RemainingFaces.Count];
+                for (int index = 0; index < snapshot.Length; index++)
+                {
+                    snapshot[index] = context.Signal.RemainingFaces[index];
+                }
+
+                Observed.Add(snapshot);
+                return new EventResult(EventResultStatus.Success, "captured");
+            }
+        }
+
+        private sealed class CaptureHitPayloadResult : EventResultModule
+        {
+            public ProjectileHandle Projectile { get; private set; }
+            public DiceRevolverShotContext Shot { get; private set; }
+            public DiceFaceActivation Activation { get; private set; }
+            public Collider HitCollider { get; private set; }
+            public Vector3 HitPosition { get; private set; }
+
+            public override EventResult Execute(EventExecutionContext context)
+            {
+                Projectile = context.Signal.Projectile;
+                Shot = context.Signal.Shot;
+                Activation = context.Signal.Activation;
+                HitCollider = context.Signal.HitCollider;
+                HitPosition = context.Signal.HitPosition;
+                return new EventResult(EventResultStatus.Success, "captured hit payload");
             }
         }
 

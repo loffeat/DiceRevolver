@@ -178,18 +178,41 @@ namespace DiceRevolver.Prototype
                 return Skipped("奖励激活已达到本轮最大触发次数。");
             }
 
-            bool accepted = context.Services.RequestBonusActivation(
-                context.Signal.EquippedFace,
-                maximumSpreadAngle,
-                minimumSpreadSeparation,
-                null);
+            int reserved = used + 1;
+            context.State.SetInt(counterKey, reserved);
+            bool accepted;
+            try
+            {
+                accepted = context.Services.RequestBonusActivation(
+                    context.Signal.EquippedFace,
+                    maximumSpreadAngle,
+                    minimumSpreadSeparation,
+                    null);
+            }
+            catch
+            {
+                RollBackReservationWithoutNestedProgress(context.State, used, reserved);
+                throw;
+            }
+
             if (!accepted)
             {
+                RollBackReservationWithoutNestedProgress(context.State, used, reserved);
                 return Skipped("奖励骰面激活请求未被接受。");
             }
 
-            context.State.SetInt(counterKey, used + 1);
             return Success("已请求奖励骰面激活。");
+        }
+
+        private void RollBackReservationWithoutNestedProgress(
+            EventRuleStateStore state,
+            int previous,
+            int reserved)
+        {
+            if (state.GetInt(counterKey) == reserved)
+            {
+                state.SetInt(counterKey, previous);
+            }
         }
 
         public override void CollectValidationIssues(List<EventRuleValidationIssue> issues)

@@ -89,7 +89,7 @@ namespace DiceRevolver.Prototype
                         default,
                         null,
                         Vector3.zero,
-                        realChamberPool,
+                        legacyCandidates,
                         candidate,
                         default);
                     PassiveEventRuleServices services = CreateServices(signal);
@@ -104,16 +104,16 @@ namespace DiceRevolver.Prototype
 
             if (allowed.Count > 0)
             {
-                int minimumPriority = int.MaxValue;
+                int maximumPriority = int.MinValue;
                 for (int index = 0; index < priorities.Count; index++)
                 {
-                    minimumPriority = Math.Min(minimumPriority, priorities[index]);
+                    maximumPriority = Math.Max(maximumPriority, priorities[index]);
                 }
 
                 List<int> selected = new();
                 for (int index = 0; index < allowed.Count; index++)
                 {
-                    if (priorities[index] == minimumPriority)
+                    if (priorities[index] == maximumPriority)
                     {
                         selected.Add(allowed[index]);
                     }
@@ -203,13 +203,22 @@ namespace DiceRevolver.Prototype
             Collider hitCollider,
             Vector3 hitPosition)
         {
+            NotifyProjectileHit(shot, default, hitCollider, hitPosition);
+        }
+
+        public void NotifyProjectileHit(
+            DiceRevolverShotContext shot,
+            ProjectileHandle projectile,
+            Collider hitCollider,
+            Vector3 hitPosition)
+        {
             DiceFaceActivation activation = shot?.Activation;
             EventSignal signal = CreateSignal(
                 EventSignalType.ProjectileHit,
                 shot != null ? shot.Face : 0,
                 activation,
                 shot,
-                default,
+                projectile,
                 hitCollider,
                 hitPosition,
                 Array.Empty<int>(),
