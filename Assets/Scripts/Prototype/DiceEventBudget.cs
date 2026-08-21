@@ -14,11 +14,12 @@ namespace DiceRevolver.Prototype
 
         public int Remaining { get; private set; }
 
-        public bool TryConsume(Action exhaustedWarning = null)
+        public bool TryConsume(int amount, Action exhaustedWarning = null)
         {
-            if (Remaining > 0)
+            int required = Mathf.Max(1, amount);
+            if (Remaining >= required)
             {
-                Remaining--;
+                Remaining -= required;
                 return true;
             }
 
@@ -30,5 +31,8 @@ namespace DiceRevolver.Prototype
 
             return false;
         }
+
+        public bool TryConsume(Action exhaustedWarning = null) =>
+            TryConsume(1, exhaustedWarning);
     }
 }

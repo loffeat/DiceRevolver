@@ -136,6 +136,17 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void BudgetDoesNotPartiallyConsumeWhenTheRequestedCostExceedsRemaining()
+        {
+            DiceEventBudget budget = new DiceEventBudget(1);
+
+            bool consumed = budget.TryConsume(2);
+
+            Assert.That(consumed, Is.False);
+            Assert.That(budget.Remaining, Is.EqualTo(1));
+        }
+
+        [Test]
         public void ActivationAndEventContextDoNotExposeGunOrChamber()
         {
             Assert.That(typeof(DiceFaceActivation).GetProperty("Gun"), Is.Null);
