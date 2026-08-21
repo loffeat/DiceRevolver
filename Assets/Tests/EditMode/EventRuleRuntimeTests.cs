@@ -57,6 +57,21 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void TriggerMismatchProducesASkippedDebugRecord()
+        {
+            EventRuleDefinition rule = CreateRule(CreateRecordingTrigger(new List<string>(), false));
+            FakeRuleServices services = new FakeRuleServices();
+
+            new EventRuleRuntime(rule, 2, DiceFaceSlotType.OnFire)
+                .TryHandle(Signal(EventSignalType.OnFire), services);
+
+            Assert.That(services.DebugRecords, Is.EqualTo(new[]
+            {
+                new RuleDebugRecord(rule, "trigger", EventResultStatus.Skipped)
+            }));
+        }
+
+        [Test]
         public void RuleConditionsUseAndSemanticsAndStopAtFirstFailure()
         {
             List<string> order = new();
@@ -91,6 +106,29 @@ namespace DiceRevolver.Tests
 
             Assert.That(result.Status, Is.EqualTo(EventResultStatus.Failed));
             Assert.That(order, Is.EqualTo(new[] { "trigger", "first" }));
+        }
+
+        [Test]
+        public void ConditionAndResultFailuresProduceDebugRecords()
+        {
+            EventRuleDefinition conditionRule = CreateRule(
+                CreateRecordingTrigger(new List<string>(), true),
+                new[] { CreateRecordingCondition(new List<string>(), "condition", false) });
+            EventRuleDefinition resultRule = CreateRule(
+                CreateRecordingTrigger(new List<string>(), true),
+                null,
+                Entry(null, CreateRecordingResult(new List<string>(), "result", EventResultStatus.Failed)));
+            FakeRuleServices services = new FakeRuleServices();
+
+            new EventRuleRuntime(conditionRule, 2, DiceFaceSlotType.OnFire)
+                .TryHandle(Signal(EventSignalType.OnFire), services);
+            new EventRuleRuntime(resultRule, 2, DiceFaceSlotType.OnFire)
+                .TryHandle(Signal(EventSignalType.OnFire), services);
+
+            Assert.That(services.DebugRecords, Does.Contain(
+                new RuleDebugRecord(conditionRule, "rule-condition", EventResultStatus.Skipped)));
+            Assert.That(services.DebugRecords, Does.Contain(
+                new RuleDebugRecord(resultRule, "result", EventResultStatus.Failed)));
         }
 
         [Test]
@@ -164,6 +202,20 @@ namespace DiceRevolver.Tests
                 Throws.Nothing);
             Assert.That(result.Status, Is.EqualTo(EventResultStatus.Failed));
             Assert.That(services.Exceptions, Has.Count.EqualTo(1));
+            Assert.That(services.DebugRecords, Does.Contain(
+                new RuleDebugRecord(rule, stage.ToString().ToLowerInvariant(), EventResultStatus.Failed)));
+        }
+
+        [Test]
+        public void ThrowingDebugReporterDoesNotEscapeTheRuleBoundary()
+        {
+            EventRuleDefinition rule = CreateRule(CreateRecordingTrigger(new List<string>(), false));
+            FakeRuleServices services = new FakeRuleServices { ThrowOnRecordRuleDebug = true };
+
+            Assert.That(
+                () => new EventRuleRuntime(rule, 2, DiceFaceSlotType.OnFire)
+                    .TryHandle(Signal(EventSignalType.OnFire), services),
+                Throws.Nothing);
         }
 
         [Test]
@@ -279,6 +331,26 @@ namespace DiceRevolver.Tests
 
         public enum ModuleFailureStage { Trigger, Condition, Result }
 
+        private readonly struct RuleDebugRecord : IEquatable<RuleDebugRecord>
+        {
+            public RuleDebugRecord(EventRuleDefinition rule, string stage, EventResultStatus status)
+            {
+                Rule = rule;
+                Stage = stage;
+                Status = status;
+            }
+
+            public EventRuleDefinition Rule { get; }
+            public string Stage { get; }
+            public EventResultStatus Status { get; }
+
+            public bool Equals(RuleDebugRecord other) =>
+                Rule == other.Rule && Stage == other.Stage && Status == other.Status;
+
+            public override bool Equals(object obj) => obj is RuleDebugRecord other && Equals(other);
+            public override int GetHashCode() => (Rule, Stage, Status).GetHashCode();
+        }
+
         private sealed class RecordingTrigger : EventTriggerModule
         {
             private List<string> order;
@@ -385,6 +457,8 @@ namespace DiceRevolver.Tests
         private sealed class FakeRuleServices : IEventRuleServices
         {
             public List<Exception> Exceptions { get; } = new();
+            public List<RuleDebugRecord> DebugRecords { get; } = new();
+            public bool ThrowOnRecordRuleDebug { get; set; }
             public DiceEventBudget EventBudget => null;
             public bool RequestProjectile(ProjectileDefinition definition, Vector3 origin, Vector3 direction, AttackEffectOverride attackEffectOverride, bool isPrimary) => false;
             public bool Schedule(float delaySeconds, Action callback) => false;
@@ -396,7 +470,15 @@ namespace DiceRevolver.Tests
             public void SetDrawPriority(int priority) { }
             public void RejectDrawCandidate(string reason) { }
             public void MultiplyProjectileDamage(float multiplier) { }
-            public void RecordRuleDebug(EventRuleDefinition rule, string stage, string description, EventResultStatus status) { }
+            public void RecordRuleDebug(EventRuleDefinition rule, string stage, string description, EventResultStatus status)
+            {
+                if (ThrowOnRecordRuleDebug)
+                {
+                    throw new InvalidOperationException("debug");
+                }
+
+                DebugRecords.Add(new RuleDebugRecord(rule, stage, status));
+            }
             public void ReportException(Exception exception, ScriptableObject module) => Exceptions.Add(exception);
         }
     }

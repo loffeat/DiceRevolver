@@ -147,6 +147,37 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void SilentBudgetExhaustionDoesNotConsumeTheSingleWarningOpportunity()
+        {
+            DiceEventBudget budget = new DiceEventBudget(1);
+            List<string> warnings = new List<string>();
+
+            Assert.That(budget.TryConsume(2), Is.False);
+            Assert.That(budget.TryConsume(2, () => warnings.Add("exhausted")), Is.False);
+            Assert.That(budget.TryConsume(2, () => warnings.Add("exhausted")), Is.False);
+
+            Assert.That(warnings, Is.EqualTo(new[] { "exhausted" }));
+        }
+
+        [Test]
+        public void ThrowingBudgetWarningDoesNotEscapeOrRepeat()
+        {
+            DiceEventBudget budget = new DiceEventBudget(1);
+            int warningAttempts = 0;
+
+            Assert.That(
+                () => budget.TryConsume(2, () =>
+                {
+                    warningAttempts++;
+                    throw new System.InvalidOperationException("warning");
+                }),
+                Throws.Nothing);
+            Assert.That(budget.TryConsume(2, () => warningAttempts++), Is.False);
+
+            Assert.That(warningAttempts, Is.EqualTo(1));
+        }
+
+        [Test]
         public void ActivationAndEventContextDoNotExposeGunOrChamber()
         {
             Assert.That(typeof(DiceFaceActivation).GetProperty("Gun"), Is.Null);

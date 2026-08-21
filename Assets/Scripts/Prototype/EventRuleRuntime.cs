@@ -36,11 +36,13 @@ namespace DiceRevolver.Prototype
 
             if (rule.RecursionPolicy == EventRuleRecursionPolicy.IgnoreBonusActivation && signal.IsBonusActivation)
             {
+                RecordDebug(services, "rule", "Rule ignores bonus activations.", EventResultStatus.Skipped);
                 return Skipped("Rule ignores bonus activations.");
             }
 
             if (rule.RecursionPolicy == EventRuleRecursionPolicy.DenyReentry && activeInvocationCount > 0)
             {
+                RecordDebug(services, "rule", "Rule reentry is denied.", EventResultStatus.Skipped);
                 return Skipped("Rule reentry is denied.");
             }
 
@@ -56,11 +58,15 @@ namespace DiceRevolver.Prototype
                 DiceEventBudget budget = signal.EventBudget;
                 if (budget != null && !budget.TryConsume(Mathf.Max(1, rule.EventBudgetCost)))
                 {
+                    RecordDebug(services, "budget", "Event budget is exhausted.", EventResultStatus.Skipped);
                     return Skipped("Event budget is exhausted.");
                 }
 
                 EventEvaluationContext evaluationContext = new EventEvaluationContext(signal, state, services);
-                EventRuleInvocationResult conditionResult = EvaluateConditions(rule.Conditions, evaluationContext);
+                EventRuleInvocationResult conditionResult = EvaluateConditions(
+                    rule.Conditions,
+                    evaluationContext,
+                    "rule-condition");
                 if (conditionResult.Status != EventResultStatus.Success)
                 {
                     return conditionResult;
@@ -90,10 +96,14 @@ namespace DiceRevolver.Prototype
                 EventResultEntry entry = entries[entryIndex];
                 if (entry == null || entry.Result == null)
                 {
+                    RecordDebug(services, "result", "Rule result entry is incomplete.", EventResultStatus.Failed);
                     return Failed("Rule result entry is incomplete.");
                 }
 
-                EventRuleInvocationResult localConditionResult = EvaluateConditions(entry.Conditions, evaluationContext);
+                EventRuleInvocationResult localConditionResult = EvaluateConditions(
+                    entry.Conditions,
+                    evaluationContext,
+                    "result-condition");
                 if (localConditionResult.Status == EventResultStatus.Failed)
                 {
                     return localConditionResult;
@@ -117,8 +127,11 @@ namespace DiceRevolver.Prototype
                 catch (Exception exception)
                 {
                     ReportException(services, exception, entry.Result);
+                    RecordDebug(services, "result", "Result threw an exception.", EventResultStatus.Failed);
                     return Failed("Result threw an exception.");
                 }
+
+                RecordDebug(services, "result", result.Description, result.Status);
 
                 if (result.Status == EventResultStatus.Failed)
                 {
@@ -131,7 +144,8 @@ namespace DiceRevolver.Prototype
 
         private EventRuleInvocationResult EvaluateConditions(
             IReadOnlyList<EventConditionModule> conditions,
-            EventEvaluationContext context)
+            EventEvaluationContext context,
+            string stage)
         {
             if (conditions == null)
             {
@@ -154,11 +168,13 @@ namespace DiceRevolver.Prototype
                 catch (Exception exception)
                 {
                     ReportException(context.Services, exception, condition);
+                    RecordDebug(context.Services, "condition", "Condition threw an exception.", EventResultStatus.Failed);
                     return Failed("Condition threw an exception.");
                 }
 
                 if (!result.Passed)
                 {
+                    RecordDebug(context.Services, stage, result.FailureReason ?? result.Description, EventResultStatus.Skipped);
                     return Skipped(result.FailureReason ?? result.Description);
                 }
             }
@@ -170,13 +186,19 @@ namespace DiceRevolver.Prototype
         {
             try
             {
-                return rule.Trigger.Matches(signal)
-                    ? Succeeded()
-                    : Skipped("Trigger did not match.");
+                if (rule.Trigger.Matches(signal))
+                {
+                    RecordDebug(services, "trigger", null, EventResultStatus.Success);
+                    return Succeeded();
+                }
+
+                RecordDebug(services, "trigger", "Trigger did not match.", EventResultStatus.Skipped);
+                return Skipped("Trigger did not match.");
             }
             catch (Exception exception)
             {
                 ReportException(services, exception, rule.Trigger);
+                RecordDebug(services, "trigger", "Trigger threw an exception.", EventResultStatus.Failed);
                 return Failed("Trigger threw an exception.");
             }
         }
@@ -207,6 +229,22 @@ namespace DiceRevolver.Prototype
             catch (Exception)
             {
                 // Exception reporting must not escape a rule boundary.
+            }
+        }
+
+        private void RecordDebug(
+            IEventRuleServices services,
+            string stage,
+            string description,
+            EventResultStatus status)
+        {
+            try
+            {
+                services?.RecordRuleDebug(rule, stage, description, status);
+            }
+            catch (Exception)
+            {
+                // Debug reporting must not escape a rule boundary.
             }
         }
 

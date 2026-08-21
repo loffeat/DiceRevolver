@@ -23,10 +23,17 @@ namespace DiceRevolver.Prototype
                 return true;
             }
 
-            if (!warningIssued)
+            if (!warningIssued && exhaustedWarning != null)
             {
                 warningIssued = true;
-                exhaustedWarning?.Invoke();
+                try
+                {
+                    exhaustedWarning.Invoke();
+                }
+                catch (Exception)
+                {
+                    // Budget exhaustion reporting must not escape the event boundary.
+                }
             }
 
             return false;
