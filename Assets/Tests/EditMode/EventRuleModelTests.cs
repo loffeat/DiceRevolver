@@ -69,7 +69,8 @@ namespace DiceRevolver.Tests
             Assert.That(signal.SourceFace, Is.EqualTo(2));
             Assert.That(signal.Slot, Is.EqualTo(DiceFaceSlotType.OnHit));
             Assert.That(signal.HitPosition, Is.EqualTo(new Vector3(1f, 2f, 3f)));
-            Assert.That(signal.RemainingFaces, Is.SameAs(remainingFaces));
+            remainingFaces.Add(6);
+            Assert.That(signal.RemainingFaces, Is.EqualTo(new[] { 1, 3, 5 }));
             Assert.That(signal.DrawCandidate, Is.EqualTo(6));
             Assert.That(signal.EventBudget, Is.SameAs(budget));
             Assert.That(signal.IsBonusActivation, Is.True);

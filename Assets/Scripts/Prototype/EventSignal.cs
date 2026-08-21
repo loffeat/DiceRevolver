@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -31,7 +32,9 @@ namespace DiceRevolver.Prototype
             Projectile = projectile;
             HitCollider = hitCollider;
             HitPosition = hitPosition;
-            RemainingFaces = remainingFaces;
+            RemainingFaces = remainingFaces == null
+                ? Array.AsReadOnly(Array.Empty<int>())
+                : new List<int>(remainingFaces).AsReadOnly();
             DrawCandidate = drawCandidate;
             CurrentStats = currentStats;
             EventBudget = eventBudget;
