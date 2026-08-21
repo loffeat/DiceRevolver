@@ -132,7 +132,52 @@ namespace DiceRevolver.Prototype
                 entry.Result.CollectValidationIssues(issues);
             }
 
+            if (slot == DiceFaceSlotType.Base && FindPrimaryProjectileDefinition() == null)
+            {
+                issues.Add(new EventRuleValidationIssue(
+                    EventRuleValidationSeverity.Error,
+                    "missing-primary-projectile",
+                    "基础规则必须提供一个可解析的主弹丸定义。",
+                    this));
+            }
+
             return issues;
+        }
+
+        public ProjectileDefinition FindPrimaryProjectileDefinition()
+        {
+            return FindPrimaryProjectileDefinition(results);
+        }
+
+        private static ProjectileDefinition FindPrimaryProjectileDefinition(
+            IReadOnlyList<EventResultEntry> entries)
+        {
+            if (entries == null)
+            {
+                return null;
+            }
+
+            for (int index = 0; index < entries.Count; index++)
+            {
+                EventResultModule result = entries[index]?.Result;
+                if (result is IEventRuleProjectileDefinitionProvider provider &&
+                    provider.IsPrimaryProjectile &&
+                    provider.ProjectileDefinition != null)
+                {
+                    return provider.ProjectileDefinition;
+                }
+
+                if (result is DelayResultModule delay)
+                {
+                    ProjectileDefinition nested = FindPrimaryProjectileDefinition(delay.Entries);
+                    if (nested != null)
+                    {
+                        return nested;
+                    }
+                }
+            }
+
+            return null;
         }
 
         private static void CollectConditionIssues(
