@@ -93,6 +93,73 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void PipelineOverlayRuleExecutesWhenTheFaceSlotHasNoPersistentRule()
+        {
+            CountingResult overlayResult = Own(ScriptableObject.CreateInstance<CountingResult>());
+            EventRuleDefinition overlayRule = CreateRule(overlayResult);
+            DiceFaceConfigurationSnapshot overlaySnapshot = Snapshot(CreateEntry(
+                DiceFaceSlotType.OnFire,
+                overlayRule));
+            DiceEventRuleRuntimeSet runtimes = new DiceEventRuleRuntimeSet();
+            runtimes.RebuildFace(1, default);
+            DiceShotPipeline pipeline = CreatePipeline();
+            pipeline.ConfigureRuleExecution((face, slot, dispatchedRule, context) =>
+                runtimes.ExecuteActive(
+                    face,
+                    slot,
+                    dispatchedRule,
+                    Signal(face, slot, context),
+                    new BulletEventRuleServices(context, null)));
+
+            DiceFaceActivation activation = pipeline.ExecuteShot(
+                1,
+                overlaySnapshot,
+                Vector3.zero,
+                Vector3.forward,
+                4,
+                null,
+                null);
+
+            Assert.That(overlayResult.ExecutionCount, Is.EqualTo(1));
+            Assert.That(activation.RemainingEventBudget, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void SnapshotRuleMismatchUsesTransientStateWithoutReplacingPersistentRuntime()
+        {
+            StatefulResult persistentResult = Own(ScriptableObject.CreateInstance<StatefulResult>());
+            StatefulResult snapshotResult = Own(ScriptableObject.CreateInstance<StatefulResult>());
+            EventRuleDefinition persistentRule = CreateRule(persistentResult);
+            EventRuleDefinition snapshotRule = CreateRule(snapshotResult);
+            DiceFaceConfigurationSnapshot persistentSnapshot = Snapshot(CreateEntry(
+                DiceFaceSlotType.OnFire,
+                persistentRule));
+            DiceFaceConfigurationSnapshot mismatchedSnapshot = Snapshot(CreateEntry(
+                DiceFaceSlotType.OnFire,
+                snapshotRule));
+            DiceEventRuleRuntimeSet runtimes = new DiceEventRuleRuntimeSet();
+            runtimes.RebuildFace(2, persistentSnapshot);
+            DiceShotPipeline pipeline = CreatePipeline();
+            pipeline.ConfigureRuleExecution((face, slot, dispatchedRule, context) =>
+                runtimes.ExecuteActive(
+                    face,
+                    slot,
+                    dispatchedRule,
+                    Signal(face, slot, context),
+                    new BulletEventRuleServices(context, null)));
+
+            pipeline.ExecuteShot(
+                2, mismatchedSnapshot, Vector3.zero, Vector3.forward, 4, null, null);
+            pipeline.ExecuteShot(
+                2, mismatchedSnapshot, Vector3.zero, Vector3.forward, 4, null, null);
+            pipeline.ExecuteShot(
+                2, persistentSnapshot, Vector3.zero, Vector3.forward, 4, null, null);
+
+            Assert.That(snapshotResult.ObservedCounts, Is.EqualTo(new[] { 1, 1 }));
+            Assert.That(persistentResult.ObservedCounts, Is.EqualTo(new[] { 1 }));
+        }
+
+        [Test]
         public void GunExecutesRuleBackedOnFireOnceWithoutItsSerializedLegacyEffect()
         {
             GameObject playerInstance = UnityEngine.Object.Instantiate(
@@ -365,6 +432,31 @@ namespace DiceRevolver.Tests
                 null,
                 false,
                 default);
+        }
+
+        private static EventSignal Signal(
+            int face,
+            DiceFaceSlotType slot,
+            BulletEventContext context)
+        {
+            DiceFaceActivation activation = context.Activation;
+            DiceRevolverShotContext shot = context.Shot;
+            return new EventSignal(
+                slot == DiceFaceSlotType.OnHit ? EventSignalType.OnHit : EventSignalType.OnFire,
+                face,
+                shot != null ? shot.Face : face,
+                slot,
+                activation,
+                shot,
+                context.PrimaryProjectile,
+                context.HitCollider,
+                context.HitPosition,
+                Array.Empty<int>(),
+                0,
+                shot != null ? shot.Stats : default,
+                activation?.EventBudget,
+                activation != null && activation.IsBonusActivation,
+                activation != null ? activation.DebugScope : default);
         }
 
         private T Own<T>(T value) where T : UnityEngine.Object

@@ -39,20 +39,44 @@ namespace DiceRevolver.Prototype
             IEventRuleServices services)
         {
             int slotIndex = (int)slot;
-            if (face < 1 || face > DiceRevolverRules.FaceCount ||
-                slotIndex < 0 || slotIndex >= SlotCount)
+            if (!IsValidSlot(face, slotIndex))
             {
                 return false;
             }
 
-            EventRuleRuntime runtime = runtimes[face - 1, slotIndex];
-            if (runtime == null)
+            return ExecuteActive(
+                face,
+                slot,
+                definitions[face - 1, slotIndex],
+                signal,
+                services);
+        }
+
+        public bool ExecuteActive(
+            int face,
+            DiceFaceSlotType slot,
+            EventRuleDefinition definition,
+            EventSignal signal,
+            IEventRuleServices services)
+        {
+            int slotIndex = (int)slot;
+            if (!IsValidSlot(face, slotIndex) || definition == null)
             {
                 return false;
             }
+
+            EventRuleRuntime runtime = definitions[face - 1, slotIndex] == definition
+                ? runtimes[face - 1, slotIndex]
+                : new EventRuleRuntime(definition, face, slot);
 
             runtime.TryHandle(signal, services);
             return true;
+        }
+
+        private static bool IsValidSlot(int face, int slotIndex)
+        {
+            return face >= 1 && face <= DiceRevolverRules.FaceCount &&
+                slotIndex >= 0 && slotIndex < SlotCount;
         }
     }
 }

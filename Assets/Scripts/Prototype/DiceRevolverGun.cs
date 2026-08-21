@@ -454,7 +454,7 @@ namespace DiceRevolver.Prototype
             BulletEventRuleServices services = new BulletEventRuleServices(
                 context,
                 shotPipeline.ReportRuleException);
-            return eventRuleRuntimes.ExecuteActive(face, slot, signal, services);
+            return eventRuleRuntimes.ExecuteActive(face, slot, rule, signal, services);
         }
 
         private static EventSignalType ToActiveSignalType(DiceFaceSlotType slot)
