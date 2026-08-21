@@ -3,6 +3,7 @@
   "rootNamespace": "DiceRevolver.Tests",
   "references": [
     "DiceRevolver.Prototype",
+    "DiceRevolver.Editor",
     "Unity.InputSystem",
     "UnityEngine.TestRunner",
     "UnityEditor.TestRunner"
