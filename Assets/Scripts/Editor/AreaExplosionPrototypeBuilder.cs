@@ -1,3 +1,4 @@
+using System.Linq;
 using DiceRevolver.Prototype;
 using UnityEditor;
 using UnityEngine;
@@ -10,8 +11,8 @@ namespace DiceRevolver.Editor
         private const string MaterialPath = "Assets/Materials/ExplosionRing.mat";
         private const string DefinitionPath =
             "Assets/Resources/DiceFacePrototype/Projectiles/BlastExplosion.asset";
-        private const string EffectPath =
-            "Assets/Resources/DiceFacePrototype/BulletEvents/ExplosionOnHitEffect.asset";
+        private const string RulePath =
+            "Assets/Resources/DiceFacePrototype/EventRules/Core/BlastRoundRule.asset";
         private const string LibraryPath =
             "Assets/Resources/DiceFacePrototype/Projectiles/ProjectileDefinitionLibrary.asset";
 
@@ -26,7 +27,7 @@ namespace DiceRevolver.Editor
             Material ringMaterial = LoadOrCreateRingMaterial();
             Projectile explosionPrefab = LoadOrCreateExplosionPrefab(ringMaterial);
             ProjectileDefinition definition = LoadOrCreateDefinition(explosionPrefab);
-            BindEffectIfMissing(definition);
+            BindRuleIfMissing(definition);
             AppendDefinitionIfMissing(definition);
 
             AssetDatabase.SaveAssets();
@@ -128,18 +129,21 @@ namespace DiceRevolver.Editor
             return definition;
         }
 
-        private static void BindEffectIfMissing(ProjectileDefinition definition)
+        private static void BindRuleIfMissing(ProjectileDefinition definition)
         {
-            ExplosionOnHitEffect effect =
-                AssetDatabase.LoadAssetAtPath<ExplosionOnHitEffect>(EffectPath);
-            if (effect == null)
+            EventRuleDefinition rule =
+                AssetDatabase.LoadAssetAtPath<EventRuleDefinition>(RulePath);
+            SpawnProjectileResultModule result = rule?.Results
+                .Select(entry => entry.Result)
+                .OfType<SpawnProjectileResultModule>()
+                .FirstOrDefault();
+            if (result == null)
             {
-                effect = ScriptableObject.CreateInstance<ExplosionOnHitEffect>();
-                AssetDatabase.CreateAsset(effect, EffectPath);
+                return;
             }
 
-            SerializedObject serialized = new SerializedObject(effect);
-            SerializedProperty property = serialized.FindProperty("explosionProjectileDefinition");
+            SerializedObject serialized = new SerializedObject(result);
+            SerializedProperty property = serialized.FindProperty("projectileDefinition");
             if (property.objectReferenceValue != null)
             {
                 return;
@@ -147,7 +151,7 @@ namespace DiceRevolver.Editor
 
             property.objectReferenceValue = definition;
             serialized.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(effect);
+            EditorUtility.SetDirty(result);
         }
 
         private static void AppendDefinitionIfMissing(ProjectileDefinition definition)

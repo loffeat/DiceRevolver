@@ -21,12 +21,6 @@ namespace DiceRevolver.Editor
             EnsureFolder(Root, "EventRules");
             EnsureFolder(Root + "/EventRules", "Lightning");
 
-            ProjectileDefinition orb = LoadRequired<ProjectileDefinition>(
-                Root + "/Projectiles/LightningOrb.asset");
-            ProjectileTagDefinition lightning = LoadRequired<ProjectileTagDefinition>(
-                Root + "/ProjectileTags/Lightning.asset");
-            LightningChainDefinition chain = LoadRequired<LightningChainDefinition>(
-                Root + "/Lightning/LightningChainDefinition.asset");
             ProjectileSpawnEffect legacyOrb = LoadRequired<ProjectileSpawnEffect>(
                 Root + "/BulletEvents/FireLightningOrbProjectile.asset");
             ElectromagneticResonanceEffect legacyResonance =
@@ -42,42 +36,43 @@ namespace DiceRevolver.Editor
             FinisherPassiveEffect legacyFinisher = LoadRequired<FinisherPassiveEffect>(
                 Root + "/BulletEvents/FinisherPassiveEffect.asset");
 
-            MigrateLightningOrb(legacyOrb, orb);
-            MigrateResonance(legacyResonance, lightning, chain);
-            MigrateTesla(legacyTesla, lightning);
+            MigrateLightningOrb(legacyOrb);
+            MigrateResonance(legacyResonance);
+            MigrateTesla(legacyTesla);
             MigrateEcho(legacyEcho);
             MigrateChainReaction(legacyReaction);
             MigrateFinisher(legacyFinisher);
             Debug.Log("Lightning Event Rules are ready.");
         }
 
-        private static void MigrateLightningOrb(
-            ProjectileSpawnEffect legacy,
-            ProjectileDefinition orb)
+        private static void MigrateLightningOrb(ProjectileSpawnEffect legacy)
         {
             EventRuleMigrationUtility.MigrateRule(
                 EntryPath("LightningOrb"), RulePath("LightningOrb"),
                 DiceFaceSlotType.Base, EventSignalMask.Base, legacy,
                 rule => EnsureSingleResult<SpawnProjectileResultModule>(rule, result =>
                 {
-                    Set(result, "projectileDefinition", orb);
-                    Set(result, "delaySeconds", 0f);
-                    Set(result, "attackEffectOverride", AttackEffectOverride.UseProjectileDefault);
-                    Set(result, "primaryProjectile", true);
+                    Set(result, "projectileDefinition", legacy.ProjectileDefinition);
+                    Set(result, "useCurrentPrimaryDefinition", false);
+                    Set(result, "useHitOrigin", false);
+                    Set(result, "delaySeconds", legacy.DelaySeconds);
+                    Set(result, "attackEffectOverride", legacy.AttackEffectOverride);
+                    Set(result, "primaryProjectile", legacy.PrimaryProjectile);
                 }),
                 rule => rule.Conditions.Count == 0 &&
                     TrySingleResult(rule, out SpawnProjectileResultModule spawn) &&
-                    Read<UnityEngine.Object>(spawn, "projectileDefinition") == orb &&
-                    Mathf.Approximately(Read<float>(spawn, "delaySeconds"), 0f) &&
+                    Read<UnityEngine.Object>(spawn, "projectileDefinition") ==
+                        legacy.ProjectileDefinition &&
+                    !Read<bool>(spawn, "useCurrentPrimaryDefinition") &&
+                    !Read<bool>(spawn, "useHitOrigin") &&
+                    Mathf.Approximately(Read<float>(spawn, "delaySeconds"),
+                        legacy.DelaySeconds) &&
                     Read<AttackEffectOverride>(spawn, "attackEffectOverride") ==
-                        AttackEffectOverride.UseProjectileDefault &&
-                    Read<bool>(spawn, "primaryProjectile"));
+                        legacy.AttackEffectOverride &&
+                    Read<bool>(spawn, "primaryProjectile") == legacy.PrimaryProjectile);
         }
 
-        private static void MigrateResonance(
-            ElectromagneticResonanceEffect legacy,
-            ProjectileTagDefinition lightning,
-            LightningChainDefinition chain)
+        private static void MigrateResonance(ElectromagneticResonanceEffect legacy)
         {
             EventRuleMigrationUtility.MigrateRule(
                 EntryPath("ElectromagneticResonance"), RulePath("ElectromagneticResonance"),
@@ -85,28 +80,29 @@ namespace DiceRevolver.Editor
                 rule =>
                 {
                     EnsureSingleRuleCondition<ProjectileTagConditionModule>(
-                        rule, condition => Set(condition, "projectileTag", lightning));
+                        rule, condition => Set(
+                            condition, "projectileTag", legacy.LightningTag));
                     EnsureSingleResult<CreateLightningChainResultModule>(rule, result =>
                     {
-                        Set(result, "lightningTag", lightning);
-                        Set(result, "chainDefinition", chain);
-                        Set(result, "searchRadius", 6f);
-                        Set(result, "maximumConnections", 3);
+                        Set(result, "lightningTag", legacy.LightningTag);
+                        Set(result, "chainDefinition", legacy.ChainDefinition);
+                        Set(result, "searchRadius", legacy.SearchRadius);
+                        Set(result, "maximumConnections", legacy.MaximumConnections);
                     });
                 },
                 rule => rule.Conditions.Count == 1 &&
                     rule.Conditions[0] is ProjectileTagConditionModule tag &&
-                    Read<UnityEngine.Object>(tag, "projectileTag") == lightning &&
+                    Read<UnityEngine.Object>(tag, "projectileTag") == legacy.LightningTag &&
                     TrySingleResult(rule, out CreateLightningChainResultModule result) &&
-                    Read<UnityEngine.Object>(result, "lightningTag") == lightning &&
-                    Read<UnityEngine.Object>(result, "chainDefinition") == chain &&
-                    Mathf.Approximately(Read<float>(result, "searchRadius"), 6f) &&
-                    Read<int>(result, "maximumConnections") == 3);
+                    Read<UnityEngine.Object>(result, "lightningTag") == legacy.LightningTag &&
+                    Read<UnityEngine.Object>(result, "chainDefinition") ==
+                        legacy.ChainDefinition &&
+                    Mathf.Approximately(Read<float>(result, "searchRadius"),
+                        legacy.SearchRadius) &&
+                    Read<int>(result, "maximumConnections") == legacy.MaximumConnections);
         }
 
-        private static void MigrateTesla(
-            TeslaPassiveEffect legacy,
-            ProjectileTagDefinition lightning)
+        private static void MigrateTesla(TeslaPassiveEffect legacy)
         {
             EventRuleMigrationUtility.MigrateRule(
                 EntryPath("Tesla"), RulePath("Tesla"),
@@ -115,8 +111,8 @@ namespace DiceRevolver.Editor
                 EventSignalMask.BeforeProjectileStats |
                 EventSignalMask.ReloadStarted,
                 legacy,
-                rule => EnsureTeslaResults(rule, lightning),
-                rule => HasTeslaParity(rule, lightning));
+                rule => EnsureTeslaResults(rule, legacy),
+                rule => HasTeslaParity(rule, legacy));
         }
 
         private static void MigrateEcho(EchoSynergyPassiveEffect legacy)
@@ -127,7 +123,9 @@ namespace DiceRevolver.Editor
                 EventSignalMask.ProjectileHit |
                 EventSignalMask.FaceConsumed |
                 EventSignalMask.ReloadStarted,
-                legacy, EnsureEchoResults, HasEchoParity);
+                legacy,
+                rule => EnsureEchoResults(rule, legacy),
+                rule => HasEchoParity(rule, legacy));
         }
 
         private static void MigrateChainReaction(ChainReactionOnFireEndEffect legacy)
@@ -164,7 +162,7 @@ namespace DiceRevolver.Editor
 
         private static void EnsureTeslaResults(
             EventRuleDefinition rule,
-            ProjectileTagDefinition lightning)
+            TeslaPassiveEffect legacy)
         {
             if (rule.Results.Count != 0)
             {
@@ -181,12 +179,12 @@ namespace DiceRevolver.Editor
                 }),
                 CreateSignalCondition(rule, EventSignalMask.ProjectileSpawned),
                 CreateCondition<ProjectileTagConditionModule>(rule,
-                    condition => Set(condition, "projectileTag", lightning)));
+                    condition => Set(condition, "projectileTag", legacy.LightningTag)));
             AppendResult(results,
                 CreateResult<MultiplyProjectileDamageFromCounterResultModule>(rule, result =>
                 {
                     Set(result, "counterKey", StacksKey);
-                    Set(result, "damagePerStack", 0.05f);
+                    Set(result, "damagePerStack", legacy.DamagePerStack);
                 }),
                 CreateSignalCondition(rule, EventSignalMask.BeforeProjectileStats),
                 CreateCondition<SourceFaceConditionModule>(rule, _ => { }),
@@ -200,7 +198,7 @@ namespace DiceRevolver.Editor
 
         private static bool HasTeslaParity(
             EventRuleDefinition rule,
-            ProjectileTagDefinition lightning)
+            TeslaPassiveEffect legacy)
         {
             if (rule.Conditions.Count != 0 || rule.Results.Count != 3)
             {
@@ -215,7 +213,7 @@ namespace DiceRevolver.Editor
                    Read<EventSignalMask>(incrementEntry.Conditions[0], "signals") ==
                        EventSignalMask.ProjectileSpawned &&
                    Read<UnityEngine.Object>(incrementEntry.Conditions[1], "projectileTag") ==
-                       lightning &&
+                       legacy.LightningTag &&
                    incrementEntry.Result is IncrementCounterResultModule increment &&
                    Read<string>(increment, "counterKey") == StacksKey &&
                    Read<int>(increment, "amount") == 1 &&
@@ -225,7 +223,8 @@ namespace DiceRevolver.Editor
                        EventSignalMask.BeforeProjectileStats &&
                    damageEntry.Result is MultiplyProjectileDamageFromCounterResultModule damage &&
                    Read<string>(damage, "counterKey") == StacksKey &&
-                   Mathf.Approximately(Read<float>(damage, "damagePerStack"), 0.05f) &&
+                   Mathf.Approximately(Read<float>(damage, "damagePerStack"),
+                       legacy.DamagePerStack) &&
                    HasConditions<SignalTypeConditionModule>(resetEntry) &&
                    Read<EventSignalMask>(resetEntry.Conditions[0], "signals") ==
                        EventSignalMask.ReloadStarted &&
@@ -233,7 +232,9 @@ namespace DiceRevolver.Editor
                    Read<string>(reset, "counterKey") == StacksKey;
         }
 
-        private static void EnsureEchoResults(EventRuleDefinition rule)
+        private static void EnsureEchoResults(
+            EventRuleDefinition rule,
+            EchoSynergyPassiveEffect legacy)
         {
             if (rule.Results.Count != 0)
             {
@@ -245,9 +246,9 @@ namespace DiceRevolver.Editor
             AppendResult(results,
                 CreateResult<RequestBonusActivationResultModule>(rule, result =>
                 {
-                    Set(result, "maximumTriggers", 4);
-                    Set(result, "maximumSpreadAngle", 8f);
-                    Set(result, "minimumSpreadSeparation", 2f);
+                    Set(result, "maximumTriggers", legacy.MaximumTriggersPerChamber);
+                    Set(result, "maximumSpreadAngle", legacy.MaximumSpreadAngle);
+                    Set(result, "minimumSpreadSeparation", legacy.MinimumSpreadSeparation);
                     Set(result, "counterKey", EchoCounterKey);
                 }),
                 CreateSignalCondition(rule, EventSignalMask.ProjectileHit),
@@ -279,7 +280,9 @@ namespace DiceRevolver.Editor
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        private static bool HasEchoParity(EventRuleDefinition rule)
+        private static bool HasEchoParity(
+            EventRuleDefinition rule,
+            EchoSynergyPassiveEffect legacy)
         {
             if (rule.Conditions.Count != 0 || rule.Results.Count != 4)
             {
@@ -297,9 +300,12 @@ namespace DiceRevolver.Editor
                    Read<string>(bonusEntry.Conditions[2], "stateKey") == EchoConsumedKey &&
                    !Read<bool>(bonusEntry.Conditions[2], "expectedValue") &&
                    bonusEntry.Result is RequestBonusActivationResultModule bonus &&
-                   Read<int>(bonus, "maximumTriggers") == 4 &&
-                   Mathf.Approximately(Read<float>(bonus, "maximumSpreadAngle"), 8f) &&
-                   Mathf.Approximately(Read<float>(bonus, "minimumSpreadSeparation"), 2f) &&
+                   Read<int>(bonus, "maximumTriggers") ==
+                       legacy.MaximumTriggersPerChamber &&
+                   Mathf.Approximately(Read<float>(bonus, "maximumSpreadAngle"),
+                       legacy.MaximumSpreadAngle) &&
+                   Mathf.Approximately(Read<float>(bonus, "minimumSpreadSeparation"),
+                       legacy.MinimumSpreadSeparation) &&
                    Read<string>(bonus, "counterKey") == EchoCounterKey &&
                    HasConditions<SignalTypeConditionModule, SourceFaceConditionModule>(
                        consumedEntry) &&

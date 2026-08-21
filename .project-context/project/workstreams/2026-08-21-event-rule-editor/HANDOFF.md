@@ -2,11 +2,11 @@
 
 ## 当前状态
 
-- `active`，Task 1–9 已完成；核心与雷电构筑均已迁移到真实 Event Rule 资产，待 Task 10 做旧具体 Effect 的零引用审计、条件删除和最终回归。
+- `active`，Task 1–9 主实现已完成；Task 10 已安全删除 Core 三个无引用具体 Effect。Task 9 staged fix、Task 10 Unity 验证及雷电五 Effect 最终清理仍未完成。
 
 ## 下一步首个动作
 
-- 读取 `.superpowers/sdd/2026-08-21-event-rule-editor/progress.md` 与 Task 10 brief，然后先写引用/删除契约 RED；只有真实 AssetDatabase/GUID 扫描为零引用时才删除旧具体 Effect。
+- 平台恢复后先提交当前 staged Task 9 fix，运行 `EventRuleLightningMigrationTests` custom-value focused 与必要联合回归；通过后提交 Task 10 清理并运行 focused/full EditMode。
 
 ## 当前方案及原因
 
@@ -27,7 +27,7 @@
 
 ## 尚未完成
 
-- Task 10 的旧具体 Effect 引用审计、条件删除、最终聚焦/全量回归与最终上下文收尾尚未完成。
+- Task 10 的雷电五个具体 Effect 删除、focused/full EditMode 与最终提交尚未完成；staged builder/tests 和生产 `SelectTargets` helper 仍是删除门禁。
 - 实施前完整 EditMode 基线为 `[failed] 251/252`、`0 skipped`；唯一失败为已批准的 Ground `Y=-0.01` 契约差异。
 - 尚未运行可见 Play Mode 验收。
 
@@ -46,10 +46,20 @@
 
 ## 最近验证
 
+- [passed] Task 10 Core 三类型与六 GUID 在 `Assets` 零引用；已删除其 scripts/assets/.meta，`ProjectileSpawnEffect` 与三份兼容资产保留。
+- [passed] 八个保护 SHA256 与既有基线一致；Player/TestRobot 枪械调参仍为 `2/2/32`。
+- [not-run] Task 10 tests、focused/full EditMode 与人工 Editor/战斗验收（platform usage limit）。
+- [not-run] Task 9 fix round 1 custom-value RED、核心 GREEN 与联合回归：平台 usage limit；不得把下列修复前结果当作本轮通过证据。
 - [passed] Task 9 核心迁移 EditMode `10/10`、`0 skipped`。
 - [passed] Task 9 指定十套联合 EditMode `41/41`、`0 skipped`。
 - [passed] Task 9 前后八个受保护文件 SHA256 与 Player/TestRobot 枪械参数完全一致。
+- [passed] Task 9 fix round 1 静态 diff、八个保护哈希与 Player/TestRobot 枪械参数保持不变。
 - [failed] 完整 EditMode `251/252`，唯一失败为已知 Ground `Y=-0.01` 契约差异。
+
+## Task 10 保留门禁
+
+- 保留 `ElectromagneticResonanceEffect`、`TeslaPassiveEffect`、`EchoSynergyPassiveEffect`、`ChainReactionOnFireEndEffect`、`FinisherPassiveEffect`，直到 Task 9 staged 引用迁移且类型/GUID 再扫描为零。
+- 保留抽象 `BulletEventEffect`、`PassiveEventEffect`、hidden legacy 字段/read fallback，以及 `ProjectileSpawnEffect` 与 FireBasic/FireTestRobot/FireLightningOrb 三资产。
 
 ## 首先读取
 

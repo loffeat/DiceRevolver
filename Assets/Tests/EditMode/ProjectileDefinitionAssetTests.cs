@@ -184,13 +184,17 @@ namespace DiceRevolver.Tests
 
             Assert.That(basicShot, Is.Not.Null);
             Assert.That(basicShot.SlotType, Is.EqualTo(DiceFaceSlotType.Base));
-            Assert.That(basicShot.Effect, Is.TypeOf<ProjectileSpawnEffect>());
+            Assert.That(basicShot.Rule, Is.Not.Null);
+            Assert.That(basicShot.Effect, Is.Null);
             Assert.That(doubleTap.SlotType, Is.EqualTo(DiceFaceSlotType.OnFire));
-            Assert.That(doubleTap.Effect, Is.TypeOf<ExtraShotOnFireEffect>());
+            Assert.That(doubleTap.Rule, Is.Not.Null);
+            Assert.That(doubleTap.Effect, Is.Null);
             Assert.That(blastRound.SlotType, Is.EqualTo(DiceFaceSlotType.OnHit));
-            Assert.That(blastRound.Effect, Is.TypeOf<ExplosionOnHitEffect>());
+            Assert.That(blastRound.Rule, Is.Not.Null);
+            Assert.That(blastRound.Effect, Is.Null);
             Assert.That(loadedFour.SlotType, Is.EqualTo(DiceFaceSlotType.OnFireEnd));
-            Assert.That(loadedFour.Effect, Is.TypeOf<ForceFaceFourOnFireEndEffect>());
+            Assert.That(loadedFour.Rule, Is.Not.Null);
+            Assert.That(loadedFour.Effect, Is.Null);
         }
     }
 }

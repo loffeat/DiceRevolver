@@ -37,11 +37,12 @@ namespace DiceRevolver.Tests
 
             yield return Port<Projectile>("speed", "默认飞行速度");
             yield return Port<Projectile>("lifetime", "默认存在时间（秒）");
-            yield return Port<ExtraShotOnFireEffect>("delaySeconds", "第二发延迟（秒）");
-            yield return Port<ExtraShotOnFireEffect>("attackEffectOverride", "攻击特效判定");
             yield return Port<ProjectileSpawnEffect>("projectileDefinition", "弹丸定义");
             yield return Port<ProjectileSpawnEffect>("delaySeconds", "生成延迟（秒）");
-            yield return Port<ExplosionOnHitEffect>("explosionProjectileDefinition", "爆炸弹丸定义");
+            yield return Port<SpawnProjectileResultModule>("projectileDefinition", "弹丸定义");
+            yield return Port<SpawnProjectileResultModule>("delaySeconds", "生成延迟（秒）");
+            yield return Port<SpawnProjectileResultModule>("attackEffectOverride", "攻击特效判定");
+            yield return Port<ForceFaceResultModule>("face", "指定骰面");
             yield return Port<AreaExplosionProjectile>("radius", "爆炸半径");
             yield return Port<AreaExplosionProjectile>("visualDuration", "视觉持续时间（秒）");
             yield return Port<AreaExplosionProjectile>("ringColor", "圆环颜色");

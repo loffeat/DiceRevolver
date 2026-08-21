@@ -2,91 +2,11 @@ using DiceRevolver.Prototype;
 using NUnit.Framework;
 using System.Reflection;
 using UnityEngine;
-using UnityEngine.TestTools;
 
 namespace DiceRevolver.Tests
 {
     public sealed class BulletEventEffectTests
     {
-        [Test]
-        public void ForceFaceFourUsesOnlyBoundedCapability()
-        {
-            int requestedFace = 0;
-            DiceFaceActivation activation = CreateActivation(
-                refillAndForceNextFaceAction: face =>
-                {
-                    requestedFace = face;
-                    return true;
-                });
-            ForceFaceFourOnFireEndEffect effect = ScriptableObject.CreateInstance<ForceFaceFourOnFireEndEffect>();
-            effect.Trigger(new BulletEventContext(activation, null, null, Vector3.zero));
-
-            Assert.That(requestedFace, Is.EqualTo(4));
-
-            Object.DestroyImmediate(effect);
-        }
-
-        [Test]
-        public void ExtraShotSchedulesOneAdditionalShotAfterDefaultDelay()
-        {
-            ExtraShotOnFireEffect effect = ScriptableObject.CreateInstance<ExtraShotOnFireEffect>();
-            ProjectileDefinition definition = ScriptableObject.CreateInstance<ProjectileDefinition>();
-            ProjectileSpawnRequest requestedShot = default;
-            int requestCount = 0;
-            float scheduledDelay = -1f;
-            System.Action scheduledCallback = null;
-            DiceFaceActivation activation = CreateActivation(
-                null,
-                (delay, callback) =>
-                {
-                    scheduledDelay = delay;
-                    scheduledCallback = callback;
-                },
-                requested =>
-                {
-                    requestCount++;
-                    requestedShot = requested;
-                });
-            activation.RequestProjectile(
-                definition,
-                AttackEffectOverride.ForceDisabled,
-                true,
-                Vector3.zero,
-                Vector3.forward);
-            requestCount = 0;
-            BulletEventContext context = new BulletEventContext(activation, null, null, Vector3.zero);
-
-            effect.Trigger(context);
-
-            Assert.That(effect.DelaySeconds, Is.EqualTo(0.25f));
-            Assert.That(scheduledDelay, Is.EqualTo(0.25f));
-            Assert.That(scheduledCallback, Is.Not.Null);
-            Assert.That(requestCount, Is.Zero);
-
-            scheduledCallback.Invoke();
-
-            Assert.That(requestCount, Is.EqualTo(1));
-            Assert.That(requestedShot.Definition, Is.SameAs(definition));
-            Assert.That(requestedShot.IsPrimary, Is.False);
-            Assert.That(requestedShot.CanTriggerHitEffects, Is.False);
-
-            Object.DestroyImmediate(effect);
-            Object.DestroyImmediate(definition);
-        }
-
-        [Test]
-        public void ExtraShotDoesNotRequestShotWhenRecursionIsBlocked()
-        {
-            ExtraShotOnFireEffect effect = ScriptableObject.CreateInstance<ExtraShotOnFireEffect>();
-            BulletEventContext context = new BulletEventContext(null, null, null, Vector3.zero);
-
-            effect.Trigger(context);
-
-            Assert.That(context.Activation, Is.Null);
-
-            Object.DestroyImmediate(effect);
-        }
-
         [Test]
         public void EventContextSchedulePassesOriginalContextToDelayedCallback()
         {
@@ -102,63 +22,6 @@ namespace DiceRevolver.Tests
 
             Assert.That(accepted, Is.True);
             Assert.That(receivedContext.Activation, Is.SameAs(activation));
-        }
-
-        [Test]
-        public void ExtraShotWithoutSchedulerDoesNotFallBackToImmediateFire()
-        {
-            ExtraShotOnFireEffect effect = ScriptableObject.CreateInstance<ExtraShotOnFireEffect>();
-            int requestCount = 0;
-            DiceFaceActivation activation = CreateActivation(null, null, _ => requestCount++);
-            BulletEventContext context = new BulletEventContext(activation, null, null, Vector3.zero);
-
-            Assert.DoesNotThrow(() => effect.Trigger(context));
-            Assert.That(requestCount, Is.Zero);
-
-            Object.DestroyImmediate(effect);
-        }
-
-        [Test]
-        public void ExplosionSkipsMissingPrefab()
-        {
-            ExplosionOnHitEffect effect = ScriptableObject.CreateInstance<ExplosionOnHitEffect>();
-
-            LogAssert.Expect(LogType.Warning, "ExplosionOnHitEffect skipped because no explosion projectile definition is assigned.");
-            Assert.DoesNotThrow(() => effect.Trigger(new BulletEventContext(null, null, null, Vector3.zero)));
-
-            Object.DestroyImmediate(effect);
-        }
-
-        [Test]
-        public void ExplosionRequestsConfiguredProjectileAtHitPosition()
-        {
-            ExplosionOnHitEffect effect = ScriptableObject.CreateInstance<ExplosionOnHitEffect>();
-            ProjectileDefinition definition = ScriptableObject.CreateInstance<ProjectileDefinition>();
-            typeof(ExplosionOnHitEffect).GetField(
-                "explosionProjectileDefinition",
-                BindingFlags.Instance | BindingFlags.NonPublic).SetValue(effect, definition);
-            ProjectileSpawnRequest request = default;
-            int requestCount = 0;
-            DiceFaceActivation activation = CreateActivation(
-                null,
-                null,
-                requested =>
-                {
-                    requestCount++;
-                    request = requested;
-                });
-            Vector3 hitPosition = new Vector3(4f, 0f, -2f);
-
-            effect.Trigger(new BulletEventContext(activation, null, null, hitPosition));
-
-            Assert.That(requestCount, Is.EqualTo(1));
-            Assert.That(request.Definition, Is.SameAs(definition));
-            Assert.That(request.Origin, Is.EqualTo(hitPosition));
-            Assert.That(request.IsPrimary, Is.False);
-            Assert.That(request.CanTriggerHitEffects, Is.False);
-
-            Object.DestroyImmediate(definition);
-            Object.DestroyImmediate(effect);
         }
 
         [Test]

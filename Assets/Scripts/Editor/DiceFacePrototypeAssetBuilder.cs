@@ -20,15 +20,6 @@ namespace DiceRevolver.Editor
             EnsureFolder(RootFolder, "EventRules");
             EnsureFolder(RootFolder + "/EventRules", "Core");
 
-            ExtraShotOnFireEffect extraShot = LoadOrCreate<ExtraShotOnFireEffect>(
-                $"{RootFolder}/BulletEvents/ExtraShotOnFireEffect.asset",
-                out _);
-            ExplosionOnHitEffect explosion = LoadOrCreate<ExplosionOnHitEffect>(
-                $"{RootFolder}/BulletEvents/ExplosionOnHitEffect.asset",
-                out _);
-            ForceFaceFourOnFireEndEffect forceFour = LoadOrCreate<ForceFaceFourOnFireEndEffect>(
-                $"{RootFolder}/BulletEvents/ForceFaceFourOnFireEndEffect.asset",
-                out _);
             ProjectileSpawnEffect basicProjectile =
                 AssetDatabase.LoadAssetAtPath<ProjectileSpawnEffect>(BasicProjectileEffectPath);
 
@@ -61,11 +52,7 @@ namespace DiceRevolver.Editor
                     "开火时额外发射一次当前骰面。",
                     new Color(0.95f, 0.78f, 0.25f, 1f),
                     DiceFaceSlotType.OnFire,
-                    extraShot);
-            }
-            else
-            {
-                ConfigureMissingSlotMapping(doubleTap, DiceFaceSlotType.OnFire, extraShot);
+                    null);
             }
 
             DiceFaceEntry blastRound = LoadOrCreate<DiceFaceEntry>(
@@ -79,11 +66,7 @@ namespace DiceRevolver.Editor
                     "击中时生成已配置的爆炸弹幕。",
                     new Color(0.92f, 0.30f, 0.22f, 1f),
                     DiceFaceSlotType.OnHit,
-                    explosion);
-            }
-            else
-            {
-                ConfigureMissingSlotMapping(blastRound, DiceFaceSlotType.OnHit, explosion);
+                    null);
             }
 
             DiceFaceEntry loadedFour = LoadOrCreate<DiceFaceEntry>(
@@ -97,11 +80,7 @@ namespace DiceRevolver.Editor
                     "结束开火时填回骰面 4，并令下一次必定掷出 4。",
                     new Color(0.25f, 0.70f, 0.95f, 1f),
                     DiceFaceSlotType.OnFireEnd,
-                    forceFour);
-            }
-            else
-            {
-                ConfigureMissingSlotMapping(loadedFour, DiceFaceSlotType.OnFireEnd, forceFour);
+                    null);
             }
 
             DiceFaceLibrary faceLibrary = LoadOrCreate<DiceFaceLibrary>(
@@ -121,13 +100,11 @@ namespace DiceRevolver.Editor
                 out bool eventLibraryCreated);
             if (eventLibraryCreated)
             {
-                SetObjectArray(eventLibrary, "effects", extraShot, explosion, forceFour);
+                SetObjectArray(eventLibrary, "effects", basicProjectile);
             }
 
             SaveTouchedAssets(
-                extraShot,
-                explosion,
-                forceFour,
+                basicProjectile,
                 basicShot,
                 doubleTap,
                 blastRound,

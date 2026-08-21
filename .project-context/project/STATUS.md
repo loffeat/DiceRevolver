@@ -7,6 +7,8 @@
 ## 全局有效状态
 
 - 当前实现包含顶视角移动、骰子左轮、弹药 HUD、运行时构筑页、既有四个示例词条和六个雷电构筑词条。
+- 十个公开骰面词条均已迁移为 Rule-backed 资源；Rule 模块以所属规则的 SubAsset 保存，运行时状态按 Gun/骰面/槽位隔离。
+- Core 三个已迁移具体 Effect（DoubleTap、BlastRound、LoadedFour）已通过静态类型/GUID 门禁删除；五个雷电具体 Effect 因 Task 9 staged 迁移兼容引用暂时保留。
 - 每个骰面现拥有基础、开火时、命中时、开火后和被动五个互不占用的单事件槽位；活动事件使用不可变激活快照，被动事件使用每枪每面的独立 Runtime。
 - 构筑页会显示每面的五行槽位摘要；选择词条后点击骰面只替换该词条对应槽位。新词条只进入资源库，没有自动装备到 Player 或 TestRobot。
 - 弹丸支持 ScriptableObject 类型和多标签身份、按不同受伤对象计算的通用穿透，以及按 Gun 隔离的存活弹丸 Registry。
@@ -36,7 +38,7 @@
 
 ## 活跃工作流
 
-- [2026-08-21 事件配置页面](workstreams/2026-08-21-event-rule-editor/STATE.md)（`active`；已选择 Subagent-Driven Development，并在隔离工作树执行 10 任务实施计划）
+- [2026-08-21 事件配置页面](workstreams/2026-08-21-event-rule-editor/STATE.md)（`active`；Task 1–9 主实现完成，Task 10 完成安全 Core 清理，Unity 验证受平台 usage limit 阻止）
 
 ## 完成历史
 
@@ -60,7 +62,7 @@
 
 ## 已知缺口
 
-- 事件规则仍主要由具体 Effect 类型和资源表达；已批准规则列表式事件配置页面设计，但运行时规则模型、编辑器页面和旧事件迁移尚未实施。
+- Task 9 修复与 Task 10 的 focused/full EditMode 尚未在平台恢复后执行；雷电五个具体 Effect 仍等待先提交并验证 Task 9 修复后清理。
 - 已有通用受伤接口和无限生命测试靶，但没有正式敌人的有限生命、死亡与穿透消费逻辑。
 - 骰面构筑仅存在于当前运行期，没有存档。
 - 尚未执行完整 PlayMode 战斗流程验证。
@@ -71,6 +73,8 @@
 
 ## 最近项目级验证
 
+- [passed] `2026-08-21`：Task 10 静态门禁确认 Core 三类型及六个 GUID 在 `Assets` 零引用；八个受保护文件 SHA256 与既有基线一致，Player/TestRobot 调参仍为 `2/2/32`。
+- [not-run] `2026-08-21`：Task 9 fix、Task 10 focused/full EditMode 与人工可视验收均因平台 usage limit 未运行；最近一次完整回归仍是修复前 `[failed] 251/252`，唯一失败为 Ground `Y=-0.01`。
 - [passed] `2026-08-21`：战斗 Debug、枪械事件管线、被动和 UI 聚焦 EditMode `107/107`。
 - [passed] `2026-08-21`：特斯拉、收尾者与战斗 Debug 联合 EditMode `20/20`。
 - [failed] `2026-08-21`：战斗 Debug 完成后的完整 EditMode 为 `251/252`；唯一失败仍为既有 Ground `Y=-0.01` 契约差异，没有新增失败。

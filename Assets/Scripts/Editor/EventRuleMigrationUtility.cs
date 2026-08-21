@@ -21,18 +21,13 @@ namespace DiceRevolver.Editor
 
             ProjectileSpawnEffect basic = LoadRequired<ProjectileSpawnEffect>(
                 Root + "/BulletEvents/FireBasicRevolverProjectile.asset");
-            ExtraShotOnFireEffect doubleTap = LoadRequired<ExtraShotOnFireEffect>(
-                Root + "/BulletEvents/ExtraShotOnFireEffect.asset");
-            ExplosionOnHitEffect blast = LoadRequired<ExplosionOnHitEffect>(
-                Root + "/BulletEvents/ExplosionOnHitEffect.asset");
-            ForceFaceFourOnFireEndEffect loadedFour =
-                LoadRequired<ForceFaceFourOnFireEndEffect>(
-                    Root + "/BulletEvents/ForceFaceFourOnFireEndEffect.asset");
+            ProjectileDefinition blast = LoadRequired<ProjectileDefinition>(
+                Root + "/Projectiles/BlastExplosion.asset");
 
             MigrateBasicShot(basic);
-            MigrateDoubleTap(doubleTap);
+            MigrateDoubleTap();
             MigrateBlastRound(blast);
-            MigrateLoadedFour(loadedFour);
+            MigrateLoadedFour();
         }
 
         public static EventRuleDefinition MigrateRule(
@@ -107,21 +102,21 @@ namespace DiceRevolver.Editor
                     false));
         }
 
-        private static void MigrateDoubleTap(ExtraShotOnFireEffect legacy)
+        private static void MigrateDoubleTap()
         {
             MigrateRule(
                 Root + "/DiceFaces/DoubleTap.asset",
                 CoreRuleFolder + "/DoubleTapRule.asset",
                 DiceFaceSlotType.OnFire,
                 EventSignalMask.OnFire,
-                legacy,
+                null,
                 rule => EnsureResult<SpawnProjectileResultModule>(rule, module =>
                 {
                     SerializedObject serialized = new SerializedObject(module);
                     serialized.FindProperty("useCurrentPrimaryDefinition").boolValue = true;
-                    serialized.FindProperty("delaySeconds").floatValue = legacy.DelaySeconds;
+                    serialized.FindProperty("delaySeconds").floatValue = 0.25f;
                     serialized.FindProperty("attackEffectOverride").enumValueIndex =
-                        (int)legacy.AttackEffectOverride;
+                        (int)AttackEffectOverride.ForceDisabled;
                     serialized.FindProperty("primaryProjectile").boolValue = false;
                     serialized.ApplyModifiedPropertiesWithoutUndo();
                 }),
@@ -130,20 +125,20 @@ namespace DiceRevolver.Editor
                     null,
                     true,
                     false,
-                    legacy.DelaySeconds,
-                    legacy.AttackEffectOverride,
+                    0.25f,
+                    AttackEffectOverride.ForceDisabled,
                     false,
                     false));
         }
 
-        private static void MigrateBlastRound(ExplosionOnHitEffect legacy)
+        private static void MigrateBlastRound(ProjectileDefinition explosionDefinition)
         {
             MigrateRule(
                 Root + "/DiceFaces/BlastRound.asset",
                 CoreRuleFolder + "/BlastRoundRule.asset",
                 DiceFaceSlotType.OnHit,
                 EventSignalMask.OnHit,
-                legacy,
+                null,
                 rule =>
                 {
                     EnsureRuleCondition<AttackEffectConditionModule>(rule, module =>
@@ -156,7 +151,7 @@ namespace DiceRevolver.Editor
                     {
                         SerializedObject serialized = new SerializedObject(module);
                         serialized.FindProperty("projectileDefinition").objectReferenceValue =
-                            legacy.ExplosionProjectileDefinition;
+                            explosionDefinition;
                         serialized.FindProperty("useHitOrigin").boolValue = true;
                         serialized.FindProperty("attackEffectOverride").enumValueIndex =
                             (int)AttackEffectOverride.UseProjectileDefault;
@@ -167,7 +162,7 @@ namespace DiceRevolver.Editor
                 rule => HasSingleAttackEffectCondition(rule, true) &&
                     HasSingleSpawnParity(
                         rule,
-                        legacy.ExplosionProjectileDefinition,
+                        explosionDefinition,
                         false,
                         true,
                         0f,
@@ -176,14 +171,14 @@ namespace DiceRevolver.Editor
                         true));
         }
 
-        private static void MigrateLoadedFour(ForceFaceFourOnFireEndEffect legacy)
+        private static void MigrateLoadedFour()
         {
             MigrateRule(
                 Root + "/DiceFaces/LoadedFour.asset",
                 CoreRuleFolder + "/LoadedFourRule.asset",
                 DiceFaceSlotType.OnFireEnd,
                 EventSignalMask.OnFireEnd,
-                legacy,
+                null,
                 rule => EnsureResult<ForceFaceResultModule>(rule, module =>
                 {
                     SerializedObject serialized = new SerializedObject(module);
@@ -314,8 +309,16 @@ namespace DiceRevolver.Editor
             DiceFaceSlotType slot,
             UnityEngine.Object expectedLegacyEffect)
         {
-            if (expectedLegacyEffect == null ||
-                (slot == DiceFaceSlotType.Passive && expectedLegacyEffect is not PassiveEventEffect) ||
+            if (expectedLegacyEffect == null)
+            {
+                return serializedEntry.FindProperty("effect").objectReferenceValue == null &&
+                    serializedEntry.FindProperty("passiveEffect").objectReferenceValue == null &&
+                    ArrayContainsOnly(serializedEntry.FindProperty("onFireEffects"), null) &&
+                    ArrayContainsOnly(serializedEntry.FindProperty("onHitEffects"), null) &&
+                    ArrayContainsOnly(serializedEntry.FindProperty("onFireEndEffects"), null);
+            }
+
+            if ((slot == DiceFaceSlotType.Passive && expectedLegacyEffect is not PassiveEventEffect) ||
                 (slot != DiceFaceSlotType.Passive && expectedLegacyEffect is not BulletEventEffect))
             {
                 return false;

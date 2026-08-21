@@ -51,6 +51,9 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 - [DiceFaceLoadout.cs](../../Assets/Scripts/Prototype/DiceFaceLoadout.cs)：保存六个骰面的五槽位运行时装备，并兼容读取旧序列化数据。
 - [DiceFaceConfiguration.cs](../../Assets/Scripts/Prototype/DiceFaceConfiguration.cs)：保存单面五槽位配置、活动槽临时覆盖并生成单次激活快照。
 - [DiceFaceEntry.cs](../../Assets/Scripts/Prototype/DiceFaceEntry.cs)：单槽位 ScriptableObject 构筑词条，绑定一个槽位类型和一个事件效果。
+- [EventRuleDefinition.cs](../../Assets/Scripts/Prototype/EventRuleDefinition.cs)：保存触发器、规则条件和有序结果模块；模块作为同资产 SubAsset 持久化。
+- [EventRuleRuntime.cs](../../Assets/Scripts/Prototype/EventRuleRuntime.cs)：按 Gun、骰面和槽位隔离状态，在预算与异常边界内执行 Rule。
+- [EventRuleEditorWindow.cs](../../Assets/Scripts/Editor/EventRuleEditorWindow.cs)：通过 AssetDatabase 和 TypeCache 提供三栏规则资产编辑与调试页面。
 - [ProjectileDefinition.cs](../../Assets/Scripts/Prototype/ProjectileDefinition.cs)：拥有弹丸 Prefab、类型/标签、运行时属性、默认攻击特效与扩展端口。
 - [OwnedProjectileRegistry.cs](../../Assets/Scripts/Prototype/OwnedProjectileRegistry.cs)：按 Gun 隔离并查询仍存活的已生成弹丸。
 - [LightningChainExecutor.cs](../../Assets/Scripts/Prototype/LightningChainExecutor.cs)：沿雷电球节点渲染闪电链，并对链路范围内目标去重结算直接伤害。
@@ -77,6 +80,7 @@ DiceRevolver 是一个 Unity 6 顶视角射击原型。当前核心验证目标�
 TopDownCharacterController -> 移动/瞄准/动画/DiceRevolverGun
 DiceRevolverRuntime 抽面/换弹 -> DicePassiveRuntime 抽面约束/被动状态 -> DiceShotPipeline 激活四个活动槽 -> DiceRevolverGun Unity 适配
 DiceFaceLoadout -> DiceFaceConfigurationSnapshot 五槽位快照 -> DiceShotPipeline + DicePassiveRuntime
+DiceFaceEntry Rule -> DiceEventRuleRuntimeSet -> Trigger/Condition/Result SubAssets -> 受限 IEventRuleServices
 ProjectileSpawnEffect -> ProjectileDefinition -> ProjectileRuntimeStats + 弹丸 Prefab
 DiceFaceActivation -> 延迟生成、命中事件关系、临时活动槽覆盖与共享连锁预算
 弹丸生成 -> OwnedProjectileRegistry -> 电磁共鸣选点 -> LightningChainExecutor 直接链路伤害
@@ -103,8 +107,8 @@ DiceShotPipeline / DiceFaceActivation / 被动奖励射击 -> CombatDebugTrace -
 - 骰面词条：绑定一个事件阶段、可装备到对应槽位的 `DiceFaceEntry` 资源。
 - 五槽位：每个骰面独立拥有基础、开火时、命中时、开火后四个活动槽，以及一个被动槽。
 - 装备：`DiceFaceLoadout` 中六个面到五槽位配置的映射。
-- 弹丸事件：由 `BulletEventEffect` 在开火、命中或开火结束时执行的扩展行为。
-- 被动事件：由 `PassiveEventEffect` 为每把枪、每个装备面创建独立运行时实例的持续规则。
+- 事件规则：由 `EventRuleDefinition` 与同资产模块 SubAssets 表达，并由每把枪、每个装备面独立 Runtime 执行。
+- 兼容事件：尚未删除的 `BulletEventEffect`/`PassiveEventEffect` 回退；`ProjectileSpawnEffect` 继续服务 Player/TestRobot 受保护基础槽。
 - 弹丸类型/标签：通过 ScriptableObject 身份比较的弹丸分类；一个弹丸拥有一个类型和多个标签。
 - 骰面激活：一次骰面被抽中后，从四阶段事件派发到其弹丸、命中与延迟连锁结束的独立攻击链。
 - 事件预算：一次骰面激活最多可消费的事件次数；预算在开火时固化，并由该激活的直接与延迟事件共享。

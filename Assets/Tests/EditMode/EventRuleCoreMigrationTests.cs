@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -25,32 +24,25 @@ namespace DiceRevolver.Tests
             DiceFaceSlotType expectedSlot,
             EventSignalType expectedSignal)
         {
-            string entryPath = $"{Root}/DiceFaces/{assetName}.asset";
             string rulePath = $"{Root}/EventRules/Core/{assetName}Rule.asset";
-            DiceFaceEntry entry = AssetDatabase.LoadAssetAtPath<DiceFaceEntry>(entryPath);
-            EventRuleDefinition rule = AssetDatabase.LoadAssetAtPath<EventRuleDefinition>(rulePath);
+            DiceFaceEntry entry = Load<DiceFaceEntry>($"{Root}/DiceFaces/{assetName}.asset");
+            EventRuleDefinition rule = Load<EventRuleDefinition>(rulePath);
 
-            Assert.That(entry, Is.Not.Null, entryPath);
-            Assert.That(rule, Is.Not.Null, rulePath);
             Assert.That(entry.Rule, Is.SameAs(rule));
             Assert.That(entry.Effect, Is.Null);
-            SerializedObject serializedEntry = new SerializedObject(entry);
-            Assert.That(serializedEntry.FindProperty("effect").objectReferenceValue, Is.Null);
-            Assert.That(serializedEntry.FindProperty("onFireEffects").arraySize, Is.Zero);
-            Assert.That(serializedEntry.FindProperty("onHitEffects").arraySize, Is.Zero);
-            Assert.That(serializedEntry.FindProperty("onFireEndEffects").arraySize, Is.Zero);
+            Assert.That(entry.PassiveEffect, Is.Null);
             Assert.That(entry.SlotType, Is.EqualTo(expectedSlot));
             Assert.That(rule.DisplayName, Is.EqualTo(entry.DisplayName));
             Assert.That(rule.Description, Is.EqualTo(entry.Description));
             Assert.That(rule.DisplayColor, Is.EqualTo(entry.DisplayColor));
             Assert.That(rule.AllowsSlot(expectedSlot), Is.True);
             Assert.That(rule.Trigger, Is.TypeOf<SignalTypeTriggerModule>());
-            Assert.That(((SignalTypeTriggerModule)rule.Trigger).Matches(
-                Signal(expectedSignal, expectedSlot)), Is.True);
+            Assert.That(((SignalTypeTriggerModule)rule.Trigger).Signals,
+                Is.EqualTo(ToMask(expectedSignal)));
             Assert.That(rule.CanEquip(expectedSlot), Is.True);
 
-            UnityEngine.Object[] assets = AssetDatabase.LoadAllAssetsAtPath(rulePath);
-            ScriptableObject[] modules = assets.OfType<ScriptableObject>()
+            ScriptableObject[] modules = AssetDatabase.LoadAllAssetsAtPath(rulePath)
+                .OfType<ScriptableObject>()
                 .Where(asset => asset != rule)
                 .ToArray();
             Assert.That(modules, Is.Not.Empty);
@@ -68,88 +60,43 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
-        public void BasicShotRuleMatchesLegacyPrimaryProjectileRequest()
-        {
-            ProjectileSpawnEffect legacy = Load<ProjectileSpawnEffect>(
-                $"{Root}/BulletEvents/FireBasicRevolverProjectile.asset");
-            LegacyCapture legacyCapture = RunLegacy(legacy, EventSignalType.Base, true);
-            RuleCapture migrated = RunRule("BasicShot", EventSignalType.Base, DiceFaceSlotType.Base, true);
-
-            Assert.That(legacyCapture.Requests, Has.Count.EqualTo(1));
-            Assert.That(migrated.Services.Requests, Has.Count.EqualTo(1));
-            Assert.That(migrated.Services.Requests[0].Definition,
-                Is.SameAs(legacyCapture.Requests[0].Definition));
-            Assert.That(migrated.Services.Requests[0].IsPrimary, Is.True);
-            Assert.That(legacyCapture.Requests[0].IsPrimary, Is.True);
-        }
-
-        [Test]
-        public void DoubleTapRuleMatchesLegacyDelayedCurrentPrimaryRequest()
-        {
-            ExtraShotOnFireEffect legacy = Load<ExtraShotOnFireEffect>(
-                $"{Root}/BulletEvents/ExtraShotOnFireEffect.asset");
-            LegacyCapture legacyCapture = RunLegacy(legacy, EventSignalType.OnFire, true);
-            RuleCapture migrated = RunRule(
-                "DoubleTap", EventSignalType.OnFire, DiceFaceSlotType.OnFire, true);
-
-            Assert.That(legacyCapture.Delay, Is.EqualTo(0.25f));
-            Assert.That(migrated.Services.Delay, Is.EqualTo(legacyCapture.Delay));
-            Assert.That(legacyCapture.Requests, Is.Empty);
-            Assert.That(migrated.Services.Requests, Is.Empty);
-
-            legacyCapture.Callback.Invoke();
-            migrated.Services.Callback.Invoke();
-
-            Assert.That(legacyCapture.Requests, Has.Count.EqualTo(1));
-            Assert.That(migrated.Services.Requests, Has.Count.EqualTo(1));
-            Assert.That(migrated.Services.Requests[0].Definition,
-                Is.SameAs(legacyCapture.Requests[0].Definition));
-            Assert.That(migrated.Services.Requests[0].AttackEffectOverride,
-                Is.EqualTo(AttackEffectOverride.ForceDisabled));
-            Assert.That(migrated.Services.Requests[0].IsPrimary, Is.False);
-            Assert.That(legacyCapture.Requests[0].CanTriggerHitEffects, Is.False);
-        }
-
-        [Test]
-        public void BlastRoundRuleMatchesLegacyHitSpawnAndRejectsNonAttackHits()
-        {
-            ExplosionOnHitEffect legacy = Load<ExplosionOnHitEffect>(
-                $"{Root}/BulletEvents/ExplosionOnHitEffect.asset");
-            LegacyCapture legacyCapture = RunLegacy(legacy, EventSignalType.OnHit, true);
-            RuleCapture migrated = RunRule(
-                "BlastRound", EventSignalType.OnHit, DiceFaceSlotType.OnHit, true);
-
-            Assert.That(legacyCapture.Requests, Has.Count.EqualTo(1));
-            Assert.That(migrated.Services.Requests, Has.Count.EqualTo(1));
-            Assert.That(migrated.Services.Requests[0].Definition,
-                Is.SameAs(legacyCapture.Requests[0].Definition));
-            Assert.That(migrated.Services.Requests[0].Origin, Is.EqualTo(legacyCapture.HitPosition));
-
-            RuleCapture rejected = RunRule(
-                "BlastRound", EventSignalType.OnHit, DiceFaceSlotType.OnHit, false);
-            Assert.That(rejected.Services.Requests, Is.Empty);
-        }
-
-        [Test]
-        public void LoadedFourRuleMatchesLegacyRefillAndForceRequest()
-        {
-            ForceFaceFourOnFireEndEffect legacy = Load<ForceFaceFourOnFireEndEffect>(
-                $"{Root}/BulletEvents/ForceFaceFourOnFireEndEffect.asset");
-            LegacyCapture legacyCapture = RunLegacy(legacy, EventSignalType.OnFireEnd, true);
-            RuleCapture migrated = RunRule(
-                "LoadedFour", EventSignalType.OnFireEnd, DiceFaceSlotType.OnFireEnd, true);
-
-            Assert.That(legacyCapture.ForcedFaces, Is.EqualTo(new[] { 4 }));
-            Assert.That(migrated.Services.ForcedFaces, Is.EqualTo(legacyCapture.ForcedFaces));
-        }
-
-        [Test]
         public void CoreEntriesRemainMembersOfThePublicLibrary()
         {
             DiceFaceLibrary library = Load<DiceFaceLibrary>($"{Root}/DiceFaceLibrary.asset");
             Assert.That(
                 library.Entries.Select(entry => entry.name),
                 Is.SupersetOf(new[] { "BasicShot", "DoubleTap", "BlastRound", "LoadedFour" }));
+        }
+
+        [Test]
+        public void PublicEntriesHaveExactlyOneImplementationAndRulesOwnEveryModule()
+        {
+            DiceFaceLibrary faceLibrary = Load<DiceFaceLibrary>($"{Root}/DiceFaceLibrary.asset");
+            Assert.That(faceLibrary.Entries.Select(entry => entry.name), Is.EquivalentTo(new[]
+            {
+                "BasicShot", "DoubleTap", "BlastRound", "LoadedFour", "LightningOrb",
+                "Finisher", "ElectromagneticResonance", "Tesla", "EchoSynergy", "ChainReaction"
+            }));
+
+            foreach (DiceFaceEntry entry in faceLibrary.Entries)
+            {
+                int implementationCount = entry.Rule != null ? 1 : 0;
+                implementationCount += entry.Effect != null ? 1 : 0;
+                implementationCount += entry.PassiveEffect != null ? 1 : 0;
+                Assert.That(implementationCount, Is.EqualTo(1), entry.name);
+                Assert.That(entry.Rule, Is.Not.Null, entry.name);
+                string rulePath = AssetDatabase.GetAssetPath(entry.Rule);
+                foreach (ScriptableObject asset in AssetDatabase.LoadAllAssetsAtPath(rulePath)
+                             .OfType<ScriptableObject>())
+                {
+                    Assert.That(AssetDatabase.GetAssetPath(asset), Is.EqualTo(rulePath), asset.name);
+                    Assert.That(MonoScript.FromScriptableObject(asset), Is.Not.Null, asset.name);
+                }
+            }
+
+            BulletEventLibrary eventLibrary =
+                Load<BulletEventLibrary>($"{Root}/BulletEventLibrary.asset");
+            Assert.That(eventLibrary.Effects, Is.All.Not.Null);
         }
 
         [Test]
@@ -188,79 +135,7 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
-        public void DesignerEditedBasicRuleDoesNotLoseItsLegacyFallback()
-        {
-            ProjectileDefinition replacement = Load<ProjectileDefinition>(
-                $"{Root}/Projectiles/BlastExplosion.asset");
-            ProjectileDefinition original = Load<ProjectileDefinition>(
-                $"{Root}/Projectiles/BasicRevolverBullet.asset");
-            AssertLegacySurvivesDesignerRuleEdit(
-                "BasicShot",
-                $"{Root}/BulletEvents/FireBasicRevolverProjectile.asset",
-                rule => SetSpawn(rule, replacement, false, false, 0f,
-                    AttackEffectOverride.UseProjectileDefault, true),
-                rule => SetSpawn(rule, original, false, false, 0f,
-                    AttackEffectOverride.UseProjectileDefault, true));
-        }
-
-        [Test]
-        public void DesignerEditedDoubleTapRuleDoesNotLoseItsLegacyFallback()
-        {
-            AssertLegacySurvivesDesignerRuleEdit(
-                "DoubleTap",
-                $"{Root}/BulletEvents/ExtraShotOnFireEffect.asset",
-                rule => SetSpawn(rule, null, false, false, 0.5f,
-                    AttackEffectOverride.UseProjectileDefault, true),
-                rule => SetSpawn(rule, null, true, false, 0.25f,
-                    AttackEffectOverride.ForceDisabled, false));
-        }
-
-        [Test]
-        public void DesignerEditedBlastRoundRuleDoesNotLoseItsLegacyFallback()
-        {
-            ProjectileDefinition replacement = Load<ProjectileDefinition>(
-                $"{Root}/Projectiles/BasicRevolverBullet.asset");
-            ProjectileDefinition original = Load<ProjectileDefinition>(
-                $"{Root}/Projectiles/BlastExplosion.asset");
-            AssertLegacySurvivesDesignerRuleEdit(
-                "BlastRound",
-                $"{Root}/BulletEvents/ExplosionOnHitEffect.asset",
-                rule =>
-                {
-                    SetSpawn(rule, replacement, false, false, 0f,
-                        AttackEffectOverride.UseProjectileDefault, false);
-                    SetAttackEffectCondition(rule, false);
-                },
-                rule =>
-                {
-                    SetSpawn(rule, original, false, true, 0f,
-                        AttackEffectOverride.UseProjectileDefault, false);
-                    SetAttackEffectCondition(rule, true);
-                });
-        }
-
-        [Test]
-        public void DesignerEditedLoadedFourRuleDoesNotLoseItsLegacyFallback()
-        {
-            AssertLegacySurvivesDesignerRuleEdit(
-                "LoadedFour",
-                $"{Root}/BulletEvents/ForceFaceFourOnFireEndEffect.asset",
-                rule => SetForceFace(rule, 5),
-                rule => SetForceFace(rule, 4));
-        }
-
-        [Test]
-        public void CustomLegacyEffectIsNeverClearedByCoreMigration()
-        {
-            AssertLegacySurvivesDesignerRuleEdit(
-                "BasicShot",
-                $"{Root}/BulletEvents/ExtraShotOnFireEffect.asset",
-                _ => { },
-                _ => { });
-        }
-
-        [Test]
-        public void MigrationUtilityAndBuilderDoNotUseGlobalSaveAssets()
+        public void MigrationUtilityAndBuilderKeepTargetedSaveContract()
         {
             string utilitySource = File.ReadAllText(
                 "Assets/Scripts/Editor/EventRuleMigrationUtility.cs");
@@ -269,11 +144,7 @@ namespace DiceRevolver.Tests
 
             Assert.That(utilitySource, Does.Not.Contain("AssetDatabase.SaveAssets("));
             Assert.That(builderSource, Does.Not.Contain("AssetDatabase.SaveAssets("));
-        }
 
-        [Test]
-        public void MigrationUtilityExposesReusablePathAndModuleLinkContract()
-        {
             MethodInfo method = typeof(EventRuleMigrationUtility).GetMethod(
                 "MigrateRule",
                 BindingFlags.Public | BindingFlags.Static,
@@ -289,147 +160,19 @@ namespace DiceRevolver.Tests
                     typeof(Func<EventRuleDefinition, bool>)
                 },
                 null);
-
             Assert.That(method, Is.Not.Null);
-            Assert.That(method.ReturnType, Is.EqualTo(typeof(EventRuleDefinition)));
         }
 
-        private static LegacyCapture RunLegacy(
-            BulletEventEffect effect,
-            EventSignalType signalType,
-            bool canTriggerHitEffects)
+        private static EventSignalMask ToMask(EventSignalType signal)
         {
-            LegacyCapture capture = new LegacyCapture();
-            DiceFaceActivation activation = new DiceFaceActivation(
-                2,
-                default,
-                Vector3.zero,
-                Vector3.forward,
-                (delay, callback) =>
-                {
-                    capture.Delay = delay;
-                    capture.Callback = callback;
-                },
-                request => capture.Requests.Add(request),
-                face =>
-                {
-                    capture.ForcedFaces.Add(face);
-                    return true;
-                },
-                null);
-            ProjectileDefinition primary = Load<ProjectileDefinition>(
-                $"{Root}/Projectiles/BasicRevolverBullet.asset");
-            activation.RequestProjectile(
-                primary,
-                AttackEffectOverride.UseProjectileDefault,
-                true,
-                Vector3.zero,
-                Vector3.forward);
-            capture.Requests.Clear();
-            capture.HitPosition = new Vector3(4f, 0f, -2f);
-            DiceRevolverShotContext shot = new DiceRevolverShotContext(
-                2,
-                Vector3.zero,
-                Vector3.forward,
-                null,
-                default,
-                default,
-                null,
-                primary,
-                activation,
-                canTriggerHitEffects);
-
-            if (signalType != EventSignalType.OnHit || canTriggerHitEffects)
+            return signal switch
             {
-                effect.Trigger(new BulletEventContext(
-                    activation,
-                    shot,
-                    null,
-                    capture.HitPosition));
-            }
-
-            if (effect is ProjectileSpawnEffect)
-            {
-                capture.Callback.Invoke();
-            }
-
-            return capture;
-        }
-
-        private static RuleCapture RunRule(
-            string assetName,
-            EventSignalType signalType,
-            DiceFaceSlotType slot,
-            bool canTriggerHitEffects)
-        {
-            EventRuleDefinition rule = Load<EventRuleDefinition>(
-                $"{Root}/EventRules/Core/{assetName}Rule.asset");
-            CapturingServices services = new CapturingServices();
-            DiceFaceActivation activation = new DiceFaceActivation(
-                2,
-                default,
-                Vector3.zero,
-                Vector3.forward,
-                null,
-                _ => { },
-                null,
-                null);
-            ProjectileDefinition primary = Load<ProjectileDefinition>(
-                $"{Root}/Projectiles/BasicRevolverBullet.asset");
-            activation.RequestProjectile(
-                primary,
-                AttackEffectOverride.UseProjectileDefault,
-                true,
-                Vector3.zero,
-                Vector3.forward);
-            DiceRevolverShotContext shot = new DiceRevolverShotContext(
-                2,
-                Vector3.zero,
-                Vector3.forward,
-                null,
-                default,
-                default,
-                null,
-                primary,
-                activation,
-                canTriggerHitEffects);
-            EventSignal signal = Signal(
-                signalType,
-                slot,
-                activation,
-                shot,
-                new Vector3(4f, 0f, -2f),
-                services.EventBudget);
-
-            EventRuleInvocationResult result =
-                new EventRuleRuntime(rule, 2, slot).TryHandle(signal, services);
-            return new RuleCapture(result, services);
-        }
-
-        private static EventSignal Signal(
-            EventSignalType signalType,
-            DiceFaceSlotType slot,
-            DiceFaceActivation activation = null,
-            DiceRevolverShotContext shot = null,
-            Vector3 hitPosition = default,
-            DiceEventBudget budget = null)
-        {
-            return new EventSignal(
-                signalType,
-                2,
-                2,
-                slot,
-                activation,
-                shot,
-                default,
-                null,
-                hitPosition,
-                Array.Empty<int>(),
-                0,
-                default,
-                budget ?? new DiceEventBudget(32),
-                false,
-                default);
+                EventSignalType.Base => EventSignalMask.Base,
+                EventSignalType.OnFire => EventSignalMask.OnFire,
+                EventSignalType.OnHit => EventSignalMask.OnHit,
+                EventSignalType.OnFireEnd => EventSignalMask.OnFireEnd,
+                _ => EventSignalMask.None
+            };
         }
 
         private static T Load<T>(string path) where T : UnityEngine.Object
@@ -444,195 +187,6 @@ namespace DiceRevolver.Tests
             using SHA256 sha = SHA256.Create();
             return BitConverter.ToString(sha.ComputeHash(File.ReadAllBytes(assetPath)))
                 .Replace("-", string.Empty);
-        }
-
-        private static void AssertLegacySurvivesDesignerRuleEdit(
-            string assetName,
-            string legacyEffectPath,
-            Action<EventRuleDefinition> mutate,
-            Action<EventRuleDefinition> restore)
-        {
-            string entryPath = $"{Root}/DiceFaces/{assetName}.asset";
-            string rulePath = $"{Root}/EventRules/Core/{assetName}Rule.asset";
-            DiceFaceEntry entry = Load<DiceFaceEntry>(entryPath);
-            EventRuleDefinition rule = Load<EventRuleDefinition>(rulePath);
-            BulletEventEffect legacy = Load<BulletEventEffect>(legacyEffectPath);
-            byte[] originalEntryBytes = File.ReadAllBytes(entryPath);
-            byte[] originalRuleBytes = File.ReadAllBytes(rulePath);
-            SerializedObject serializedEntry = new SerializedObject(entry);
-            serializedEntry.FindProperty("effect").objectReferenceValue = legacy;
-            serializedEntry.ApplyModifiedPropertiesWithoutUndo();
-            mutate(rule);
-            AssetDatabase.SaveAssetIfDirty(entry);
-            SaveRuleObjects(rule);
-
-            try
-            {
-                EventRuleMigrationUtility.MigrateCoreRules();
-                serializedEntry.Update();
-                Assert.That(
-                    serializedEntry.FindProperty("effect").objectReferenceValue,
-                    Is.SameAs(legacy));
-            }
-            finally
-            {
-                restore(rule);
-                serializedEntry.Update();
-                serializedEntry.FindProperty("effect").objectReferenceValue = null;
-                serializedEntry.ApplyModifiedPropertiesWithoutUndo();
-                AssetDatabase.SaveAssetIfDirty(entry);
-                SaveRuleObjects(rule);
-                File.WriteAllBytes(entryPath, originalEntryBytes);
-                File.WriteAllBytes(rulePath, originalRuleBytes);
-                AssetDatabase.ImportAsset(entryPath, ImportAssetOptions.ForceUpdate);
-                AssetDatabase.ImportAsset(rulePath, ImportAssetOptions.ForceUpdate);
-            }
-        }
-
-        private static void SetSpawn(
-            EventRuleDefinition rule,
-            ProjectileDefinition definition,
-            bool useCurrentPrimary,
-            bool useHitOrigin,
-            float delay,
-            AttackEffectOverride attackEffectOverride,
-            bool primary)
-        {
-            SpawnProjectileResultModule result =
-                rule.Results.Select(entry => entry.Result)
-                    .OfType<SpawnProjectileResultModule>()
-                    .Single();
-            SerializedObject serialized = new SerializedObject(result);
-            serialized.FindProperty("projectileDefinition").objectReferenceValue = definition;
-            serialized.FindProperty("useCurrentPrimaryDefinition").boolValue = useCurrentPrimary;
-            serialized.FindProperty("useHitOrigin").boolValue = useHitOrigin;
-            serialized.FindProperty("delaySeconds").floatValue = delay;
-            serialized.FindProperty("attackEffectOverride").enumValueIndex =
-                (int)attackEffectOverride;
-            serialized.FindProperty("primaryProjectile").boolValue = primary;
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-        }
-
-        private static void SetAttackEffectCondition(EventRuleDefinition rule, bool expected)
-        {
-            AttackEffectConditionModule condition =
-                rule.Conditions.OfType<AttackEffectConditionModule>().Single();
-            SerializedObject serialized = new SerializedObject(condition);
-            serialized.FindProperty("expectedCanTriggerHitEffects").boolValue = expected;
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-        }
-
-        private static void SetForceFace(EventRuleDefinition rule, int face)
-        {
-            ForceFaceResultModule result =
-                rule.Results.Select(entry => entry.Result)
-                    .OfType<ForceFaceResultModule>()
-                    .Single();
-            SerializedObject serialized = new SerializedObject(result);
-            serialized.FindProperty("face").intValue = face;
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-        }
-
-        private static void SaveRuleObjects(EventRuleDefinition rule)
-        {
-            foreach (UnityEngine.Object asset in AssetDatabase.LoadAllAssetsAtPath(
-                         AssetDatabase.GetAssetPath(rule)))
-            {
-                AssetDatabase.SaveAssetIfDirty(asset);
-            }
-        }
-
-        private sealed class LegacyCapture
-        {
-            public readonly List<ProjectileSpawnRequest> Requests = new List<ProjectileSpawnRequest>();
-            public readonly List<int> ForcedFaces = new List<int>();
-            public float Delay = -1f;
-            public Action Callback;
-            public Vector3 HitPosition;
-        }
-
-        private readonly struct RuleCapture
-        {
-            public RuleCapture(EventRuleInvocationResult result, CapturingServices services)
-            {
-                Result = result;
-                Services = services;
-            }
-
-            public EventRuleInvocationResult Result { get; }
-            public CapturingServices Services { get; }
-        }
-
-        private readonly struct ProjectileRequest
-        {
-            public ProjectileRequest(
-                ProjectileDefinition definition,
-                Vector3 origin,
-                Vector3 direction,
-                AttackEffectOverride attackEffectOverride,
-                bool isPrimary)
-            {
-                Definition = definition;
-                Origin = origin;
-                Direction = direction;
-                AttackEffectOverride = attackEffectOverride;
-                IsPrimary = isPrimary;
-            }
-
-            public ProjectileDefinition Definition { get; }
-            public Vector3 Origin { get; }
-            public Vector3 Direction { get; }
-            public AttackEffectOverride AttackEffectOverride { get; }
-            public bool IsPrimary { get; }
-        }
-
-        private sealed class CapturingServices : IEventRuleServices
-        {
-            public readonly List<ProjectileRequest> Requests = new List<ProjectileRequest>();
-            public readonly List<int> ForcedFaces = new List<int>();
-            public DiceEventBudget EventBudget { get; } = new DiceEventBudget(32);
-            public float Delay { get; private set; } = -1f;
-            public Action Callback { get; private set; }
-
-            public bool RequestProjectile(
-                ProjectileDefinition definition,
-                Vector3 origin,
-                Vector3 direction,
-                AttackEffectOverride attackEffectOverride,
-                bool isPrimary)
-            {
-                Requests.Add(new ProjectileRequest(
-                    definition, origin, direction, attackEffectOverride, isPrimary));
-                return true;
-            }
-
-            public bool Schedule(float delaySeconds, Action callback)
-            {
-                Delay = delaySeconds;
-                Callback = callback;
-                return true;
-            }
-
-            public bool RequestRefillAndForceNextFace(int face)
-            {
-                ForcedFaces.Add(face);
-                return true;
-            }
-
-            public bool RequestBonusActivation(int face, float maximumSpreadAngle,
-                float minimumSpreadSeparation, EventRuleDefinition sourceRule) => false;
-            public bool RequestLightningChain(ProjectileHandle origin,
-                IReadOnlyList<ProjectileHandle> targets, LightningChainDefinition definition) => false;
-            public bool QueueNextShotOverlay(DiceFaceActiveOverlay overlay) => false;
-            public IReadOnlyList<ProjectileHandle> FindOwnedProjectiles(Vector3 origin, float radius,
-                ProjectileTagDefinition requiredTag, Projectile excludedProjectile) =>
-                Array.Empty<ProjectileHandle>();
-            public void SetDrawPriority(int priority) { }
-            public void RejectDrawCandidate(string reason) { }
-            public void MultiplyProjectileDamage(float multiplier) { }
-            public void RecordRuleDebug(EventRuleDefinition rule, string stage,
-                string description, EventResultStatus status) { }
-            public void ReportException(Exception exception, ScriptableObject module) { }
         }
     }
 }

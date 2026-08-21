@@ -52,6 +52,159 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void FirstMigrationCopiesCustomLegacyParametersBeforeClearingFallbacks()
+        {
+            string[] names =
+            {
+                "LightningOrb",
+                "ElectromagneticResonance",
+                "Tesla",
+                "EchoSynergy"
+            };
+            string[] legacyPaths =
+            {
+                $"{Root}/BulletEvents/FireLightningOrbProjectile.asset",
+                $"{Root}/BulletEvents/ElectromagneticResonanceEffect.asset",
+                $"{Root}/BulletEvents/TeslaPassiveEffect.asset",
+                $"{Root}/BulletEvents/EchoSynergyPassiveEffect.asset"
+            };
+            string[] paths = names.SelectMany(name => new[]
+                {
+                    $"{Root}/DiceFaces/{name}.asset",
+                    $"{Root}/EventRules/Lightning/{name}Rule.asset"
+                })
+                .Concat(legacyPaths)
+                .ToArray();
+            Dictionary<string, byte[]> backups = paths.ToDictionary(
+                path => path,
+                System.IO.File.ReadAllBytes);
+
+            ProjectileSpawnEffect orbLegacy = Load<ProjectileSpawnEffect>(legacyPaths[0]);
+            ElectromagneticResonanceEffect resonanceLegacy =
+                Load<ElectromagneticResonanceEffect>(legacyPaths[1]);
+            TeslaPassiveEffect teslaLegacy = Load<TeslaPassiveEffect>(legacyPaths[2]);
+            EchoSynergyPassiveEffect echoLegacy = Load<EchoSynergyPassiveEffect>(legacyPaths[3]);
+            ProjectileDefinition customDefinition = Load<ProjectileDefinition>(
+                $"{Root}/Projectiles/BasicRevolverBullet.asset");
+            ProjectileTagDefinition customTag = Load<ProjectileTagDefinition>(
+                $"{Root}/ProjectileTags/Elemental.asset");
+            LightningChainDefinition chain = Load<LightningChainDefinition>(
+                $"{Root}/Lightning/LightningChainDefinition.asset");
+
+            try
+            {
+                SetLegacy(orbLegacy, "projectileDefinition", customDefinition);
+                SetLegacy(orbLegacy, "delaySeconds", 0.4f);
+                SetLegacy(orbLegacy, "attackEffectOverride", AttackEffectOverride.ForceDisabled);
+                SetLegacy(orbLegacy, "primaryProjectile", false);
+                SetLegacy(resonanceLegacy, "lightningTag", customTag);
+                SetLegacy(resonanceLegacy, "searchRadius", 4.25f);
+                SetLegacy(resonanceLegacy, "maximumConnections", 2);
+                SetLegacy(teslaLegacy, "lightningTag", customTag);
+                SetLegacy(teslaLegacy, "damagePerStack", 0.125f);
+                SetLegacy(echoLegacy, "maximumTriggersPerChamber", 2);
+                SetLegacy(echoLegacy, "maximumSpreadAngle", 11f);
+                SetLegacy(echoLegacy, "minimumSpreadSeparation", 3f);
+
+                ResetRuleAndLegacyEntry("LightningOrb", orbLegacy, false);
+                ResetRuleAndLegacyEntry("ElectromagneticResonance", resonanceLegacy, false);
+                ResetRuleAndLegacyEntry("Tesla", teslaLegacy, true);
+                ResetRuleAndLegacyEntry("EchoSynergy", echoLegacy, true);
+
+                LightningBuildPrototypeBuilder.Build();
+
+                SpawnProjectileResultModule spawn = Rule("LightningOrb").Results
+                    .Select(entry => entry.Result)
+                    .OfType<SpawnProjectileResultModule>()
+                    .Single();
+                Assert.That(ReadReference(spawn, "projectileDefinition"),
+                    Is.SameAs(customDefinition));
+                Assert.That(ReadBool(spawn, "useCurrentPrimaryDefinition"), Is.False);
+                Assert.That(ReadBool(spawn, "useHitOrigin"), Is.False);
+                Assert.That(ReadFloat(spawn, "delaySeconds"), Is.EqualTo(0.4f));
+                Assert.That(ReadInt(spawn, "attackEffectOverride"),
+                    Is.EqualTo((int)AttackEffectOverride.ForceDisabled));
+                Assert.That(ReadBool(spawn, "primaryProjectile"), Is.False);
+
+                CreateLightningChainResultModule resonance =
+                    Rule("ElectromagneticResonance").Results
+                        .Select(entry => entry.Result)
+                        .OfType<CreateLightningChainResultModule>()
+                        .Single();
+                Assert.That(ReadReference(resonance, "lightningTag"), Is.SameAs(customTag));
+                Assert.That(ReadReference(resonance, "chainDefinition"), Is.SameAs(chain));
+                Assert.That(ReadFloat(resonance, "searchRadius"), Is.EqualTo(4.25f));
+                Assert.That(ReadInt(resonance, "maximumConnections"), Is.EqualTo(2));
+
+                MultiplyProjectileDamageFromCounterResultModule tesla = Rule("Tesla").Results
+                    .Select(entry => entry.Result)
+                    .OfType<MultiplyProjectileDamageFromCounterResultModule>()
+                    .Single();
+                ProjectileTagConditionModule teslaTag = Rule("Tesla").Results[0].Conditions
+                    .OfType<ProjectileTagConditionModule>()
+                    .Single();
+                Assert.That(ReadReference(teslaTag, "projectileTag"), Is.SameAs(customTag));
+                Assert.That(ReadFloat(tesla, "damagePerStack"), Is.EqualTo(0.125f));
+
+                RequestBonusActivationResultModule echo = Rule("EchoSynergy").Results
+                    .Select(entry => entry.Result)
+                    .OfType<RequestBonusActivationResultModule>()
+                    .Single();
+                Assert.That(ReadInt(echo, "maximumTriggers"), Is.EqualTo(2));
+                Assert.That(ReadFloat(echo, "maximumSpreadAngle"), Is.EqualTo(11f));
+                Assert.That(ReadFloat(echo, "minimumSpreadSeparation"), Is.EqualTo(3f));
+
+                foreach (string name in names)
+                {
+                    DiceFaceEntry entry = Load<DiceFaceEntry>($"{Root}/DiceFaces/{name}.asset");
+                    Assert.That(entry.Rule, Is.SameAs(Rule(name)), name);
+                    Assert.That(entry.Effect, Is.Null, name);
+                    Assert.That(entry.PassiveEffect, Is.Null, name);
+                }
+            }
+            finally
+            {
+                RestoreAssets(backups);
+            }
+        }
+
+        [Test]
+        public void CustomLegacyValueSurvivesWhenExistingRuleDoesNotHaveExactParity()
+        {
+            string entryPath = $"{Root}/DiceFaces/Tesla.asset";
+            string rulePath = $"{Root}/EventRules/Lightning/TeslaRule.asset";
+            string legacyPath = $"{Root}/BulletEvents/TeslaPassiveEffect.asset";
+            Dictionary<string, byte[]> backups = new[] { entryPath, rulePath, legacyPath }
+                .ToDictionary(path => path, System.IO.File.ReadAllBytes);
+            TeslaPassiveEffect legacy = Load<TeslaPassiveEffect>(legacyPath);
+            DiceFaceEntry entry = Load<DiceFaceEntry>(entryPath);
+
+            try
+            {
+                SetLegacy(legacy, "damagePerStack", 0.2f);
+                SerializedObject serializedEntry = new(entry);
+                serializedEntry.FindProperty("passiveEffect").objectReferenceValue = legacy;
+                serializedEntry.ApplyModifiedPropertiesWithoutUndo();
+                AssetDatabase.SaveAssetIfDirty(entry);
+
+                LightningBuildPrototypeBuilder.Build();
+
+                serializedEntry.Update();
+                Assert.That(serializedEntry.FindProperty("passiveEffect").objectReferenceValue,
+                    Is.SameAs(legacy));
+                MultiplyProjectileDamageFromCounterResultModule ruleValue = Rule("Tesla").Results
+                    .Select(result => result.Result)
+                    .OfType<MultiplyProjectileDamageFromCounterResultModule>()
+                    .Single();
+                Assert.That(ReadFloat(ruleValue, "damagePerStack"), Is.EqualTo(0.05f));
+            }
+            finally
+            {
+                RestoreAssets(backups);
+            }
+        }
+
+        [Test]
         public void LightningEntriesReferencePersistentRuleAssetsAndModules()
         {
             string[] names =
@@ -353,6 +506,93 @@ namespace DiceRevolver.Tests
             T asset = AssetDatabase.LoadAssetAtPath<T>(path);
             Assert.That(asset, Is.Not.Null, path);
             return asset;
+        }
+
+        private static void ResetRuleAndLegacyEntry(
+            string name,
+            UnityEngine.Object legacy,
+            bool passive)
+        {
+            string rulePath = $"{Root}/EventRules/Lightning/{name}Rule.asset";
+            EventRuleDefinition rule = Load<EventRuleDefinition>(rulePath);
+            UnityEngine.Object[] subAssets = AssetDatabase.LoadAllAssetsAtPath(rulePath)
+                .Where(asset => asset != rule)
+                .ToArray();
+            SerializedObject serializedRule = new(rule);
+            serializedRule.FindProperty("trigger").objectReferenceValue = null;
+            serializedRule.FindProperty("conditions").arraySize = 0;
+            serializedRule.FindProperty("results").arraySize = 0;
+            serializedRule.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.SaveAssetIfDirty(rule);
+            foreach (UnityEngine.Object subAsset in subAssets)
+            {
+                UnityEngine.Object.DestroyImmediate(subAsset, true);
+            }
+
+            AssetDatabase.SaveAssetIfDirty(rule);
+            DiceFaceEntry entry = Load<DiceFaceEntry>($"{Root}/DiceFaces/{name}.asset");
+            SerializedObject serializedEntry = new(entry);
+            serializedEntry.FindProperty("rule").objectReferenceValue = null;
+            serializedEntry.FindProperty(passive ? "passiveEffect" : "effect")
+                .objectReferenceValue = legacy;
+            serializedEntry.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.SaveAssetIfDirty(entry);
+        }
+
+        private static void SetLegacy(UnityEngine.Object target, string propertyName, object value)
+        {
+            SerializedObject serialized = new(target);
+            SerializedProperty property = serialized.FindProperty(propertyName);
+            switch (value)
+            {
+                case UnityEngine.Object reference:
+                    property.objectReferenceValue = reference;
+                    break;
+                case float number:
+                    property.floatValue = number;
+                    break;
+                case int number:
+                    property.intValue = number;
+                    break;
+                case bool flag:
+                    property.boolValue = flag;
+                    break;
+                case Enum enumValue:
+                    property.intValue = Convert.ToInt32(enumValue);
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unsupported legacy value: {value}");
+            }
+
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.SaveAssetIfDirty(target);
+        }
+
+        private static UnityEngine.Object ReadReference(
+            UnityEngine.Object target,
+            string propertyName) =>
+            new SerializedObject(target).FindProperty(propertyName).objectReferenceValue;
+
+        private static float ReadFloat(UnityEngine.Object target, string propertyName) =>
+            new SerializedObject(target).FindProperty(propertyName).floatValue;
+
+        private static int ReadInt(UnityEngine.Object target, string propertyName) =>
+            new SerializedObject(target).FindProperty(propertyName).intValue;
+
+        private static bool ReadBool(UnityEngine.Object target, string propertyName) =>
+            new SerializedObject(target).FindProperty(propertyName).boolValue;
+
+        private static void RestoreAssets(IReadOnlyDictionary<string, byte[]> backups)
+        {
+            foreach (KeyValuePair<string, byte[]> backup in backups)
+            {
+                System.IO.File.WriteAllBytes(backup.Key, backup.Value);
+            }
+
+            foreach (string path in backups.Keys)
+            {
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+            }
         }
 
         private ProjectileHandle Handle(

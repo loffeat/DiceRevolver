@@ -36,12 +36,13 @@
 
 ## 当前正在进行
 
-- Task 9 已完成六个雷电构筑 Rule 资产、迁移与联合回归；下一步执行 Task 10 的旧具体 Effect 引用审计、条件删除和最终回归。
+- Task 10 已完成可安全静态清理：`ExtraShotOnFireEffect`、`ExplosionOnHitEffect`、`ForceFaceFourOnFireEndEffect` 的 script/asset/.meta 已删除，builders、Rule 资产测试与 `BulletEventLibrary` 已清零其类型/GUID 引用。
+- 五个雷电具体 Effect 暂时保留：Task 9 staged builder/tests 仍直接引用，且 `ElectromagneticResonanceEffect.SelectTargets` 仍被生产 Rule 模块复用；在不改写 staged 修复的约束下不能安全删除。
 
 ## 下一步
 
-1. 执行 Task 10，先用真实 AssetDatabase/GUID 引用证明哪些旧具体 Effect 可以删除。
-2. 完成最终聚焦/全量回归、人工验收记录和上下文同步。
+1. 平台恢复后先提交当前 staged Task 9 fix，再运行其 custom-value focused 与必要联合回归。
+2. 通过后提交 Task 10 静态清理，运行 Task 10 focused/full EditMode；最后完成五个雷电具体 Effect 清理与人工 Editor/战斗验收。
 
 ## 已完成
 
@@ -52,10 +53,13 @@
 - 用户选择 Subagent-Driven Development；已建立 `codex/event-rule-editor` 隔离工作树并通过上下文检查。
 - Task 1–8 已完成并提交；Task 9 已将雷电球、电磁共鸣、特斯拉、呼应协同、链式反应和收尾者迁移为 Rule-backed 资源。
 - Task 9 十套联合 EditMode 回归为 `[passed] 41/41`、`0 skipped`，八个受保护文件哈希与 Player/TestRobot 枪械参数保持不变。
+- Task 9 fix round 1 已消除迁移 Builder 中四类 legacy 设计参数的硬编码默认值；新增 custom legacy 与非精确 parity 契约测试，但修复后 Unity 验证因平台 usage limit 未运行。
+- Task 10 Core 清理已用类型名与 script/asset GUID 双重扫描证明生产 DiceFaceEntry 全部 Rule-backed，并删除三组无生产引用的具体 Effect；`ProjectileSpawnEffect` 与三份资产按兼容边界保留。
 
 ## 阻塞
 
-- 无。
+- Task 9 fix round 1、Task 10 tests/focused/full EditMode 与人工可视验收受平台 usage limit 阻止；未尝试绕过、启动 Unity 或提交。
+- 五个雷电具体 Effect 的删除还受 staged Task 9 直接引用阻止，需先提交并验证 Task 9 fix。
 
 ## 非目标
 
@@ -71,6 +75,10 @@
 - 计划新增的 `Assets/Scripts/Editor/` 事件规则编辑器文件。
 - 计划新增的 `Assets/Tests/EditMode/` 规则运行时与编辑器测试。
 - `.project-context/project/`
+- `Assets/Scripts/Editor/DiceFacePrototypeAssetBuilder.cs`
+- `Assets/Scripts/Editor/EventRuleMigrationUtility.cs`
+- `Assets/Scripts/Editor/AreaExplosionPrototypeBuilder.cs`
+- `Assets/Tests/EditMode/EventRuleCoreMigrationTests.cs`
 
 ## 相关资料
 
@@ -85,3 +93,7 @@
 - [passed] `2026-08-21`：实施计划完成规格覆盖、占位符和跨任务接口一致性自审。
 - [passed] `2026-08-21`：隔离工作树上下文检查输出 `[context:ok]`。
 - [failed] `2026-08-21`：实施前完整 EditMode `251/252`、`0 skipped`；唯一失败为 `RenderingLayerContractTests.PrototypeSceneUsesZeroHeightSpriteGroundAndEntities`，即已批准的 Ground `Y=-0.01` 例外。
+- [not-run] `2026-08-21`：Task 9 fix round 1 的 custom-value RED、核心 GREEN 与联合回归因平台 usage limit 未运行；此前 `10/10` 与 `41/41` 仅为修复前证据。
+- [passed] `2026-08-21`：Task 9 fix round 1 静态 diff、八个保护哈希、Player/TestRobot 调参与上下文检查保持正常。
+- [passed] `2026-08-21`：Task 10 Core 三类型与六个 GUID 在 `Assets` 精确扫描为零；八个保护哈希仍与 Task 8/9 基线一致，Player/TestRobot `shotsPerSecond/reloadDuration/eventBudgetPerActivation=2/2/32`。
+- [not-run] `2026-08-21`：Task 10 tests、focused/full EditMode 与人工 Editor/战斗验收（platform usage limit）；最近一次完整回归仍为修复前 `[failed] 251/252`，唯一失败为 Ground Y。

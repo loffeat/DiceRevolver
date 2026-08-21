@@ -11,8 +11,8 @@ namespace DiceRevolver.Tests
         private const string PrefabPath = "Assets/Prefab/Projectiles/BlastExplosion.prefab";
         private const string DefinitionPath =
             "Assets/Resources/DiceFacePrototype/Projectiles/BlastExplosion.asset";
-        private const string EffectPath =
-            "Assets/Resources/DiceFacePrototype/BulletEvents/ExplosionOnHitEffect.asset";
+        private const string RulePath =
+            "Assets/Resources/DiceFacePrototype/EventRules/Core/BlastRoundRule.asset";
         private const string LibraryPath =
             "Assets/Resources/DiceFacePrototype/Projectiles/ProjectileDefinitionLibrary.asset";
 
@@ -47,17 +47,23 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
-        public void HitEffectAndProjectileLibraryReferenceExplosionDefinition()
+        public void HitRuleAndProjectileLibraryReferenceExplosionDefinition()
         {
             ProjectileDefinition definition =
                 AssetDatabase.LoadAssetAtPath<ProjectileDefinition>(DefinitionPath);
-            ExplosionOnHitEffect effect =
-                AssetDatabase.LoadAssetAtPath<ExplosionOnHitEffect>(EffectPath);
+            EventRuleDefinition rule =
+                AssetDatabase.LoadAssetAtPath<EventRuleDefinition>(RulePath);
             ProjectileDefinitionLibrary library =
                 AssetDatabase.LoadAssetAtPath<ProjectileDefinitionLibrary>(LibraryPath);
 
-            Assert.That(effect, Is.Not.Null);
-            Assert.That(effect.ExplosionProjectileDefinition, Is.SameAs(definition));
+            Assert.That(rule, Is.Not.Null);
+            SpawnProjectileResultModule spawn = rule.Results
+                .Select(entry => entry.Result)
+                .OfType<SpawnProjectileResultModule>()
+                .Single();
+            Assert.That(spawn.ProjectileDefinition, Is.SameAs(definition));
+            Assert.That(new SerializedObject(spawn).FindProperty("useHitOrigin").boolValue,
+                Is.True);
             Assert.That(library, Is.Not.Null);
             Assert.That(library.Definitions.Contains(definition), Is.True);
         }
