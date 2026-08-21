@@ -124,10 +124,29 @@ namespace DiceRevolver.Editor
                 SetObjectArray(eventLibrary, "effects", extraShot, explosion, forceFour);
             }
 
+            SaveTouchedAssets(
+                extraShot,
+                explosion,
+                forceFour,
+                basicShot,
+                doubleTap,
+                blastRound,
+                loadedFour,
+                faceLibrary,
+                eventLibrary);
             EventRuleMigrationUtility.MigrateCoreRules();
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
             Debug.Log("Dice face prototype assets are ready.");
+        }
+
+        private static void SaveTouchedAssets(params Object[] assets)
+        {
+            for (int index = 0; index < assets.Length; index++)
+            {
+                if (assets[index] != null)
+                {
+                    AssetDatabase.SaveAssetIfDirty(assets[index]);
+                }
+            }
         }
 
         private static void ConfigureEntry(

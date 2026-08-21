@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using DiceRevolver.Editor;
 using DiceRevolver.Prototype;
@@ -186,6 +187,113 @@ namespace DiceRevolver.Tests
             Assert.That(protectedPaths.Select(Hash), Is.EqualTo(protectedBefore));
         }
 
+        [Test]
+        public void DesignerEditedBasicRuleDoesNotLoseItsLegacyFallback()
+        {
+            ProjectileDefinition replacement = Load<ProjectileDefinition>(
+                $"{Root}/Projectiles/BlastExplosion.asset");
+            ProjectileDefinition original = Load<ProjectileDefinition>(
+                $"{Root}/Projectiles/BasicRevolverBullet.asset");
+            AssertLegacySurvivesDesignerRuleEdit(
+                "BasicShot",
+                $"{Root}/BulletEvents/FireBasicRevolverProjectile.asset",
+                rule => SetSpawn(rule, replacement, false, false, 0f,
+                    AttackEffectOverride.UseProjectileDefault, true),
+                rule => SetSpawn(rule, original, false, false, 0f,
+                    AttackEffectOverride.UseProjectileDefault, true));
+        }
+
+        [Test]
+        public void DesignerEditedDoubleTapRuleDoesNotLoseItsLegacyFallback()
+        {
+            AssertLegacySurvivesDesignerRuleEdit(
+                "DoubleTap",
+                $"{Root}/BulletEvents/ExtraShotOnFireEffect.asset",
+                rule => SetSpawn(rule, null, false, false, 0.5f,
+                    AttackEffectOverride.UseProjectileDefault, true),
+                rule => SetSpawn(rule, null, true, false, 0.25f,
+                    AttackEffectOverride.ForceDisabled, false));
+        }
+
+        [Test]
+        public void DesignerEditedBlastRoundRuleDoesNotLoseItsLegacyFallback()
+        {
+            ProjectileDefinition replacement = Load<ProjectileDefinition>(
+                $"{Root}/Projectiles/BasicRevolverBullet.asset");
+            ProjectileDefinition original = Load<ProjectileDefinition>(
+                $"{Root}/Projectiles/BlastExplosion.asset");
+            AssertLegacySurvivesDesignerRuleEdit(
+                "BlastRound",
+                $"{Root}/BulletEvents/ExplosionOnHitEffect.asset",
+                rule =>
+                {
+                    SetSpawn(rule, replacement, false, false, 0f,
+                        AttackEffectOverride.UseProjectileDefault, false);
+                    SetAttackEffectCondition(rule, false);
+                },
+                rule =>
+                {
+                    SetSpawn(rule, original, false, true, 0f,
+                        AttackEffectOverride.UseProjectileDefault, false);
+                    SetAttackEffectCondition(rule, true);
+                });
+        }
+
+        [Test]
+        public void DesignerEditedLoadedFourRuleDoesNotLoseItsLegacyFallback()
+        {
+            AssertLegacySurvivesDesignerRuleEdit(
+                "LoadedFour",
+                $"{Root}/BulletEvents/ForceFaceFourOnFireEndEffect.asset",
+                rule => SetForceFace(rule, 5),
+                rule => SetForceFace(rule, 4));
+        }
+
+        [Test]
+        public void CustomLegacyEffectIsNeverClearedByCoreMigration()
+        {
+            AssertLegacySurvivesDesignerRuleEdit(
+                "BasicShot",
+                $"{Root}/BulletEvents/ExtraShotOnFireEffect.asset",
+                _ => { },
+                _ => { });
+        }
+
+        [Test]
+        public void MigrationUtilityAndBuilderDoNotUseGlobalSaveAssets()
+        {
+            string utilitySource = File.ReadAllText(
+                "Assets/Scripts/Editor/EventRuleMigrationUtility.cs");
+            string builderSource = File.ReadAllText(
+                "Assets/Scripts/Editor/DiceFacePrototypeAssetBuilder.cs");
+
+            Assert.That(utilitySource, Does.Not.Contain("AssetDatabase.SaveAssets("));
+            Assert.That(builderSource, Does.Not.Contain("AssetDatabase.SaveAssets("));
+        }
+
+        [Test]
+        public void MigrationUtilityExposesReusablePathAndModuleLinkContract()
+        {
+            MethodInfo method = typeof(EventRuleMigrationUtility).GetMethod(
+                "MigrateRule",
+                BindingFlags.Public | BindingFlags.Static,
+                null,
+                new[]
+                {
+                    typeof(string),
+                    typeof(string),
+                    typeof(DiceFaceSlotType),
+                    typeof(EventSignalMask),
+                    typeof(UnityEngine.Object),
+                    typeof(Action<EventRuleDefinition>),
+                    typeof(Func<EventRuleDefinition, bool>)
+                },
+                null);
+
+            Assert.That(method, Is.Not.Null);
+            Assert.That(method.ReturnType, Is.EqualTo(typeof(EventRuleDefinition)));
+        }
+
         private static LegacyCapture RunLegacy(
             BulletEventEffect effect,
             EventSignalType signalType,
@@ -336,6 +444,102 @@ namespace DiceRevolver.Tests
             using SHA256 sha = SHA256.Create();
             return BitConverter.ToString(sha.ComputeHash(File.ReadAllBytes(assetPath)))
                 .Replace("-", string.Empty);
+        }
+
+        private static void AssertLegacySurvivesDesignerRuleEdit(
+            string assetName,
+            string legacyEffectPath,
+            Action<EventRuleDefinition> mutate,
+            Action<EventRuleDefinition> restore)
+        {
+            string entryPath = $"{Root}/DiceFaces/{assetName}.asset";
+            string rulePath = $"{Root}/EventRules/Core/{assetName}Rule.asset";
+            DiceFaceEntry entry = Load<DiceFaceEntry>(entryPath);
+            EventRuleDefinition rule = Load<EventRuleDefinition>(rulePath);
+            BulletEventEffect legacy = Load<BulletEventEffect>(legacyEffectPath);
+            byte[] originalEntryBytes = File.ReadAllBytes(entryPath);
+            byte[] originalRuleBytes = File.ReadAllBytes(rulePath);
+            SerializedObject serializedEntry = new SerializedObject(entry);
+            serializedEntry.FindProperty("effect").objectReferenceValue = legacy;
+            serializedEntry.ApplyModifiedPropertiesWithoutUndo();
+            mutate(rule);
+            AssetDatabase.SaveAssetIfDirty(entry);
+            SaveRuleObjects(rule);
+
+            try
+            {
+                EventRuleMigrationUtility.MigrateCoreRules();
+                serializedEntry.Update();
+                Assert.That(
+                    serializedEntry.FindProperty("effect").objectReferenceValue,
+                    Is.SameAs(legacy));
+            }
+            finally
+            {
+                restore(rule);
+                serializedEntry.Update();
+                serializedEntry.FindProperty("effect").objectReferenceValue = null;
+                serializedEntry.ApplyModifiedPropertiesWithoutUndo();
+                AssetDatabase.SaveAssetIfDirty(entry);
+                SaveRuleObjects(rule);
+                File.WriteAllBytes(entryPath, originalEntryBytes);
+                File.WriteAllBytes(rulePath, originalRuleBytes);
+                AssetDatabase.ImportAsset(entryPath, ImportAssetOptions.ForceUpdate);
+                AssetDatabase.ImportAsset(rulePath, ImportAssetOptions.ForceUpdate);
+            }
+        }
+
+        private static void SetSpawn(
+            EventRuleDefinition rule,
+            ProjectileDefinition definition,
+            bool useCurrentPrimary,
+            bool useHitOrigin,
+            float delay,
+            AttackEffectOverride attackEffectOverride,
+            bool primary)
+        {
+            SpawnProjectileResultModule result =
+                rule.Results.Select(entry => entry.Result)
+                    .OfType<SpawnProjectileResultModule>()
+                    .Single();
+            SerializedObject serialized = new SerializedObject(result);
+            serialized.FindProperty("projectileDefinition").objectReferenceValue = definition;
+            serialized.FindProperty("useCurrentPrimaryDefinition").boolValue = useCurrentPrimary;
+            serialized.FindProperty("useHitOrigin").boolValue = useHitOrigin;
+            serialized.FindProperty("delaySeconds").floatValue = delay;
+            serialized.FindProperty("attackEffectOverride").enumValueIndex =
+                (int)attackEffectOverride;
+            serialized.FindProperty("primaryProjectile").boolValue = primary;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void SetAttackEffectCondition(EventRuleDefinition rule, bool expected)
+        {
+            AttackEffectConditionModule condition =
+                rule.Conditions.OfType<AttackEffectConditionModule>().Single();
+            SerializedObject serialized = new SerializedObject(condition);
+            serialized.FindProperty("expectedCanTriggerHitEffects").boolValue = expected;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void SetForceFace(EventRuleDefinition rule, int face)
+        {
+            ForceFaceResultModule result =
+                rule.Results.Select(entry => entry.Result)
+                    .OfType<ForceFaceResultModule>()
+                    .Single();
+            SerializedObject serialized = new SerializedObject(result);
+            serialized.FindProperty("face").intValue = face;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void SaveRuleObjects(EventRuleDefinition rule)
+        {
+            foreach (UnityEngine.Object asset in AssetDatabase.LoadAllAssetsAtPath(
+                         AssetDatabase.GetAssetPath(rule)))
+            {
+                AssetDatabase.SaveAssetIfDirty(asset);
+            }
         }
 
         private sealed class LegacyCapture

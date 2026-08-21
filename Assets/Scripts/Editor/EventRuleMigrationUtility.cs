@@ -19,123 +19,37 @@ namespace DiceRevolver.Editor
             EnsureFolder(Root, "EventRules");
             EnsureFolder(Root + "/EventRules", "Core");
 
-            ProjectileSpawnEffect basicEffect = LoadRequired<ProjectileSpawnEffect>(
+            ProjectileSpawnEffect basic = LoadRequired<ProjectileSpawnEffect>(
                 Root + "/BulletEvents/FireBasicRevolverProjectile.asset");
-            ExtraShotOnFireEffect doubleTapEffect = LoadRequired<ExtraShotOnFireEffect>(
+            ExtraShotOnFireEffect doubleTap = LoadRequired<ExtraShotOnFireEffect>(
                 Root + "/BulletEvents/ExtraShotOnFireEffect.asset");
-            ExplosionOnHitEffect blastEffect = LoadRequired<ExplosionOnHitEffect>(
+            ExplosionOnHitEffect blast = LoadRequired<ExplosionOnHitEffect>(
                 Root + "/BulletEvents/ExplosionOnHitEffect.asset");
+            ForceFaceFourOnFireEndEffect loadedFour =
+                LoadRequired<ForceFaceFourOnFireEndEffect>(
+                    Root + "/BulletEvents/ForceFaceFourOnFireEndEffect.asset");
 
-            Migration[] migrations =
-            {
-                EnsureBasicShot(basicEffect),
-                EnsureDoubleTap(doubleTapEffect),
-                EnsureBlastRound(blastEffect),
-                EnsureLoadedFour()
-            };
-
-            AssetDatabase.SaveAssets();
-            for (int index = 0; index < migrations.Length; index++)
-            {
-                LinkEntryAfterParity(migrations[index]);
-            }
-
-            AssetDatabase.SaveAssets();
+            MigrateBasicShot(basic);
+            MigrateDoubleTap(doubleTap);
+            MigrateBlastRound(blast);
+            MigrateLoadedFour(loadedFour);
         }
 
-        private static Migration EnsureBasicShot(ProjectileSpawnEffect legacy)
-        {
-            Migration migration = EnsureRule(
-                "BasicShot",
-                DiceFaceSlotType.Base,
-                EventSignalMask.Base);
-            EnsureResult<SpawnProjectileResultModule>(migration.Rule, module =>
-            {
-                SerializedObject serialized = new SerializedObject(module);
-                serialized.FindProperty("projectileDefinition").objectReferenceValue =
-                    legacy.ProjectileDefinition;
-                serialized.FindProperty("delaySeconds").floatValue = legacy.DelaySeconds;
-                serialized.FindProperty("attackEffectOverride").enumValueIndex =
-                    (int)legacy.AttackEffectOverride;
-                serialized.FindProperty("primaryProjectile").boolValue = legacy.PrimaryProjectile;
-                serialized.ApplyModifiedPropertiesWithoutUndo();
-            });
-            return migration;
-        }
-
-        private static Migration EnsureDoubleTap(ExtraShotOnFireEffect legacy)
-        {
-            Migration migration = EnsureRule(
-                "DoubleTap",
-                DiceFaceSlotType.OnFire,
-                EventSignalMask.OnFire);
-            EnsureResult<SpawnProjectileResultModule>(migration.Rule, module =>
-            {
-                SerializedObject serialized = new SerializedObject(module);
-                serialized.FindProperty("useCurrentPrimaryDefinition").boolValue = true;
-                serialized.FindProperty("delaySeconds").floatValue = legacy.DelaySeconds;
-                serialized.FindProperty("attackEffectOverride").enumValueIndex =
-                    (int)legacy.AttackEffectOverride;
-                serialized.FindProperty("primaryProjectile").boolValue = false;
-                serialized.ApplyModifiedPropertiesWithoutUndo();
-            });
-            return migration;
-        }
-
-        private static Migration EnsureBlastRound(ExplosionOnHitEffect legacy)
-        {
-            Migration migration = EnsureRule(
-                "BlastRound",
-                DiceFaceSlotType.OnHit,
-                EventSignalMask.OnHit);
-            EnsureRuleCondition<AttackEffectConditionModule>(migration.Rule, module =>
-            {
-                SerializedObject serialized = new SerializedObject(module);
-                serialized.FindProperty("expectedCanTriggerHitEffects").boolValue = true;
-                serialized.ApplyModifiedPropertiesWithoutUndo();
-            });
-            EnsureResult<SpawnProjectileResultModule>(migration.Rule, module =>
-            {
-                SerializedObject serialized = new SerializedObject(module);
-                serialized.FindProperty("projectileDefinition").objectReferenceValue =
-                    legacy.ExplosionProjectileDefinition;
-                serialized.FindProperty("useHitOrigin").boolValue = true;
-                serialized.FindProperty("attackEffectOverride").enumValueIndex =
-                    (int)AttackEffectOverride.UseProjectileDefault;
-                serialized.FindProperty("primaryProjectile").boolValue = false;
-                serialized.ApplyModifiedPropertiesWithoutUndo();
-            });
-            return migration;
-        }
-
-        private static Migration EnsureLoadedFour()
-        {
-            Migration migration = EnsureRule(
-                "LoadedFour",
-                DiceFaceSlotType.OnFireEnd,
-                EventSignalMask.OnFireEnd);
-            EnsureResult<ForceFaceResultModule>(migration.Rule, module =>
-            {
-                SerializedObject serialized = new SerializedObject(module);
-                serialized.FindProperty("face").intValue = 4;
-                serialized.ApplyModifiedPropertiesWithoutUndo();
-            });
-            return migration;
-        }
-
-        private static Migration EnsureRule(
-            string assetName,
+        public static EventRuleDefinition MigrateRule(
+            string entryPath,
+            string rulePath,
             DiceFaceSlotType slot,
-            EventSignalMask signal)
+            EventSignalMask signal,
+            UnityEngine.Object expectedLegacyEffect,
+            Action<EventRuleDefinition> ensureModules,
+            Func<EventRuleDefinition, bool> hasParity)
         {
-            string entryPath = $"{Root}/DiceFaces/{assetName}.asset";
-            string rulePath = $"{CoreRuleFolder}/{assetName}Rule.asset";
             DiceFaceEntry entry = LoadRequired<DiceFaceEntry>(entryPath);
             EventRuleDefinition rule = AssetDatabase.LoadAssetAtPath<EventRuleDefinition>(rulePath);
             if (rule == null)
             {
                 rule = ScriptableObject.CreateInstance<EventRuleDefinition>();
-                rule.name = assetName + "Rule";
+                rule.name = System.IO.Path.GetFileNameWithoutExtension(rulePath);
                 AssetDatabase.CreateAsset(rule, rulePath);
                 SerializedObject serialized = new SerializedObject(rule);
                 serialized.FindProperty("displayName").stringValue = entry.DisplayName;
@@ -143,11 +57,149 @@ namespace DiceRevolver.Editor
                 serialized.FindProperty("displayColor").colorValue = entry.DisplayColor;
                 serialized.FindProperty("allowedSlots").intValue = (int)ToMask(slot);
                 serialized.ApplyModifiedPropertiesWithoutUndo();
+                AssetDatabase.SaveAssetIfDirty(rule);
             }
 
             EnsureTrigger(rule, signal);
-            EditorUtility.SetDirty(rule);
-            return new Migration(entryPath, rulePath, rule, slot, signal);
+            ensureModules?.Invoke(rule);
+            SaveRuleObjects(rule);
+            AssetDatabase.ImportAsset(rulePath, ImportAssetOptions.ForceUpdate);
+            rule = LoadRequired<EventRuleDefinition>(rulePath);
+
+            bool equivalent = HasExpectedTriggerAndSlot(rule, slot, signal) &&
+                (hasParity?.Invoke(rule) ?? false);
+            if (equivalent)
+            {
+                LinkEntryAfterParity(entryPath, rule, slot, expectedLegacyEffect);
+            }
+
+            return rule;
+        }
+
+        private static void MigrateBasicShot(ProjectileSpawnEffect legacy)
+        {
+            MigrateRule(
+                Root + "/DiceFaces/BasicShot.asset",
+                CoreRuleFolder + "/BasicShotRule.asset",
+                DiceFaceSlotType.Base,
+                EventSignalMask.Base,
+                legacy,
+                rule => EnsureResult<SpawnProjectileResultModule>(rule, module =>
+                {
+                    SerializedObject serialized = new SerializedObject(module);
+                    serialized.FindProperty("projectileDefinition").objectReferenceValue =
+                        legacy.ProjectileDefinition;
+                    serialized.FindProperty("delaySeconds").floatValue = legacy.DelaySeconds;
+                    serialized.FindProperty("attackEffectOverride").enumValueIndex =
+                        (int)legacy.AttackEffectOverride;
+                    serialized.FindProperty("primaryProjectile").boolValue =
+                        legacy.PrimaryProjectile;
+                    serialized.ApplyModifiedPropertiesWithoutUndo();
+                }),
+                rule => HasSingleSpawnParity(
+                    rule,
+                    legacy.ProjectileDefinition,
+                    false,
+                    false,
+                    legacy.DelaySeconds,
+                    legacy.AttackEffectOverride,
+                    legacy.PrimaryProjectile,
+                    false));
+        }
+
+        private static void MigrateDoubleTap(ExtraShotOnFireEffect legacy)
+        {
+            MigrateRule(
+                Root + "/DiceFaces/DoubleTap.asset",
+                CoreRuleFolder + "/DoubleTapRule.asset",
+                DiceFaceSlotType.OnFire,
+                EventSignalMask.OnFire,
+                legacy,
+                rule => EnsureResult<SpawnProjectileResultModule>(rule, module =>
+                {
+                    SerializedObject serialized = new SerializedObject(module);
+                    serialized.FindProperty("useCurrentPrimaryDefinition").boolValue = true;
+                    serialized.FindProperty("delaySeconds").floatValue = legacy.DelaySeconds;
+                    serialized.FindProperty("attackEffectOverride").enumValueIndex =
+                        (int)legacy.AttackEffectOverride;
+                    serialized.FindProperty("primaryProjectile").boolValue = false;
+                    serialized.ApplyModifiedPropertiesWithoutUndo();
+                }),
+                rule => HasSingleSpawnParity(
+                    rule,
+                    null,
+                    true,
+                    false,
+                    legacy.DelaySeconds,
+                    legacy.AttackEffectOverride,
+                    false,
+                    false));
+        }
+
+        private static void MigrateBlastRound(ExplosionOnHitEffect legacy)
+        {
+            MigrateRule(
+                Root + "/DiceFaces/BlastRound.asset",
+                CoreRuleFolder + "/BlastRoundRule.asset",
+                DiceFaceSlotType.OnHit,
+                EventSignalMask.OnHit,
+                legacy,
+                rule =>
+                {
+                    EnsureRuleCondition<AttackEffectConditionModule>(rule, module =>
+                    {
+                        SerializedObject serialized = new SerializedObject(module);
+                        serialized.FindProperty("expectedCanTriggerHitEffects").boolValue = true;
+                        serialized.ApplyModifiedPropertiesWithoutUndo();
+                    });
+                    EnsureResult<SpawnProjectileResultModule>(rule, module =>
+                    {
+                        SerializedObject serialized = new SerializedObject(module);
+                        serialized.FindProperty("projectileDefinition").objectReferenceValue =
+                            legacy.ExplosionProjectileDefinition;
+                        serialized.FindProperty("useHitOrigin").boolValue = true;
+                        serialized.FindProperty("attackEffectOverride").enumValueIndex =
+                            (int)AttackEffectOverride.UseProjectileDefault;
+                        serialized.FindProperty("primaryProjectile").boolValue = false;
+                        serialized.ApplyModifiedPropertiesWithoutUndo();
+                    });
+                },
+                rule => HasSingleAttackEffectCondition(rule, true) &&
+                    HasSingleSpawnParity(
+                        rule,
+                        legacy.ExplosionProjectileDefinition,
+                        false,
+                        true,
+                        0f,
+                        AttackEffectOverride.UseProjectileDefault,
+                        false,
+                        true));
+        }
+
+        private static void MigrateLoadedFour(ForceFaceFourOnFireEndEffect legacy)
+        {
+            MigrateRule(
+                Root + "/DiceFaces/LoadedFour.asset",
+                CoreRuleFolder + "/LoadedFourRule.asset",
+                DiceFaceSlotType.OnFireEnd,
+                EventSignalMask.OnFireEnd,
+                legacy,
+                rule => EnsureResult<ForceFaceResultModule>(rule, module =>
+                {
+                    SerializedObject serialized = new SerializedObject(module);
+                    serialized.FindProperty("face").intValue = 4;
+                    serialized.ApplyModifiedPropertiesWithoutUndo();
+                }),
+                rule =>
+                {
+                    if (!HasOneResultWithoutLocalConditions(rule, out EventResultModule result) ||
+                        result is not ForceFaceResultModule force || rule.Conditions.Count != 0)
+                    {
+                        return false;
+                    }
+
+                    return new SerializedObject(force).FindProperty("face").intValue == 4;
+                });
         }
 
         private static void EnsureTrigger(EventRuleDefinition rule, EventSignalMask signal)
@@ -165,8 +217,8 @@ namespace DiceRevolver.Editor
             serializedModule.ApplyModifiedPropertiesWithoutUndo();
             trigger.objectReferenceValue = module;
             serializedRule.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(rule);
-            EditorUtility.SetDirty(module);
+            AssetDatabase.SaveAssetIfDirty(module);
+            AssetDatabase.SaveAssetIfDirty(rule);
         }
 
         private static void EnsureRuleCondition<T>(EventRuleDefinition rule, Action<T> configure)
@@ -184,8 +236,8 @@ namespace DiceRevolver.Editor
             conditions.arraySize = 1;
             conditions.GetArrayElementAtIndex(0).objectReferenceValue = module;
             serializedRule.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(rule);
-            EditorUtility.SetDirty(module);
+            AssetDatabase.SaveAssetIfDirty(module);
+            AssetDatabase.SaveAssetIfDirty(rule);
         }
 
         private static void EnsureResult<T>(EventRuleDefinition rule, Action<T> configure)
@@ -205,8 +257,8 @@ namespace DiceRevolver.Editor
             entry.FindPropertyRelative("conditions").arraySize = 0;
             entry.FindPropertyRelative("result").objectReferenceValue = module;
             serializedRule.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(rule);
-            EditorUtility.SetDirty(module);
+            AssetDatabase.SaveAssetIfDirty(module);
+            AssetDatabase.SaveAssetIfDirty(rule);
         }
 
         private static T CreateModule<T>(EventRuleDefinition rule) where T : ScriptableObject
@@ -217,22 +269,23 @@ namespace DiceRevolver.Editor
             return module;
         }
 
-        private static void LinkEntryAfterParity(Migration migration)
+        private static void LinkEntryAfterParity(
+            string entryPath,
+            EventRuleDefinition rule,
+            DiceFaceSlotType slot,
+            UnityEngine.Object expectedLegacyEffect)
         {
-            DiceFaceEntry entry = LoadRequired<DiceFaceEntry>(migration.EntryPath);
-            EventRuleDefinition rule = LoadRequired<EventRuleDefinition>(migration.RulePath);
-            if (!HasExpectedShape(rule, migration.Slot, migration.Signal))
+            DiceFaceEntry entry = LoadRequired<DiceFaceEntry>(entryPath);
+            SerializedObject serializedEntry = new SerializedObject(entry);
+            if (!HasOnlyExpectedLegacyReferences(serializedEntry, slot, expectedLegacyEffect))
             {
                 return;
             }
 
-            SerializedObject serializedEntry = new SerializedObject(entry);
             SerializedProperty ruleReference = serializedEntry.FindProperty("rule");
             if (ruleReference.objectReferenceValue == null)
             {
                 ruleReference.objectReferenceValue = rule;
-                serializedEntry.ApplyModifiedPropertiesWithoutUndo();
-                serializedEntry.Update();
             }
 
             if (ruleReference.objectReferenceValue != rule)
@@ -240,39 +293,144 @@ namespace DiceRevolver.Editor
                 return;
             }
 
-            serializedEntry.FindProperty("effect").objectReferenceValue = null;
-            ClearArray(serializedEntry.FindProperty("onFireEffects"));
-            ClearArray(serializedEntry.FindProperty("onHitEffects"));
-            ClearArray(serializedEntry.FindProperty("onFireEndEffects"));
+            string legacyProperty = slot == DiceFaceSlotType.Passive
+                ? "passiveEffect"
+                : "effect";
+            serializedEntry.FindProperty(legacyProperty).objectReferenceValue = null;
+            if (slot != DiceFaceSlotType.Passive)
+            {
+                ClearArray(serializedEntry.FindProperty("onFireEffects"));
+                ClearArray(serializedEntry.FindProperty("onHitEffects"));
+                ClearArray(serializedEntry.FindProperty("onFireEndEffects"));
+            }
+
             serializedEntry.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(entry);
+            AssetDatabase.SaveAssetIfDirty(entry);
+            AssetDatabase.ImportAsset(entryPath, ImportAssetOptions.ForceUpdate);
         }
 
-        private static bool HasExpectedShape(
-            EventRuleDefinition rule,
+        private static bool HasOnlyExpectedLegacyReferences(
+            SerializedObject serializedEntry,
             DiceFaceSlotType slot,
-            EventSignalMask signal)
+            UnityEngine.Object expectedLegacyEffect)
         {
-            if (rule == null || !rule.AllowsSlot(slot) ||
-                rule.Trigger is not SignalTypeTriggerModule trigger ||
-                trigger.Signals != signal || rule.Results == null || rule.Results.Count == 0 ||
-                rule.Results.Any(entry => entry?.Result == null))
+            if (expectedLegacyEffect == null ||
+                (slot == DiceFaceSlotType.Passive && expectedLegacyEffect is not PassiveEventEffect) ||
+                (slot != DiceFaceSlotType.Passive && expectedLegacyEffect is not BulletEventEffect))
             {
                 return false;
             }
 
-            return slot switch
+            string legacyProperty = slot == DiceFaceSlotType.Passive
+                ? "passiveEffect"
+                : "effect";
+            UnityEngine.Object direct = serializedEntry.FindProperty(legacyProperty)
+                .objectReferenceValue;
+            if (direct != null && direct != expectedLegacyEffect)
             {
-                DiceFaceSlotType.Base => rule.FindPrimaryProjectileDefinition() != null,
-                DiceFaceSlotType.OnFire => rule.Results.Any(
-                    entry => entry.Result is SpawnProjectileResultModule),
-                DiceFaceSlotType.OnHit => rule.Conditions.Any(
-                        condition => condition is AttackEffectConditionModule) &&
-                    rule.Results.Any(entry => entry.Result is SpawnProjectileResultModule),
-                DiceFaceSlotType.OnFireEnd => rule.Results.Any(
-                    entry => entry.Result is ForceFaceResultModule),
-                _ => false
-            };
+                return false;
+            }
+
+            if (slot == DiceFaceSlotType.Passive)
+            {
+                return true;
+            }
+
+            return ArrayContainsOnly(serializedEntry.FindProperty("onFireEffects"), expectedLegacyEffect) &&
+                ArrayContainsOnly(serializedEntry.FindProperty("onHitEffects"), expectedLegacyEffect) &&
+                ArrayContainsOnly(serializedEntry.FindProperty("onFireEndEffects"), expectedLegacyEffect);
+        }
+
+        private static bool ArrayContainsOnly(SerializedProperty array, UnityEngine.Object expected)
+        {
+            if (array == null || !array.isArray)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < array.arraySize; index++)
+            {
+                UnityEngine.Object value = array.GetArrayElementAtIndex(index).objectReferenceValue;
+                if (value != null && value != expected)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool HasExpectedTriggerAndSlot(
+            EventRuleDefinition rule,
+            DiceFaceSlotType slot,
+            EventSignalMask signal)
+        {
+            return rule != null && rule.AllowedSlots == ToMask(slot) &&
+                rule.Trigger is SignalTypeTriggerModule trigger && trigger.Signals == signal;
+        }
+
+        private static bool HasSingleSpawnParity(
+            EventRuleDefinition rule,
+            ProjectileDefinition definition,
+            bool useCurrentPrimary,
+            bool useHitOrigin,
+            float delay,
+            AttackEffectOverride attackEffectOverride,
+            bool primary,
+            bool allowRuleConditions)
+        {
+            if ((!allowRuleConditions && rule.Conditions.Count != 0) ||
+                !HasOneResultWithoutLocalConditions(rule, out EventResultModule result) ||
+                result is not SpawnProjectileResultModule spawn)
+            {
+                return false;
+            }
+
+            SerializedObject serialized = new SerializedObject(spawn);
+            return serialized.FindProperty("projectileDefinition").objectReferenceValue == definition &&
+                serialized.FindProperty("useCurrentPrimaryDefinition").boolValue == useCurrentPrimary &&
+                serialized.FindProperty("useHitOrigin").boolValue == useHitOrigin &&
+                Mathf.Approximately(serialized.FindProperty("delaySeconds").floatValue, delay) &&
+                serialized.FindProperty("attackEffectOverride").enumValueIndex ==
+                    (int)attackEffectOverride &&
+                serialized.FindProperty("primaryProjectile").boolValue == primary;
+        }
+
+        private static bool HasSingleAttackEffectCondition(EventRuleDefinition rule, bool expected)
+        {
+            if (rule.Conditions.Count != 1 ||
+                rule.Conditions[0] is not AttackEffectConditionModule condition)
+            {
+                return false;
+            }
+
+            return new SerializedObject(condition)
+                .FindProperty("expectedCanTriggerHitEffects").boolValue == expected;
+        }
+
+        private static bool HasOneResultWithoutLocalConditions(
+            EventRuleDefinition rule,
+            out EventResultModule result)
+        {
+            result = null;
+            if (rule.Results == null || rule.Results.Count != 1 ||
+                rule.Results[0] == null || rule.Results[0].Result == null ||
+                rule.Results[0].Conditions.Count != 0)
+            {
+                return false;
+            }
+
+            result = rule.Results[0].Result;
+            return true;
+        }
+
+        private static void SaveRuleObjects(EventRuleDefinition rule)
+        {
+            string path = AssetDatabase.GetAssetPath(rule);
+            foreach (UnityEngine.Object asset in AssetDatabase.LoadAllAssetsAtPath(path))
+            {
+                AssetDatabase.SaveAssetIfDirty(asset);
+            }
         }
 
         private static void ClearArray(SerializedProperty property)
@@ -314,29 +472,6 @@ namespace DiceRevolver.Editor
             {
                 AssetDatabase.CreateFolder(parent, child);
             }
-        }
-
-        private readonly struct Migration
-        {
-            public Migration(
-                string entryPath,
-                string rulePath,
-                EventRuleDefinition rule,
-                DiceFaceSlotType slot,
-                EventSignalMask signal)
-            {
-                EntryPath = entryPath;
-                RulePath = rulePath;
-                Rule = rule;
-                Slot = slot;
-                Signal = signal;
-            }
-
-            public string EntryPath { get; }
-            public string RulePath { get; }
-            public EventRuleDefinition Rule { get; }
-            public DiceFaceSlotType Slot { get; }
-            public EventSignalMask Signal { get; }
         }
     }
 }
