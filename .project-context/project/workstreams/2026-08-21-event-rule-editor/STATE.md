@@ -1,8 +1,8 @@
 # 事件配置页面
 
 - ID: `2026-08-21-event-rule-editor`
-- Status: `planned`
-- Branch: `main`
+- Status: `active`
+- Branch: `codex/event-rule-editor`
 - Created: `2026-08-21`
 - Updated: `2026-08-21`
 
@@ -26,7 +26,7 @@
 
 ## 待办
 
-1. 选择 Subagent-Driven 或 Inline Execution 执行已完成的实施计划。
+1. 按 Subagent-Driven Development 执行已完成的实施计划。
 2. 建立 Rule、Trigger、Condition、Result 数据接口和纯 C# 执行器。
 3. 建立三栏 Unity Editor 页面、模块自动发现、SubAsset 编辑和即时校验。
 4. 增加旧 Effect 兼容适配器。
@@ -36,12 +36,12 @@
 
 ## 当前正在进行
 
-- 实施计划已完成并通过规格覆盖、占位符和接口一致性自审；等待用户选择执行方式。
+- 已在隔离工作树 `codex/event-rule-editor` 启动 Subagent-Driven Development；实施前 Unity 基线已完成，随后实施 Task 1。
 
 ## 下一步
 
-1. 读取[实施计划](../../../../docs/superpowers/plans/2026-08-21-event-rule-editor.md)，选择执行方式。
-2. 从纯 C# 规则数据模型、执行器和测试开始实施。
+1. 从 Task 1 纯 C# 规则数据模型、信号、状态和受限服务上下文开始测试驱动实施。
+2. 每个任务完成实现、规格与质量审查后再推进下一任务。
 
 ## 已完成
 
@@ -49,6 +49,7 @@
 - 确认 Unity Editor 深色三栏页面的可视化方向和主要交互层级。
 - 战斗事件因果 Debug 已可作为编辑器 Play Mode 调试区的数据来源。
 - 完成 10 个独立验收任务、69 个细分步骤的测试先行实施计划，并明确受保护 Prefab、旧 Effect 兼容和 Ground Y 豁免边界。
+- 用户选择 Subagent-Driven Development；已建立 `codex/event-rule-editor` 隔离工作树并通过上下文检查。
 
 ## 阻塞
 
@@ -80,4 +81,5 @@
 
 - [passed] `2026-08-21`：用户确认三栏事件配置页面的可视化方向。
 - [passed] `2026-08-21`：实施计划完成规格覆盖、占位符和跨任务接口一致性自审。
-- [not-run] `2026-08-21`：尚未开始代码实施，因此未运行本工作流的 Unity 测试。
+- [passed] `2026-08-21`：隔离工作树上下文检查输出 `[context:ok]`。
+- [failed] `2026-08-21`：实施前完整 EditMode `251/252`、`0 skipped`；唯一失败为 `RenderingLayerContractTests.PrototypeSceneUsesZeroHeightSpriteGroundAndEntities`，即已批准的 Ground `Y=-0.01` 例外。

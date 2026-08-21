@@ -36,7 +36,7 @@
 
 ## 活跃工作流
 
-- [2026-08-21 事件配置页面](workstreams/2026-08-21-event-rule-editor/STATE.md)（`planned`；设计稿与 10 任务实施计划已完成，待选择执行方式并开发）
+- [2026-08-21 事件配置页面](workstreams/2026-08-21-event-rule-editor/STATE.md)（`active`；已选择 Subagent-Driven Development，并在隔离工作树执行 10 任务实施计划）
 
 ## 完成历史
 

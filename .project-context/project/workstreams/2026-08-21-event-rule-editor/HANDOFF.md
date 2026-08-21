@@ -2,11 +2,11 @@
 
 ## 当前状态
 
-- `planned`，需求、正式设计稿、页面视觉方向和测试先行实施计划均已完成，尚未开始代码实施。
+- `active`，需求、正式设计稿、页面视觉方向和测试先行实施计划均已完成；已在 `codex/event-rule-editor` 隔离工作树启动 Subagent-Driven Development。
 
 ## 下一步首个动作
 
-- 读取[实施计划](../../../../docs/superpowers/plans/2026-08-21-event-rule-editor.md)，确认采用 Subagent-Driven 或 Inline Execution；随后从纯 C# 规则数据模型和执行器开始测试驱动实现。
+- 先读取本计划的 `.superpowers/sdd/2026-08-21-event-rule-editor/progress.md`，核对 Unity 基线与任务完成行；若 Task 1 尚未完成，则从规则数据模型、Signal、状态和受限服务上下文继续测试驱动实现。
 
 ## 当前方案及原因
 
@@ -28,7 +28,8 @@
 ## 尚未完成
 
 - 尚未创建规则运行时、EditorWindow、兼容适配器或迁移资源。
-- 尚未运行本工作流的 Unity 测试和可见 Play Mode 验收。
+- 实施前完整 EditMode 基线为 `[failed] 251/252`、`0 skipped`；唯一失败为已批准的 Ground `Y=-0.01` 契约差异。
+- 尚未运行可见 Play Mode 验收。
 
 ## 必须保护
 
