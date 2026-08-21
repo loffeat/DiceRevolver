@@ -151,12 +151,8 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
-        public void RuleFinisherPriorityMatchesLegacyFinisherForTheSameCandidates()
+        public void RuleFinisherKeepsBoundFaceUntilItBecomesTheOnlyCandidate()
         {
-            FinisherPassiveEffect legacyEffect = Own(
-                ScriptableObject.CreateInstance<FinisherPassiveEffect>());
-            using DicePassiveRuntime legacy = new DicePassiveRuntime();
-            legacy.RebuildFace(4, legacyEffect);
             SetDrawPriorityResultModule priority = Own(
                 ScriptableObject.CreateInstance<SetDrawPriorityResultModule>());
             Set(priority, "priority", 1);
@@ -168,14 +164,13 @@ namespace DiceRevolver.Tests
                 new EventConditionModule[] { ownerFace })));
             int[] remaining = { 1, 4, 5 };
 
-            DiceDrawConstraintResult legacyResult = legacy.FilterDrawCandidates(remaining, null);
             DiceDrawConstraintResult ruleResult = rules.FilterDrawCandidates(
                 remaining,
                 remaining,
                 null);
 
-            Assert.That(legacyResult.Candidates, Is.EqualTo(new[] { 1, 5 }));
             Assert.That(ruleResult.Candidates, Is.EqualTo(new[] { 1, 5 }));
+            Assert.That(ruleResult.ForcedFaceEligible, Is.False);
         }
 
         [Test]

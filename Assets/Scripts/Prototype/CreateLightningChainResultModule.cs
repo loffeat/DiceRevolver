@@ -49,7 +49,7 @@ namespace DiceRevolver.Prototype
                 Mathf.Max(0f, searchRadius),
                 lightningTag,
                 origin.Projectile);
-            IReadOnlyList<ProjectileHandle> targets = ElectromagneticResonanceEffect.SelectTargets(
+            IReadOnlyList<ProjectileHandle> targets = LightningChainTargetSelector.Select(
                 candidates,
                 Mathf.Max(0, maximumConnections),
                 count => UnityEngine.Random.Range(0, count));

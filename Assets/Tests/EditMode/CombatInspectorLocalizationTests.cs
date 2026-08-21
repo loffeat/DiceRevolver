@@ -53,13 +53,18 @@ namespace DiceRevolver.Tests
             yield return Port<ProjectileDefinitionLibrary>("definitions", "弹丸定义库");
             yield return Port<ProjectileTypeLibrary>("types", "弹幕类型库");
             yield return Port<ProjectileTagLibrary>("tags", "弹幕标签库");
-            yield return Port<TeslaPassiveEffect>("lightningTag", "雷电标签");
-            yield return Port<TeslaPassiveEffect>("damagePerStack", "每层伤害提升比例");
-            yield return Port<EchoSynergyPassiveEffect>("maximumTriggersPerChamber", "每轮最大呼应次数");
-            yield return Port<EchoSynergyPassiveEffect>("maximumSpreadAngle", "最大自然散布角度");
-            yield return Port<EchoSynergyPassiveEffect>("minimumSpreadSeparation", "同帧最小角度间隔");
-            yield return Port<ElectromagneticResonanceEffect>("searchRadius", "共鸣搜索半径");
-            yield return Port<ElectromagneticResonanceEffect>("maximumConnections", "最大连接数量");
+            yield return Port<CreateLightningChainResultModule>("lightningTag", "雷电标签");
+            yield return Port<CreateLightningChainResultModule>("chainDefinition", "闪电链定义");
+            yield return Port<CreateLightningChainResultModule>("searchRadius", "共鸣搜索半径");
+            yield return Port<CreateLightningChainResultModule>("maximumConnections", "最大连接数量");
+            yield return Port<MultiplyProjectileDamageFromCounterResultModule>(
+                "damagePerStack", "每层伤害倍率增量");
+            yield return Port<RequestBonusActivationResultModule>(
+                "maximumTriggers", "每轮最大触发次数");
+            yield return Port<RequestBonusActivationResultModule>(
+                "maximumSpreadAngle", "最大散布角度");
+            yield return Port<RequestBonusActivationResultModule>(
+                "minimumSpreadSeparation", "最小散布间隔");
             yield return Port<LightningChainDefinition>("damage", "闪电链伤害");
             yield return Port<LightningChainDefinition>("chainWidth", "闪电链宽度");
             yield return Port<CombatDebugSettings>("debugEnabled", "启用战斗事件 Debug");

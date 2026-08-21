@@ -80,8 +80,6 @@ namespace DiceRevolver.Tests
                 Assert.That(faceLibrary.Entries.Any(item => item.name == entryName), Is.True);
             }
 
-            Assert.That(eventLibrary.Effects.Any(item => item is ElectromagneticResonanceEffect), Is.True);
-            Assert.That(eventLibrary.Effects.Any(item => item is ChainReactionOnFireEndEffect), Is.True);
             Assert.That(eventLibrary.Effects.Any(item => item is ProjectileSpawnEffect &&
                 ((ProjectileSpawnEffect)item).ProjectileDefinition?.name == "LightningOrb"), Is.True);
         }
