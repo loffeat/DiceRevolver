@@ -38,6 +38,7 @@ namespace DiceRevolver.Editor
             Array.Empty<EventRuleValidationIssue>();
         [NonSerialized] private IReadOnlyList<DiceFaceEntry> references = Array.Empty<DiceFaceEntry>();
         [NonSerialized] private EventRuleDebugSource debugSource;
+        [NonSerialized] private int editorRefreshTickCount;
 
         internal EventRuleEditorSelection SelectionState =>
             selectionState ??= new EventRuleEditorSelection();
@@ -45,6 +46,7 @@ namespace DiceRevolver.Editor
         internal IReadOnlyList<EventRuleDefinition> VisibleRules =>
             visibleRules ?? (IReadOnlyList<EventRuleDefinition>)RefreshRules();
         internal IReadOnlyList<EventRuleValidationIssue> ValidationIssues => validationIssues;
+        internal int EditorRefreshTickCount => editorRefreshTickCount;
 
         [MenuItem("Window/Dice Revolver/事件规则编辑器")]
         public static void Open()
@@ -61,6 +63,8 @@ namespace DiceRevolver.Editor
         {
             selectionState ??= new EventRuleEditorSelection();
             debugSource ??= new EventRuleDebugSource();
+            EditorApplication.update -= HandleEditorUpdate;
+            EditorApplication.update += HandleEditorUpdate;
             EditorApplication.projectChanged += HandleProjectChanged;
             RefreshRules();
             RefreshValidation();
@@ -69,7 +73,17 @@ namespace DiceRevolver.Editor
 
         private void OnDisable()
         {
+            EditorApplication.update -= HandleEditorUpdate;
             EditorApplication.projectChanged -= HandleProjectChanged;
+        }
+
+        private void HandleEditorUpdate()
+        {
+            editorRefreshTickCount++;
+            if (EditorApplication.isPlaying)
+            {
+                Repaint();
+            }
         }
 
         private void HandleProjectChanged()

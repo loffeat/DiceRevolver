@@ -106,8 +106,7 @@ namespace DiceRevolver.Prototype
             string detail = string.IsNullOrWhiteSpace(description)
                 ? $"{stage}: {status}"
                 : $"{stage}: {status} - {description}";
-            bool verbose = stage != null &&
-                stage.IndexOf("condition", StringComparison.OrdinalIgnoreCase) >= 0;
+            bool verbose = CombatDebugTrace.IsVerboseRuleRecord(stage, status);
             context.Activation.RecordDebug(
                 MapEventType(stage),
                 "规则",

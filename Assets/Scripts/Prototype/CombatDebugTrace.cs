@@ -99,6 +99,18 @@ namespace DiceRevolver.Prototype
 
         public IReadOnlyList<CombatDebugRecord> Records => records;
 
+        internal static bool IsVerboseRuleRecord(
+            string stage,
+            EventResultStatus status)
+        {
+            bool conditionStage = stage != null &&
+                stage.IndexOf("condition", StringComparison.OrdinalIgnoreCase) >= 0;
+            bool unmatchedTrigger =
+                string.Equals(stage, "trigger", StringComparison.OrdinalIgnoreCase) &&
+                status == EventResultStatus.Skipped;
+            return conditionStage || unmatchedTrigger;
+        }
+
         public CombatDebugScope BeginActivation(int face, bool isBonusActivation, CombatDebugScope parent, float timestamp)
         {
             long activationId = nextActivationId++;

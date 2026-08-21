@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using DiceRevolver.Editor;
@@ -6,6 +7,7 @@ using DiceRevolver.Prototype;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
 
 namespace DiceRevolver.Tests
@@ -15,6 +17,7 @@ namespace DiceRevolver.Tests
         private const string TempFolder = "Assets/Tests/TempEventRuleWindow";
         private EventRuleEditorWindow window;
         private GameObject gunOwner;
+        private GameObject debugOverlayOwner;
 
         [SetUp]
         public void SetUp()
@@ -36,6 +39,11 @@ namespace DiceRevolver.Tests
             if (gunOwner != null)
             {
                 Object.DestroyImmediate(gunOwner);
+            }
+
+            if (debugOverlayOwner != null)
+            {
+                Object.DestroyImmediate(debugOverlayOwner);
             }
 
             DeleteTempFolder();
@@ -250,6 +258,91 @@ namespace DiceRevolver.Tests
 
             Assert.That(snapshot.Records, Is.Empty);
             Assert.That(snapshot.Message, Does.Contain("Gun"));
+        }
+
+        [Test]
+        public void SkippedRuleTriggerStaysInEditorProjectionButDoesNotReachDefaultHud()
+        {
+            gunOwner = new GameObject("Selected Gun", typeof(DiceRevolverGun));
+            DiceRevolverGun gun = gunOwner.GetComponent<DiceRevolverGun>();
+            debugOverlayOwner = new GameObject(
+                "Combat Debug Overlay",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(UnityEngine.UI.Text),
+                typeof(CombatDebugOverlay));
+            UnityEngine.UI.Text label = debugOverlayOwner.GetComponent<UnityEngine.UI.Text>();
+            CombatDebugOverlay overlay = debugOverlayOwner.GetComponent<CombatDebugOverlay>();
+            overlay.Configure(label, gun.DebugTrace, 4, 0f, 16);
+            Selection.activeGameObject = gunOwner;
+
+            EventSignal signal = new EventSignal(
+                EventSignalType.DrawCandidate,
+                3,
+                3,
+                DiceFaceSlotType.Passive,
+                null,
+                null,
+                default,
+                null,
+                default,
+                Array.Empty<int>(),
+                3,
+                default,
+                null,
+                false,
+                default);
+            PassiveEventRuleServices services = new PassiveEventRuleServices(
+                signal,
+                null,
+                null,
+                gun.DebugTrace,
+                () => 4f,
+                null);
+            EventRuleDefinition rule = ScriptableObject.CreateInstance<EventRuleDefinition>();
+            rule.name = "Unmatched Rule";
+            try
+            {
+                services.RecordRuleDebug(
+                    rule,
+                    "trigger",
+                    "Trigger did not match.",
+                    EventResultStatus.Skipped);
+
+                EventRuleDebugSnapshot editorSnapshot =
+                    new EventRuleDebugSource(() => true).ReadSelected();
+                Assert.That(gun.DebugTrace.Records, Has.Count.EqualTo(1));
+                Assert.That(gun.DebugTrace.Records[0].Verbose, Is.True);
+                Assert.That(label.text, Does.Not.Contain("Unmatched Rule"));
+                Assert.That(editorSnapshot.Records.Select(record => record.Name),
+                    Does.Contain("Unmatched Rule"));
+            }
+            finally
+            {
+                Object.DestroyImmediate(rule);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator WindowReceivesEditorRefreshTicksOnlyWhileItIsEnabled()
+        {
+            int initialTicks = window.EditorRefreshTickCount;
+            for (int attempt = 0; attempt < 3 && window.EditorRefreshTickCount == initialTicks; attempt++)
+            {
+                yield return null;
+            }
+
+            Assert.That(window.EditorRefreshTickCount, Is.GreaterThan(initialTicks));
+
+            EventRuleEditorWindow disabledWindow = window;
+            Object.DestroyImmediate(window);
+            window = null;
+            yield return null;
+            int stoppedTicks = disabledWindow.EditorRefreshTickCount;
+            yield return null;
+            yield return null;
+
+            Assert.That(disabledWindow.EditorRefreshTickCount, Is.EqualTo(stoppedTicks));
         }
 
         [Test]
