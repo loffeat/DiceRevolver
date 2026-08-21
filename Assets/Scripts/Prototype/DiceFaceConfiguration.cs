@@ -19,6 +19,11 @@ namespace DiceRevolver.Prototype
                 return false;
             }
 
+            if (entry.Rule != null && !entry.Rule.CanEquip(entry.SlotType))
+            {
+                return false;
+            }
+
             SetEntry(entry.SlotType, entry);
             return true;
         }
@@ -127,12 +132,23 @@ namespace DiceRevolver.Prototype
         public BulletEventEffect GetEffect(DiceFaceSlotType slotType)
         {
             DiceFaceEntry entry = GetEntry(slotType);
+            if (entry != null && entry.Rule != null)
+            {
+                return null;
+            }
+
             if (entry != null && entry.Effect != null)
             {
                 return entry.Effect;
             }
 
             return slotType == DiceFaceSlotType.Base ? legacyBaseEffect : null;
+        }
+
+        public EventRuleDefinition GetRule(DiceFaceSlotType slotType)
+        {
+            DiceFaceEntry entry = GetEntry(slotType);
+            return entry != null ? entry.Rule : null;
         }
 
         public PassiveEventEffect GetPassiveEffect()
@@ -148,6 +164,11 @@ namespace DiceRevolver.Prototype
             passiveEntry;
 
         public bool HasAnyEffect =>
+            GetRule(DiceFaceSlotType.Base) != null ||
+            GetRule(DiceFaceSlotType.OnFire) != null ||
+            GetRule(DiceFaceSlotType.OnHit) != null ||
+            GetRule(DiceFaceSlotType.OnFireEnd) != null ||
+            GetRule(DiceFaceSlotType.Passive) != null ||
             GetEffect(DiceFaceSlotType.Base) != null ||
             GetEffect(DiceFaceSlotType.OnFire) != null ||
             GetEffect(DiceFaceSlotType.OnHit) != null ||

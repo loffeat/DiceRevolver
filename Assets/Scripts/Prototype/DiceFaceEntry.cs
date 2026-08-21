@@ -12,6 +12,7 @@ namespace DiceRevolver.Prototype
 
         [Header("槽位事件")]
         [SerializeField, InspectorName("槽位类型")] private DiceFaceSlotType slotType;
+        [SerializeField, InspectorName("事件规则")] private EventRuleDefinition rule;
         [SerializeField, InspectorName("事件效果")] private BulletEventEffect effect;
         [SerializeField, InspectorName("被动效果")] private PassiveEventEffect passiveEffect;
 
@@ -23,9 +24,12 @@ namespace DiceRevolver.Prototype
         public string Description => description;
         public Color DisplayColor => displayColor;
         public DiceFaceSlotType SlotType =>
-            effect != null || passiveEffect != null ? slotType : ResolveLegacySlotType();
-        public BulletEventEffect Effect => effect != null ? effect : ResolveLegacyEffect();
-        public PassiveEventEffect PassiveEffect => passiveEffect;
+            rule != null || effect != null || passiveEffect != null ? slotType : ResolveLegacySlotType();
+        public EventRuleDefinition Rule => rule;
+        public BulletEventEffect Effect => rule != null
+            ? null
+            : effect != null ? effect : ResolveLegacyEffect();
+        public PassiveEventEffect PassiveEffect => rule == null ? passiveEffect : null;
 
         private DiceFaceSlotType ResolveLegacySlotType()
         {

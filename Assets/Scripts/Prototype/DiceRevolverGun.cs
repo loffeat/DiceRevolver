@@ -35,6 +35,7 @@ namespace DiceRevolver.Prototype
         private DiceRevolverRuntime runtime;
         private DiceShotPipeline shotPipeline;
         private DicePassiveRuntime passiveRuntime;
+        private readonly DiceEventRuleRuntimeSet eventRuleRuntimes = new DiceEventRuleRuntimeSet();
         private readonly OwnedProjectileRegistry ownedProjectiles = new OwnedProjectileRegistry();
         private readonly BonusShotSpreadAllocator bonusShotSpread = new BonusShotSpreadAllocator();
         private readonly CombatDebugTrace debugTrace = new CombatDebugTrace();
@@ -82,6 +83,7 @@ namespace DiceRevolver.Prototype
                 ownedProjectiles,
                 ExecuteLightningChain);
             shotPipeline.ConfigureDebugTrace(debugTrace);
+            shotPipeline.ConfigureRuleExecution(ExecuteActiveRule);
 
             if (loadout == null)
             {
@@ -101,6 +103,7 @@ namespace DiceRevolver.Prototype
                 for (int face = 1; face <= DiceRevolverRules.FaceCount; face++)
                 {
                     DiceFaceConfigurationSnapshot snapshot = loadout.GetSnapshot(face);
+                    eventRuleRuntimes.RebuildFace(face, snapshot);
                     passiveRuntime.RebuildFace(
                         face,
                         snapshot.GetPassiveEffect(),
@@ -419,6 +422,53 @@ namespace DiceRevolver.Prototype
             return true;
         }
 
+        private bool ExecuteActiveRule(
+            int face,
+            DiceFaceSlotType slot,
+            EventRuleDefinition rule,
+            BulletEventContext context)
+        {
+            DiceFaceActivation activation = context.Activation;
+            if (activation == null)
+            {
+                return false;
+            }
+
+            DiceRevolverShotContext shot = context.Shot;
+            EventSignal signal = new EventSignal(
+                ToActiveSignalType(slot),
+                face,
+                shot != null ? shot.Face : face,
+                slot,
+                activation,
+                shot,
+                context.PrimaryProjectile,
+                context.HitCollider,
+                context.HitPosition,
+                Array.Empty<int>(),
+                0,
+                shot != null ? shot.Stats : default,
+                activation.EventBudget,
+                activation.IsBonusActivation,
+                activation.DebugScope);
+            BulletEventRuleServices services = new BulletEventRuleServices(
+                context,
+                shotPipeline.ReportRuleException);
+            return eventRuleRuntimes.ExecuteActive(face, slot, signal, services);
+        }
+
+        private static EventSignalType ToActiveSignalType(DiceFaceSlotType slot)
+        {
+            return slot switch
+            {
+                DiceFaceSlotType.Base => EventSignalType.Base,
+                DiceFaceSlotType.OnFire => EventSignalType.OnFire,
+                DiceFaceSlotType.OnHit => EventSignalType.OnHit,
+                DiceFaceSlotType.OnFireEnd => EventSignalType.OnFireEnd,
+                _ => EventSignalType.OnFire
+            };
+        }
+
         private static Quaternion GetShotRotation(Vector3 direction, Quaternion fallback)
         {
             direction.y = 0f;
@@ -448,24 +498,24 @@ namespace DiceRevolver.Prototype
             DiceFaceSlotType slotType,
             DiceFaceEntry entry)
         {
+            DiceFaceConfigurationSnapshot snapshot = loadout != null
+                ? loadout.GetSnapshot(face)
+                : default;
+            eventRuleRuntimes.RebuildFace(face, snapshot);
+
             if (slotType == DiceFaceSlotType.Base)
             {
                 passiveRuntime?.UpdateBaseProjectileType(
                     face,
-                    loadout != null
-                        ? GetBaseProjectileType(loadout.GetSnapshot(face))
-                        : null);
+                    GetBaseProjectileType(snapshot));
                 return;
             }
 
             if (slotType == DiceFaceSlotType.Passive)
             {
-                DiceFaceConfigurationSnapshot snapshot = loadout != null
-                    ? loadout.GetSnapshot(face)
-                    : default;
                 passiveRuntime?.RebuildFace(
                     face,
-                    entry != null ? entry.PassiveEffect : null,
+                    snapshot.GetPassiveEffect(),
                     GetBaseProjectileType(snapshot));
             }
         }

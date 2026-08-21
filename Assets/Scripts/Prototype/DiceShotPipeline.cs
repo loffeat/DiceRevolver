@@ -18,6 +18,7 @@ namespace DiceRevolver.Prototype
         private DiceFaceActiveOverlay pendingNormalShotOverlay;
         private bool hasPendingNormalShotOverlay;
         private CombatDebugTrace debugTrace;
+        private Func<int, DiceFaceSlotType, EventRuleDefinition, BulletEventContext, bool> executeRule;
 
         public DiceShotPipeline(
             Func<float> currentTime,
@@ -220,6 +221,12 @@ namespace DiceRevolver.Prototype
             debugTrace = trace;
         }
 
+        public void ConfigureRuleExecution(
+            Func<int, DiceFaceSlotType, EventRuleDefinition, BulletEventContext, bool> executeRule)
+        {
+            this.executeRule = executeRule;
+        }
+
         public void QueueNextShotOverlay(DiceFaceActiveOverlay overlay)
         {
             if (overlay.IsEmpty)
@@ -284,6 +291,22 @@ namespace DiceRevolver.Prototype
             DiceFaceSlotType slotType,
             BulletEventContext context)
         {
+            EventRuleDefinition rule = entry?.Rule ??
+                context.Activation?.Configuration.GetRule(slotType);
+            if (rule != null && executeRule != null)
+            {
+                executeRule.Invoke(context.Activation.Face, slotType, rule, context);
+                return;
+            }
+
+            TriggerLegacyEffect(entry, slotType, context);
+        }
+
+        private void TriggerLegacyEffect(
+            DiceFaceEntry entry,
+            DiceFaceSlotType slotType,
+            BulletEventContext context)
+        {
             BulletEventEffect effect = entry != null
                 ? entry.Effect
                 : context.Activation?.Configuration.GetEffect(slotType);
@@ -311,6 +334,11 @@ namespace DiceRevolver.Prototype
             {
                 logException?.Invoke(exception, effect);
             }
+        }
+
+        internal void ReportRuleException(Exception exception, UnityEngine.Object context)
+        {
+            logException?.Invoke(exception, context);
         }
 
         private void Record(
