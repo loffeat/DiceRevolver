@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using DiceRevolver.Editor;
@@ -177,6 +178,106 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void RemoveModuleDestroysItsUnreachableOwnedClosureAndUndoRedoRestoresTheGraph()
+        {
+            string path = Path("RemoveClosureUndo.asset");
+            EventRuleDefinition rule = EventRuleAssetUtility.CreateRule(path);
+            SetArraySize(rule, "results", 1);
+            DelayResultModule root = (DelayResultModule)EventRuleAssetUtility.AddModule(
+                rule, typeof(DelayResultModule), "results.Array.data[0].result");
+            ForceFaceResultModule child = AddOwnedModule<ForceFaceResultModule>(rule);
+            SetDelayResults(root, child);
+            Undo.ClearAll();
+
+            Assert.That(EventRuleAssetUtility.RemoveModule(
+                rule, "results.Array.data[0].result"), Is.True);
+            Assert.That(OwnedModulesAt(path), Is.Empty,
+                "Removing the only root must not leave its nested module orphaned.");
+
+            Undo.PerformUndo();
+            AssetDatabase.SaveAssets();
+            rule = AssetDatabase.LoadAssetAtPath<EventRuleDefinition>(path);
+            DelayResultModule restoredRoot = rule.Results[0].Result as DelayResultModule;
+            Assert.That(restoredRoot, Is.Not.Null);
+            Assert.That(restoredRoot.Entries[0].Result, Is.TypeOf<ForceFaceResultModule>());
+            Assert.That(AssetDatabase.GetAssetPath(restoredRoot.Entries[0].Result), Is.EqualTo(path));
+
+            Undo.PerformRedo();
+            AssetDatabase.SaveAssets();
+            rule = AssetDatabase.LoadAssetAtPath<EventRuleDefinition>(path);
+            Assert.That(rule.Results[0].Result, Is.Null);
+            Assert.That(OwnedModulesAt(path), Is.Empty);
+        }
+
+        [Test]
+        public void RemoveModulePreservesAChildStillReachableByAnotherRulePath()
+        {
+            string path = Path("RemoveSharedChild.asset");
+            EventRuleDefinition rule = EventRuleAssetUtility.CreateRule(path);
+            SetArraySize(rule, "results", 2);
+            DelayResultModule root = (DelayResultModule)EventRuleAssetUtility.AddModule(
+                rule, typeof(DelayResultModule), "results.Array.data[0].result");
+            ForceFaceResultModule sharedChild = AddOwnedModule<ForceFaceResultModule>(rule);
+            SetDelayResults(root, sharedChild);
+            SetObjectReference(rule, "results.Array.data[1].result", sharedChild);
+            Undo.ClearAll();
+
+            Assert.That(EventRuleAssetUtility.RemoveModule(
+                rule, "results.Array.data[0].result"), Is.True);
+
+            Assert.That(rule.Results[0].Result, Is.Null);
+            Assert.That(rule.Results[1].Result, Is.SameAs(sharedChild));
+            Assert.That(OwnedModulesAt(path), Is.EquivalentTo(new Object[] { sharedChild }));
+        }
+
+        [Test]
+        public void RemoveModuleHandlesCyclesAndUndoRedoRestoresTheirTopology()
+        {
+            string path = Path("RemoveCycleUndo.asset");
+            EventRuleDefinition rule = EventRuleAssetUtility.CreateRule(path);
+            SetArraySize(rule, "results", 1);
+            DelayResultModule root = (DelayResultModule)EventRuleAssetUtility.AddModule(
+                rule, typeof(DelayResultModule), "results.Array.data[0].result");
+            DelayResultModule child = AddOwnedModule<DelayResultModule>(rule);
+            SetDelayResults(root, child);
+            SetDelayResults(child, root);
+            Undo.ClearAll();
+
+            Assert.That(EventRuleAssetUtility.RemoveModule(
+                rule, "results.Array.data[0].result"), Is.True);
+            Assert.That(OwnedModulesAt(path), Is.Empty);
+
+            Undo.PerformUndo();
+            AssetDatabase.SaveAssets();
+            rule = AssetDatabase.LoadAssetAtPath<EventRuleDefinition>(path);
+            DelayResultModule restoredRoot = rule.Results[0].Result as DelayResultModule;
+            DelayResultModule restoredChild = restoredRoot?.Entries[0].Result as DelayResultModule;
+            Assert.That(restoredRoot, Is.Not.Null);
+            Assert.That(restoredChild, Is.Not.Null);
+            Assert.That(restoredChild.Entries[0].Result, Is.SameAs(restoredRoot));
+
+            Undo.PerformRedo();
+            AssetDatabase.SaveAssets();
+            Assert.That(OwnedModulesAt(path), Is.Empty);
+        }
+
+        [Test]
+        public void RemoveModuleHandlesASelfCycleWithoutLeavingAnOrphan()
+        {
+            string path = Path("RemoveSelfCycle.asset");
+            EventRuleDefinition rule = EventRuleAssetUtility.CreateRule(path);
+            SetArraySize(rule, "results", 1);
+            DelayResultModule root = (DelayResultModule)EventRuleAssetUtility.AddModule(
+                rule, typeof(DelayResultModule), "results.Array.data[0].result");
+            SetDelayResults(root, root);
+            Undo.ClearAll();
+
+            Assert.That(EventRuleAssetUtility.RemoveModule(
+                rule, "results.Array.data[0].result"), Is.True);
+            Assert.That(OwnedModulesAt(path), Is.Empty);
+        }
+
+        [Test]
         public void MoveResultUsesSerializedOrderPersistsAndSupportsUndoRedo()
         {
             string path = Path("MoveUndo.asset");
@@ -231,6 +332,57 @@ namespace DiceRevolver.Tests
                 "The duplicate must never point at a source Rule SubAsset.");
             Assert.That(copyModules.Select(module => module.GetType()),
                 Is.EquivalentTo(sourceModules.Select(module => module.GetType())));
+        }
+
+        [Test]
+        public void DuplicateRuleCopiesOnlyReachableModulesAndPreservesGraphTopologyAndDataReferences()
+        {
+            string sourcePath = Path("ReachableSource.asset");
+            string copyPath = Path("ReachableCopy.asset");
+            string projectilePath = Path("SharedProjectile.asset");
+            ProjectileDefinition projectile = ScriptableObject.CreateInstance<ProjectileDefinition>();
+            AssetDatabase.CreateAsset(projectile, projectilePath);
+
+            EventRuleDefinition source = EventRuleAssetUtility.CreateRule(sourcePath);
+            SetArraySize(source, "results", 1);
+            DelayResultModule root = (DelayResultModule)EventRuleAssetUtility.AddModule(
+                source, typeof(DelayResultModule), "results.Array.data[0].result");
+            SpawnProjectileResultModule sharedChild = AddOwnedModule<SpawnProjectileResultModule>(source);
+            DelayResultModule cycleChild = AddOwnedModule<DelayResultModule>(source);
+            QueueActiveOverlayResultModule orphan = AddOwnedModule<QueueActiveOverlayResultModule>(source);
+            SetObjectReference(sharedChild, "projectileDefinition", projectile);
+            SetDelayResults(root, sharedChild, sharedChild, cycleChild);
+            SetDelayResults(cycleChild, root);
+            Assert.That(AssetDatabase.GetAssetPath(orphan), Is.EqualTo(sourcePath));
+
+            EventRuleAssetUtility.DuplicateRule(source, copyPath);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            EventRuleDefinition copy = AssetDatabase.LoadAssetAtPath<EventRuleDefinition>(copyPath);
+            DelayResultModule copyRoot = copy.Results[0].Result as DelayResultModule;
+            SpawnProjectileResultModule firstShared =
+                copyRoot?.Entries[0].Result as SpawnProjectileResultModule;
+            SpawnProjectileResultModule secondShared =
+                copyRoot?.Entries[1].Result as SpawnProjectileResultModule;
+            DelayResultModule copyCycle = copyRoot?.Entries[2].Result as DelayResultModule;
+            Object[] copyModules = OwnedModulesAt(copyPath);
+
+            Assert.That(copyModules.Length, Is.EqualTo(3),
+                "The unreachable source SubAsset must not be copied.");
+            Assert.That(copyModules.Any(module =>
+                module is QueueActiveOverlayResultModule), Is.False);
+            Assert.That(firstShared, Is.Not.Null);
+            Assert.That(secondShared, Is.SameAs(firstShared),
+                "A shared node must remain one shared node in the duplicate.");
+            Assert.That(copyCycle, Is.Not.Null);
+            Assert.That(copyCycle.Entries[0].Result, Is.SameAs(copyRoot),
+                "The duplicate must remap a cycle entirely onto its own graph.");
+            Assert.That(firstShared.ProjectileDefinition, Is.SameAs(projectile),
+                "Referenced data assets must remain shared instead of being cloned.");
+            Assert.That(copyModules.All(module =>
+                AssetDatabase.GetAssetPath(module) == copyPath), Is.True);
+            Assert.That(copyModules.Any(module =>
+                CollectReferencedModules(source).Contains(module)), Is.False);
         }
 
         [Test]
@@ -333,6 +485,46 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void AddModuleToIncompatibleArrayLeavesTheOriginalArrayAndAssetSetUntouched()
+        {
+            string path = Path("WrongArrayType.asset");
+            EventRuleDefinition rule = EventRuleAssetUtility.CreateRule(path);
+            int assetCountBefore = AssetDatabase.LoadAllAssetsAtPath(path).Length;
+            string before = EditorJsonUtility.ToJson(rule);
+
+            Assert.Throws<ArgumentException>(() => EventRuleAssetUtility.AddModuleToArray(
+                rule, typeof(ForceFaceResultModule), "tags"));
+
+            Assert.That(EditorJsonUtility.ToJson(rule), Is.EqualTo(before));
+            Assert.That(AssetDatabase.LoadAllAssetsAtPath(path).Length, Is.EqualTo(assetCountBefore));
+        }
+
+        [Test]
+        public void DuplicateRuleRejectsExistingDestinationWithoutChangingEitherAsset()
+        {
+            string sourcePath = Path("RollbackSource.asset");
+            string destinationPath = Path("RollbackExisting.asset");
+            EventRuleDefinition source = CreateValidRule("RollbackSource.asset");
+            EventRuleDefinition existing = CreateValidRule("RollbackExisting.asset");
+            string sourceBefore = EditorJsonUtility.ToJson(source);
+            string destinationBefore = EditorJsonUtility.ToJson(existing);
+            int sourceAssetsBefore = AssetDatabase.LoadAllAssetsAtPath(sourcePath).Length;
+            int destinationAssetsBefore = AssetDatabase.LoadAllAssetsAtPath(destinationPath).Length;
+
+            Assert.Throws<IOException>(() =>
+                EventRuleAssetUtility.DuplicateRule(source, destinationPath));
+
+            Assert.That(EditorJsonUtility.ToJson(source), Is.EqualTo(sourceBefore));
+            Assert.That(EditorJsonUtility.ToJson(
+                AssetDatabase.LoadAssetAtPath<EventRuleDefinition>(destinationPath)),
+                Is.EqualTo(destinationBefore));
+            Assert.That(AssetDatabase.LoadAllAssetsAtPath(sourcePath).Length,
+                Is.EqualTo(sourceAssetsBefore));
+            Assert.That(AssetDatabase.LoadAllAssetsAtPath(destinationPath).Length,
+                Is.EqualTo(destinationAssetsBefore));
+        }
+
+        [Test]
         public void DuplicateRuleClonesForeignReferencedModulesInsteadOfSharingThem()
         {
             string copyPath = Path("ForeignDuplicate.asset");
@@ -421,6 +613,45 @@ namespace DiceRevolver.Tests
             }
 
             return modules;
+        }
+
+        private static T AddOwnedModule<T>(EventRuleDefinition rule)
+            where T : ScriptableObject
+        {
+            T module = ScriptableObject.CreateInstance<T>();
+            module.name = typeof(T).Name;
+            AssetDatabase.AddObjectToAsset(module, rule);
+            EditorUtility.SetDirty(module);
+            EditorUtility.SetDirty(rule);
+            AssetDatabase.SaveAssets();
+            return module;
+        }
+
+        private static void SetDelayResults(
+            DelayResultModule delay,
+            params EventResultModule[] results)
+        {
+            SerializedObject serialized = new SerializedObject(delay);
+            SerializedProperty entries = serialized.FindProperty("entries");
+            entries.arraySize = results.Length;
+            for (int index = 0; index < results.Length; index++)
+            {
+                entries.GetArrayElementAtIndex(index)
+                    .FindPropertyRelative("result").objectReferenceValue = results[index];
+            }
+
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(delay);
+            AssetDatabase.SaveAssets();
+        }
+
+        private static Object[] OwnedModulesAt(string path)
+        {
+            return AssetDatabase.LoadAllAssetsAtPath(path)
+                .Where(asset => asset is EventTriggerModule ||
+                                asset is EventConditionModule ||
+                                asset is EventResultModule)
+                .ToArray();
         }
 
         private static void AssertIssue(

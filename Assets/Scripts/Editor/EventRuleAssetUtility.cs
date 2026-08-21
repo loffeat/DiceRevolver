@@ -83,26 +83,46 @@ namespace DiceRevolver.Editor
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
 
-            int undoGroup = BeginUndoGroup("Add Event Rule Module");
-            Undo.RecordObject(rule, "Add Event Rule Module");
             array.InsertArrayElementAtIndex(insertionIndex);
-            SerializedProperty reference = array.GetArrayElementAtIndex(insertionIndex);
-            if (reference.propertyType != SerializedPropertyType.ObjectReference)
+            SerializedProperty previewReference = array.GetArrayElementAtIndex(insertionIndex);
+            if (previewReference.propertyType != SerializedPropertyType.ObjectReference)
             {
-                Undo.CollapseUndoOperations(undoGroup);
+                serializedRule.Update();
                 throw new ArgumentException(
                     $"Array {arrayPropertyPath} does not contain module references.",
                     nameof(arrayPropertyPath));
             }
 
-            ValidateReferenceAcceptsModule(reference, moduleType);
-            reference.objectReferenceValue = null;
-            ScriptableObject module = CreateModuleSubAsset(rule, moduleType, "Add Event Rule Module");
-            reference.objectReferenceValue = module;
-            serializedRule.ApplyModifiedProperties();
-            SaveChanged(rule, module);
-            Undo.CollapseUndoOperations(undoGroup);
-            return module;
+            try
+            {
+                ValidateReferenceAcceptsModule(previewReference, moduleType);
+            }
+            finally
+            {
+                serializedRule.Update();
+            }
+
+            int undoGroup = BeginUndoGroup("Add Event Rule Module");
+            ScriptableObject module = null;
+            try
+            {
+                Undo.RecordObject(rule, "Add Event Rule Module");
+                array = serializedRule.FindProperty(arrayPropertyPath);
+                array.InsertArrayElementAtIndex(insertionIndex);
+                SerializedProperty reference = array.GetArrayElementAtIndex(insertionIndex);
+                reference.objectReferenceValue = null;
+                module = CreateModuleSubAsset(rule, moduleType, "Add Event Rule Module");
+                reference.objectReferenceValue = module;
+                serializedRule.ApplyModifiedProperties();
+                SaveChanged(rule, module);
+                Undo.CollapseUndoOperations(undoGroup);
+                return module;
+            }
+            catch
+            {
+                RollbackUndoGroup(undoGroup, new Object[] { module }, rule);
+                throw;
+            }
         }
 
         public static bool RemoveModule(
@@ -120,11 +140,13 @@ namespace DiceRevolver.Editor
                 return false;
             }
 
+            IReadOnlyList<Object> removedClosure = CollectReachableModules(module);
+
             int undoGroup = BeginUndoGroup("Remove Event Rule Module");
             Undo.RecordObject(rule, "Remove Event Rule Module");
             reference.objectReferenceValue = null;
             serializedRule.ApplyModifiedProperties();
-            DestroyOwnedModuleIfUnreferenced(rule, module);
+            DestroyOwnedModuleClosureIfUnreferenced(rule, removedClosure);
             SaveChanged(rule);
             Undo.CollapseUndoOperations(undoGroup);
             return true;
@@ -151,12 +173,13 @@ namespace DiceRevolver.Editor
             }
 
             Object module = reference.objectReferenceValue;
+            IReadOnlyList<Object> removedClosure = CollectReachableModules(module);
             int undoGroup = BeginUndoGroup("Remove Event Rule Module");
             Undo.RecordObject(rule, "Remove Event Rule Module");
             reference.objectReferenceValue = null;
             array.DeleteArrayElementAtIndex(index);
             serializedRule.ApplyModifiedProperties();
-            DestroyOwnedModuleIfUnreferenced(rule, module);
+            DestroyOwnedModuleClosureIfUnreferenced(rule, removedClosure);
             SaveChanged(rule);
             Undo.CollapseUndoOperations(undoGroup);
             return true;
@@ -189,37 +212,52 @@ namespace DiceRevolver.Editor
         {
             EnsureSavedRule(source);
             ValidateDestinationPath(destinationPath);
+            Object[] sourceModules = CollectReachableModules(source)
+                .OrderBy(module => AssetDatabase.GetAssetPath(module), StringComparer.Ordinal)
+                .ThenBy(module => module.GetType().FullName, StringComparer.Ordinal)
+                .ThenBy(module => module.name, StringComparer.Ordinal)
+                .ToArray();
 
             int undoGroup = BeginUndoGroup("Duplicate Event Rule");
-            EventRuleDefinition duplicate = Object.Instantiate(source);
-            duplicate.name = Path.GetFileNameWithoutExtension(destinationPath);
-            AssetDatabase.CreateAsset(duplicate, destinationPath);
-            Undo.RegisterCreatedObjectUndo(duplicate, "Duplicate Event Rule");
-
-            string sourcePath = AssetDatabase.GetAssetPath(source);
-            Dictionary<Object, Object> replacements = new Dictionary<Object, Object>();
-            Object[] sourceModules = CollectModulesToDuplicate(source, sourcePath);
-            for (int index = 0; index < sourceModules.Length; index++)
+            EventRuleDefinition duplicate = null;
+            List<Object> createdObjects = new List<Object>();
+            try
             {
-                Object sourceModule = sourceModules[index];
-                Object copiedModule = Object.Instantiate(sourceModule);
-                copiedModule.name = sourceModule.name;
-                AssetDatabase.AddObjectToAsset(copiedModule, duplicate);
-                Undo.RegisterCreatedObjectUndo(copiedModule, "Duplicate Event Rule Module");
-                replacements.Add(sourceModule, copiedModule);
-            }
+                duplicate = Object.Instantiate(source);
+                createdObjects.Add(duplicate);
+                duplicate.name = Path.GetFileNameWithoutExtension(destinationPath);
+                AssetDatabase.CreateAsset(duplicate, destinationPath);
+                Undo.RegisterCreatedObjectUndo(duplicate, "Duplicate Event Rule");
 
-            RemapObjectReferences(duplicate, replacements);
-            foreach (Object copiedModule in replacements.Values)
+                Dictionary<Object, Object> replacements = new Dictionary<Object, Object>();
+                for (int index = 0; index < sourceModules.Length; index++)
+                {
+                    Object sourceModule = sourceModules[index];
+                    Object copiedModule = Object.Instantiate(sourceModule);
+                    createdObjects.Add(copiedModule);
+                    copiedModule.name = sourceModule.name;
+                    AssetDatabase.AddObjectToAsset(copiedModule, duplicate);
+                    Undo.RegisterCreatedObjectUndo(copiedModule, "Duplicate Event Rule Module");
+                    replacements.Add(sourceModule, copiedModule);
+                }
+
+                RemapObjectReferences(duplicate, replacements);
+                foreach (Object copiedModule in replacements.Values)
+                {
+                    RemapObjectReferences(copiedModule, replacements);
+                    EditorUtility.SetDirty(copiedModule);
+                }
+
+                EditorUtility.SetDirty(duplicate);
+                AssetDatabase.SaveAssets();
+                Undo.CollapseUndoOperations(undoGroup);
+                return duplicate;
+            }
+            catch
             {
-                RemapObjectReferences(copiedModule, replacements);
-                EditorUtility.SetDirty(copiedModule);
+                RollbackUndoGroup(undoGroup, createdObjects, null, destinationPath);
+                throw;
             }
-
-            EditorUtility.SetDirty(duplicate);
-            AssetDatabase.SaveAssets();
-            Undo.CollapseUndoOperations(undoGroup);
-            return duplicate;
         }
 
         private static ScriptableObject CreateAndAssignModule(
@@ -230,13 +268,22 @@ namespace DiceRevolver.Editor
             string undoName)
         {
             int undoGroup = BeginUndoGroup(undoName);
-            Undo.RecordObject(rule, undoName);
-            ScriptableObject module = CreateModuleSubAsset(rule, moduleType, undoName);
-            reference.objectReferenceValue = module;
-            serializedRule.ApplyModifiedProperties();
-            SaveChanged(rule, module);
-            Undo.CollapseUndoOperations(undoGroup);
-            return module;
+            ScriptableObject module = null;
+            try
+            {
+                Undo.RecordObject(rule, undoName);
+                module = CreateModuleSubAsset(rule, moduleType, undoName);
+                reference.objectReferenceValue = module;
+                serializedRule.ApplyModifiedProperties();
+                SaveChanged(rule, module);
+                Undo.CollapseUndoOperations(undoGroup);
+                return module;
+            }
+            catch
+            {
+                RollbackUndoGroup(undoGroup, new Object[] { module }, rule);
+                throw;
+            }
         }
 
         private static ScriptableObject CreateModuleSubAsset(
@@ -245,28 +292,64 @@ namespace DiceRevolver.Editor
             string undoName)
         {
             ScriptableObject module = ScriptableObject.CreateInstance(moduleType);
-            module.name = moduleType.Name;
-            AssetDatabase.AddObjectToAsset(module, rule);
-            Undo.RegisterCreatedObjectUndo(module, undoName);
-            return module;
+            try
+            {
+                module.name = moduleType.Name;
+                AssetDatabase.AddObjectToAsset(module, rule);
+                Undo.RegisterCreatedObjectUndo(module, undoName);
+                return module;
+            }
+            catch
+            {
+                if (module != null)
+                {
+                    Object.DestroyImmediate(module, true);
+                }
+
+                throw;
+            }
         }
 
-        private static void DestroyOwnedModuleIfUnreferenced(
+        private static void DestroyOwnedModuleClosureIfUnreferenced(
             EventRuleDefinition rule,
-            Object module)
+            IReadOnlyList<Object> removedClosure)
         {
-            if (!IsModule(module) ||
-                AssetDatabase.GetAssetPath(module) != AssetDatabase.GetAssetPath(rule) ||
-                IsReferencedBy(rule, module))
+            string rulePath = AssetDatabase.GetAssetPath(rule);
+            HashSet<Object> remainingReachable = new HashSet<Object>(
+                CollectReachableModules(rule));
+            List<Object> destroyCandidates = removedClosure
+                .Where(module => module != null &&
+                                 !remainingReachable.Contains(module) &&
+                                 AssetDatabase.GetAssetPath(module) == rulePath)
+                .ToList();
+            if (destroyCandidates.Count > 0)
             {
-                return;
+                Undo.RegisterCompleteObjectUndo(
+                    destroyCandidates.ToArray(),
+                    "Remove Event Rule Module Graph");
             }
 
-            Undo.DestroyObjectImmediate(module);
+            for (int index = destroyCandidates.Count - 1; index >= 0; index--)
+            {
+                Undo.DestroyObjectImmediate(destroyCandidates[index]);
+            }
         }
 
-        private static bool IsReferencedBy(Object root, Object target)
+        private static IReadOnlyList<Object> CollectReachableModules(Object root)
         {
+            List<Object> modules = new List<Object>();
+            HashSet<Object> foundModules = new HashSet<Object>();
+            if (root == null)
+            {
+                return modules;
+            }
+
+            if (IsModule(root))
+            {
+                modules.Add(root);
+                foundModules.Add(root);
+            }
+
             HashSet<Object> visited = new HashSet<Object>();
             Queue<Object> pending = new Queue<Object>();
             pending.Enqueue(root);
@@ -285,19 +368,24 @@ namespace DiceRevolver.Editor
                     }
 
                     Object reference = property.objectReferenceValue;
-                    if (reference == target)
+                    if (!IsModule(reference))
                     {
-                        return true;
+                        continue;
                     }
 
-                    if (IsModule(reference) && visited.Add(reference))
+                    if (foundModules.Add(reference))
+                    {
+                        modules.Add(reference);
+                    }
+
+                    if (visited.Add(reference))
                     {
                         pending.Enqueue(reference);
                     }
                 }
             }
 
-            return false;
+            return modules;
         }
 
         private static void RemapObjectReferences(
@@ -320,46 +408,6 @@ namespace DiceRevolver.Editor
             }
 
             serialized.ApplyModifiedProperties();
-        }
-
-        private static Object[] CollectModulesToDuplicate(
-            EventRuleDefinition source,
-            string sourcePath)
-        {
-            HashSet<Object> modules = new HashSet<Object>(
-                AssetDatabase.LoadAllAssetsAtPath(sourcePath).Where(IsModule));
-            HashSet<Object> visited = new HashSet<Object> { source };
-            Queue<Object> pending = new Queue<Object>();
-            pending.Enqueue(source);
-            while (pending.Count > 0)
-            {
-                SerializedObject serialized = new SerializedObject(pending.Dequeue());
-                SerializedProperty property = serialized.GetIterator();
-                bool enterChildren = true;
-                while (property.Next(enterChildren))
-                {
-                    enterChildren = true;
-                    Object reference = property.propertyType == SerializedPropertyType.ObjectReference
-                        ? property.objectReferenceValue
-                        : null;
-                    if (!IsModule(reference))
-                    {
-                        continue;
-                    }
-
-                    modules.Add(reference);
-                    if (visited.Add(reference))
-                    {
-                        pending.Enqueue(reference);
-                    }
-                }
-            }
-
-            return modules
-                .OrderBy(module => AssetDatabase.GetAssetPath(module), StringComparer.Ordinal)
-                .ThenBy(module => module.GetType().FullName, StringComparer.Ordinal)
-                .ThenBy(module => module.name, StringComparer.Ordinal)
-                .ToArray();
         }
 
         private static SerializedProperty RequireObjectReference(
@@ -473,6 +521,35 @@ namespace DiceRevolver.Editor
             int group = Undo.GetCurrentGroup();
             Undo.SetCurrentGroupName(name);
             return group;
+        }
+
+        private static void RollbackUndoGroup(
+            int undoGroup,
+            IEnumerable<Object> createdObjects,
+            Object changedObject = null,
+            string createdAssetPath = null)
+        {
+            Undo.RevertAllDownToGroup(undoGroup);
+            if (!string.IsNullOrEmpty(createdAssetPath) &&
+                AssetDatabase.LoadMainAssetAtPath(createdAssetPath) != null)
+            {
+                AssetDatabase.DeleteAsset(createdAssetPath);
+            }
+
+            foreach (Object createdObject in createdObjects.Reverse())
+            {
+                if (createdObject != null)
+                {
+                    Object.DestroyImmediate(createdObject, true);
+                }
+            }
+
+            if (changedObject != null)
+            {
+                EditorUtility.SetDirty(changedObject);
+            }
+
+            AssetDatabase.SaveAssets();
         }
 
         private static void SaveChanged(params Object[] changed)
