@@ -1,0 +1,177 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace DiceRevolver.Prototype
+{
+    [Serializable]
+    public sealed class EventResultEntry
+    {
+        [SerializeField] private List<EventConditionModule> conditions = new();
+        [SerializeField] private EventResultModule result;
+
+        public EventResultEntry(IReadOnlyList<EventConditionModule> conditions, EventResultModule result)
+        {
+            this.conditions = conditions == null
+                ? new List<EventConditionModule>()
+                : new List<EventConditionModule>(conditions);
+            this.result = result;
+        }
+
+        public IReadOnlyList<EventConditionModule> Conditions => conditions;
+        public EventResultModule Result => result;
+    }
+
+    public sealed class EventRuleDefinition : ScriptableObject
+    {
+        [SerializeField] private string displayName;
+        [SerializeField] [TextArea] private string description;
+        [SerializeField] private Color displayColor = Color.white;
+        [SerializeField] private List<string> tags = new();
+        [SerializeField] private string rarity;
+        [SerializeField] private DiceFaceSlotMask allowedSlots = DiceFaceSlotMask.All;
+        [SerializeField] private EventTriggerModule trigger;
+        [SerializeField] private List<EventConditionModule> conditions = new();
+        [SerializeField] private List<EventResultEntry> results = new();
+        [SerializeField] private int eventBudgetCost = 1;
+        [SerializeField] private EventRuleRecursionPolicy recursionPolicy = EventRuleRecursionPolicy.DenyReentry;
+
+        public string DisplayName => displayName;
+        public string Description => description;
+        public Color DisplayColor => displayColor;
+        public IReadOnlyList<string> Tags => tags;
+        public string Rarity => rarity;
+        public DiceFaceSlotMask AllowedSlots => allowedSlots;
+        public EventTriggerModule Trigger => trigger;
+        public IReadOnlyList<EventConditionModule> Conditions => conditions;
+        public IReadOnlyList<EventResultEntry> Results => results;
+        public int EventBudgetCost => eventBudgetCost;
+        public EventRuleRecursionPolicy RecursionPolicy => recursionPolicy;
+
+        public bool AllowsSlot(DiceFaceSlotType slot)
+        {
+            return (allowedSlots & ToMask(slot)) != 0;
+        }
+
+        public bool CanEquip(DiceFaceSlotType slot)
+        {
+            List<EventRuleValidationIssue> issues = CollectValidationIssues(slot);
+            for (int index = 0; index < issues.Count; index++)
+            {
+                if (issues[index].Severity == EventRuleValidationSeverity.Error)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public List<EventRuleValidationIssue> CollectValidationIssues(DiceFaceSlotType slot)
+        {
+            List<EventRuleValidationIssue> issues = new();
+
+            if (!AllowsSlot(slot))
+            {
+                issues.Add(new EventRuleValidationIssue(
+                    EventRuleValidationSeverity.Error,
+                    "slot-not-allowed",
+                    $"Rule cannot be equipped in {slot}.",
+                    this));
+            }
+
+            if (trigger == null)
+            {
+                issues.Add(new EventRuleValidationIssue(
+                    EventRuleValidationSeverity.Error,
+                    "missing-trigger",
+                    "Rule requires a trigger.",
+                    this));
+            }
+            else
+            {
+                trigger.CollectValidationIssues(issues);
+            }
+
+            CollectConditionIssues(conditions, issues);
+
+            if (results == null || results.Count == 0)
+            {
+                issues.Add(new EventRuleValidationIssue(
+                    EventRuleValidationSeverity.Error,
+                    "missing-results",
+                    "Rule requires at least one result.",
+                    this));
+                return issues;
+            }
+
+            for (int index = 0; index < results.Count; index++)
+            {
+                EventResultEntry entry = results[index];
+                if (entry == null)
+                {
+                    issues.Add(new EventRuleValidationIssue(
+                        EventRuleValidationSeverity.Error,
+                        "missing-result-entry",
+                        "Rule contains an empty result entry.",
+                        this));
+                    continue;
+                }
+
+                CollectConditionIssues(entry.Conditions, issues);
+                if (entry.Result == null)
+                {
+                    issues.Add(new EventRuleValidationIssue(
+                        EventRuleValidationSeverity.Error,
+                        "missing-result",
+                        "Result entry requires a result module.",
+                        this));
+                    continue;
+                }
+
+                entry.Result.CollectValidationIssues(issues);
+            }
+
+            return issues;
+        }
+
+        private static void CollectConditionIssues(
+            IReadOnlyList<EventConditionModule> modules,
+            List<EventRuleValidationIssue> issues)
+        {
+            if (modules == null)
+            {
+                return;
+            }
+
+            for (int index = 0; index < modules.Count; index++)
+            {
+                EventConditionModule module = modules[index];
+                if (module == null)
+                {
+                    issues.Add(new EventRuleValidationIssue(
+                        EventRuleValidationSeverity.Error,
+                        "missing-condition",
+                        "Rule contains an empty condition module.",
+                        null));
+                    continue;
+                }
+
+                module.CollectValidationIssues(issues);
+            }
+        }
+
+        private static DiceFaceSlotMask ToMask(DiceFaceSlotType slot)
+        {
+            return slot switch
+            {
+                DiceFaceSlotType.Base => DiceFaceSlotMask.Base,
+                DiceFaceSlotType.OnFire => DiceFaceSlotMask.OnFire,
+                DiceFaceSlotType.OnHit => DiceFaceSlotMask.OnHit,
+                DiceFaceSlotType.OnFireEnd => DiceFaceSlotMask.OnFireEnd,
+                DiceFaceSlotType.Passive => DiceFaceSlotMask.Passive,
+                _ => DiceFaceSlotMask.None
+            };
+        }
+    }
+}
