@@ -7,6 +7,35 @@ namespace DiceRevolver.Prototype
     public sealed class EventRuleStateStore
     {
         private readonly Dictionary<(ScriptableObject, string), object> values = new();
+        private readonly Dictionary<string, object> sharedValues = new();
+
+        public int GetInt(string key, int fallback = 0)
+        {
+            ValidateSharedKey(key);
+            return sharedValues.TryGetValue(key, out object value) && value is int number
+                ? number
+                : fallback;
+        }
+
+        public void SetInt(string key, int value)
+        {
+            ValidateSharedKey(key);
+            sharedValues[key] = value;
+        }
+
+        public bool GetBool(string key, bool fallback = false)
+        {
+            ValidateSharedKey(key);
+            return sharedValues.TryGetValue(key, out object value) && value is bool flag
+                ? flag
+                : fallback;
+        }
+
+        public void SetBool(string key, bool value)
+        {
+            ValidateSharedKey(key);
+            sharedValues[key] = value;
+        }
 
         public int GetInt(ScriptableObject owner, string key, int fallback = 0)
         {
@@ -53,6 +82,7 @@ namespace DiceRevolver.Prototype
         public void Clear()
         {
             values.Clear();
+            sharedValues.Clear();
         }
 
         private static void ValidateKey(ScriptableObject owner, string key)
@@ -60,6 +90,14 @@ namespace DiceRevolver.Prototype
             if (owner == null || string.IsNullOrWhiteSpace(key))
             {
                 throw new ArgumentException("State requires a module owner and a non-blank key.");
+            }
+        }
+
+        private static void ValidateSharedKey(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                throw new ArgumentException("Shared state requires a non-blank key.");
             }
         }
     }

@@ -88,6 +88,25 @@ namespace DiceRevolver.Tests
             Object.DestroyImmediate(healthy);
         }
 
+        [Test]
+        public void LegacyFilteringCanDeferEmptyFallbackToTheCombinedRuleBoundary()
+        {
+            DenyAllPassiveEffect denying = ScriptableObject.CreateInstance<DenyAllPassiveEffect>();
+            List<string> warnings = new List<string>();
+            using DicePassiveRuntime runtime = new DicePassiveRuntime(warnings.Add, null);
+            runtime.RebuildFace(1, denying);
+
+            DiceDrawConstraintResult result = runtime.FilterDrawCandidates(
+                new[] { 1, 2, 3 },
+                null,
+                false);
+
+            Assert.That(result.Candidates, Is.Empty);
+            Assert.That(warnings, Is.Empty,
+                "only the final combined legacy+Rule boundary may warn or restore the real pool");
+            Object.DestroyImmediate(denying);
+        }
+
         private sealed class RecordingPassiveEffect : PassiveEventEffect
         {
             public List<int> Contexts { get; } = new List<int>();
@@ -169,6 +188,23 @@ namespace DiceRevolver.Tests
             public void Dispose()
             {
             }
+        }
+
+        private sealed class DenyAllPassiveEffect : PassiveEventEffect
+        {
+            public override IDicePassiveEffectRuntime CreateRuntime(PassiveBindingContext context)
+            {
+                return new DenyAllPassiveRuntime();
+            }
+        }
+
+        private sealed class DenyAllPassiveRuntime : IDicePassiveEffectRuntime
+        {
+            public bool AllowsDraw(int face, IReadOnlyList<int> remainingFaces) => false;
+            public void OnReloadStarted() { }
+            public void OnReloadCompleted() { }
+            public void OnFaceConsumed(int face) { }
+            public void Dispose() { }
         }
     }
 }

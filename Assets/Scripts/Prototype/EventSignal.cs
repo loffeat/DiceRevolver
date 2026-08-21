@@ -22,6 +22,43 @@ namespace DiceRevolver.Prototype
             DiceEventBudget eventBudget,
             bool isBonusActivation,
             CombatDebugScope debugScope)
+            : this(
+                signalType,
+                equippedFace,
+                sourceFace,
+                slot,
+                activation,
+                shot,
+                projectile,
+                hitCollider,
+                hitPosition,
+                remainingFaces,
+                drawCandidate,
+                currentStats,
+                eventBudget,
+                isBonusActivation,
+                debugScope,
+                null)
+        {
+        }
+
+        public EventSignal(
+            EventSignalType signalType,
+            int equippedFace,
+            int sourceFace,
+            DiceFaceSlotType slot,
+            DiceFaceActivation activation,
+            DiceRevolverShotContext shot,
+            ProjectileHandle projectile,
+            Collider hitCollider,
+            Vector3 hitPosition,
+            IReadOnlyList<int> remainingFaces,
+            int drawCandidate,
+            ProjectileRuntimeStats currentStats,
+            DiceEventBudget eventBudget,
+            bool isBonusActivation,
+            CombatDebugScope debugScope,
+            ProjectileTypeDefinition equippedBaseProjectileType)
         {
             SignalType = signalType;
             EquippedFace = equippedFace;
@@ -40,6 +77,7 @@ namespace DiceRevolver.Prototype
             EventBudget = eventBudget;
             IsBonusActivation = isBonusActivation;
             DebugScope = debugScope;
+            EquippedBaseProjectileType = equippedBaseProjectileType;
         }
 
         public EventSignalType SignalType { get; }
@@ -57,5 +95,6 @@ namespace DiceRevolver.Prototype
         public DiceEventBudget EventBudget { get; }
         public bool IsBonusActivation { get; }
         public CombatDebugScope DebugScope { get; }
+        public ProjectileTypeDefinition EquippedBaseProjectileType { get; }
     }
 }

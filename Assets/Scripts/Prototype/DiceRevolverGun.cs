@@ -96,6 +96,13 @@ namespace DiceRevolver.Prototype
                 exception => Debug.LogException(exception, this));
             passiveRuntime.ConfigureBonusActivation(ExecuteBonusActivation);
             passiveRuntime.ConfigureDebugTrace(debugTrace, () => Time.time);
+            eventRuleRuntimes.ConfigurePassiveServices(
+                ownedProjectiles,
+                ExecuteBonusActivation,
+                debugTrace,
+                () => Time.time,
+                message => Debug.LogWarning(message, this),
+                (exception, context) => Debug.LogException(exception, context));
             if (loadout != null)
             {
                 loadout.SlotChanged -= HandleLoadoutSlotChanged;
@@ -150,7 +157,7 @@ namespace DiceRevolver.Prototype
 
             if (update.ReloadCompleted)
             {
-                passiveRuntime?.NotifyReloadCompleted();
+                NotifyReloadCompletedPassives();
                 ResetVisualRoot();
                 debugTrace.RecordStandalone(
                     CombatDebugEventType.ReloadCompleted,
@@ -215,9 +222,9 @@ namespace DiceRevolver.Prototype
                 return;
             }
 
-            DiceRevolverDrawResult draw = passiveRuntime != null
-                ? runtime.TryBeginShot(Time.time, passiveRuntime.FilterDrawCandidates)
-                : runtime.TryBeginShot(Time.time);
+            DiceRevolverDrawResult draw = runtime.TryBeginShot(
+                Time.time,
+                FilterPassiveDrawCandidates);
             if (draw.Status != DiceRevolverDrawStatus.Fired)
             {
                 return;
@@ -256,7 +263,7 @@ namespace DiceRevolver.Prototype
                 Mathf.Max(1, eventBudgetPerActivation),
                 shot => FireStarted?.Invoke(shot),
                 shot => FireEnded?.Invoke(shot));
-            passiveRuntime?.NotifyFaceConsumed(draw.Face);
+            NotifyFaceConsumedPassives(draw.Face);
 
             DiceRevolverRuntimeUpdate completion = runtime.CompleteShot(Time.time);
             if (completion.ReloadStarted)
@@ -280,9 +287,7 @@ namespace DiceRevolver.Prototype
             }
 
             ProjectileRuntimeStats stats = definition.BuildRuntimeStats();
-            stats = passiveRuntime != null
-                ? passiveRuntime.ModifyProjectileStats(activation.Face, stats)
-                : stats;
+            stats = ModifyPassiveProjectileStats(activation.Face, stats, activation);
             Quaternion rotation = GetShotRotation(request.Direction, transform.rotation);
             Vector3 origin = request.Origin;
             origin.y = 0f;
@@ -290,7 +295,7 @@ namespace DiceRevolver.Prototype
             projectile.Configure(stats);
             projectile.Launch(request.Direction, ownerCollider);
             ProjectileHandle handle = ownedProjectiles.Register(projectile, stats);
-            passiveRuntime?.NotifyProjectileSpawned(activation.Face, handle, activation);
+            NotifyProjectileSpawnedPassives(activation.Face, handle, activation);
 
             DiceRevolverShotContext shot = new DiceRevolverShotContext(
                 activation.Face,
@@ -310,11 +315,13 @@ namespace DiceRevolver.Prototype
                     hitCollider,
                     hitPosition,
                     hit => ProjectileHit?.Invoke(hit));
-                passiveRuntime?.NotifyProjectileHit(
+                TryNotifyPassive(() => passiveRuntime?.NotifyProjectileHit(
                     shot,
                     hitCollider,
                     hitPosition,
-                    activation.SuppressedPassiveInstanceId);
+                    activation.SuppressedPassiveInstanceId));
+                TryNotifyPassive(
+                    () => eventRuleRuntimes.NotifyProjectileHit(shot, hitCollider, hitPosition));
             };
             return handle;
         }
@@ -485,7 +492,8 @@ namespace DiceRevolver.Prototype
         private void NotifyReloadStarted()
         {
             shotPipeline?.ClearForReload();
-            passiveRuntime?.NotifyReloadStarted();
+            TryNotifyPassive(() => passiveRuntime?.NotifyReloadStarted());
+            TryNotifyPassive(eventRuleRuntimes.NotifyReloadStarted);
             debugTrace.RecordStandalone(
                 CombatDebugEventType.ReloadStarted,
                 "换弹",
@@ -525,9 +533,127 @@ namespace DiceRevolver.Prototype
         private static ProjectileTypeDefinition GetBaseProjectileType(
             DiceFaceConfigurationSnapshot snapshot)
         {
-            return snapshot.GetEffect(DiceFaceSlotType.Base) is ProjectileSpawnEffect spawnEffect
-                ? spawnEffect.ProjectileDefinition?.ProjectileTypeDefinition
-                : null;
+            if (snapshot.GetEffect(DiceFaceSlotType.Base) is ProjectileSpawnEffect spawnEffect)
+            {
+                return spawnEffect.ProjectileDefinition?.ProjectileTypeDefinition;
+            }
+
+            return snapshot.GetRule(DiceFaceSlotType.Base)
+                ?.FindPrimaryProjectileDefinition()
+                ?.ProjectileTypeDefinition;
+        }
+
+        private DiceDrawConstraintResult FilterPassiveDrawCandidates(
+            IReadOnlyList<int> realChamberPool,
+            int? forcedFace)
+        {
+            DiceDrawConstraintResult legacy = passiveRuntime != null
+                ? passiveRuntime.FilterDrawCandidates(realChamberPool, forcedFace, false)
+                : new DiceDrawConstraintResult(realChamberPool, forcedFace.HasValue);
+            try
+            {
+                return eventRuleRuntimes.FilterDrawCandidates(
+                    legacy.Candidates,
+                    realChamberPool,
+                    forcedFace);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, this);
+                return new DiceDrawConstraintResult(
+                    realChamberPool,
+                    forcedFace.HasValue && ContainsFace(realChamberPool, forcedFace.Value));
+            }
+        }
+
+        private ProjectileRuntimeStats ModifyPassiveProjectileStats(
+            int sourceFace,
+            ProjectileRuntimeStats stats,
+            DiceFaceActivation activation)
+        {
+            ProjectileRuntimeStats modified = stats;
+            try
+            {
+                if (passiveRuntime != null)
+                {
+                    modified = passiveRuntime.ModifyProjectileStats(sourceFace, modified);
+                }
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, this);
+            }
+
+            try
+            {
+                modified = eventRuleRuntimes.ModifyProjectileStats(
+                    sourceFace,
+                    modified,
+                    activation);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, this);
+            }
+
+            return modified;
+        }
+
+        private void NotifyProjectileSpawnedPassives(
+            int sourceFace,
+            ProjectileHandle projectile,
+            DiceFaceActivation activation)
+        {
+            TryNotifyPassive(() => passiveRuntime?.NotifyProjectileSpawned(
+                sourceFace,
+                projectile,
+                activation));
+            TryNotifyPassive(() => eventRuleRuntimes.NotifyProjectileSpawned(
+                sourceFace,
+                projectile,
+                activation));
+        }
+
+        private void NotifyReloadCompletedPassives()
+        {
+            TryNotifyPassive(() => passiveRuntime?.NotifyReloadCompleted());
+            TryNotifyPassive(eventRuleRuntimes.NotifyReloadCompleted);
+        }
+
+        private void NotifyFaceConsumedPassives(int face)
+        {
+            TryNotifyPassive(() => passiveRuntime?.NotifyFaceConsumed(face));
+            TryNotifyPassive(() => eventRuleRuntimes.NotifyFaceConsumed(face));
+        }
+
+        private void TryNotifyPassive(Action notification)
+        {
+            try
+            {
+                notification?.Invoke();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, this);
+            }
+        }
+
+        private static bool ContainsFace(IReadOnlyList<int> faces, int face)
+        {
+            if (faces == null)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < faces.Count; index++)
+            {
+                if (faces[index] == face)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void AnimateReload(float progress)

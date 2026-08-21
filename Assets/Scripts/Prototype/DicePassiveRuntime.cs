@@ -91,6 +91,14 @@ namespace DiceRevolver.Prototype
             IReadOnlyList<int> remainingFaces,
             int? forcedFace)
         {
+            return FilterDrawCandidates(remainingFaces, forcedFace, true);
+        }
+
+        public DiceDrawConstraintResult FilterDrawCandidates(
+            IReadOnlyList<int> remainingFaces,
+            int? forcedFace,
+            bool fallbackWhenEmpty)
+        {
             if (remainingFaces == null || remainingFaces.Count == 0)
             {
                 return new DiceDrawConstraintResult(Array.Empty<int>(), false);
@@ -123,6 +131,11 @@ namespace DiceRevolver.Prototype
 
             if (candidates.Count == 0)
             {
+                if (!fallbackWhenEmpty)
+                {
+                    return new DiceDrawConstraintResult(Array.Empty<int>(), false);
+                }
+
                 for (int index = 0; index < remainingFaces.Count; index++)
                 {
                     candidates.Add(remainingFaces[index]);
