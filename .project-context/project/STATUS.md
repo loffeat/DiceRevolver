@@ -36,7 +36,7 @@
 
 ## 活跃工作流
 
-- [2026-08-21 事件配置页面](workstreams/2026-08-21-event-rule-editor/STATE.md)（`planned`；设计稿与三栏界面方向已确认，待编写实施计划并开发）
+- [2026-08-21 事件配置页面](workstreams/2026-08-21-event-rule-editor/STATE.md)（`planned`；设计稿与 10 任务实施计划已完成，待选择执行方式并开发）
 
 ## 完成历史
 

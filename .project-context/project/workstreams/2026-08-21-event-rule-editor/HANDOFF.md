@@ -2,11 +2,11 @@
 
 ## 当前状态
 
-- `planned`，需求、正式设计稿和页面视觉方向均已确认，尚未开始代码实施。
+- `planned`，需求、正式设计稿、页面视觉方向和测试先行实施计划均已完成，尚未开始代码实施。
 
 ## 下一步首个动作
 
-- 读取规则列表设计稿并使用 `writing-plans` 编写实施计划；随后从纯 C# 规则数据模型和执行器开始测试驱动实现。
+- 读取[实施计划](../../../../docs/superpowers/plans/2026-08-21-event-rule-editor.md)，确认采用 Subagent-Driven 或 Inline Execution；随后从纯 C# 规则数据模型和执行器开始测试驱动实现。
 
 ## 当前方案及原因
 
@@ -27,7 +27,6 @@
 
 ## 尚未完成
 
-- 尚未编写实施计划。
 - 尚未创建规则运行时、EditorWindow、兼容适配器或迁移资源。
 - 尚未运行本工作流的 Unity 测试和可见 Play Mode 验收。
 
@@ -54,5 +53,6 @@
 
 - [工作流状态](STATE.md)
 - [规则列表设计稿](../../../../docs/superpowers/specs/2026-08-21-event-rule-editor-design.md)
+- [实施计划](../../../../docs/superpowers/plans/2026-08-21-event-rule-editor.md)
 - [战斗 Debug 工作流](../2026-08-21-combat-debug-trace/HANDOFF.md)
 - [项目状态](../../STATUS.md)

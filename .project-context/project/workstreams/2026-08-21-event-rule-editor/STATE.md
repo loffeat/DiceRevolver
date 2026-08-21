@@ -26,7 +26,7 @@
 
 ## 待办
 
-1. 读取已批准设计并编写分阶段实施计划。
+1. 选择 Subagent-Driven 或 Inline Execution 执行已完成的实施计划。
 2. 建立 Rule、Trigger、Condition、Result 数据接口和纯 C# 执行器。
 3. 建立三栏 Unity Editor 页面、模块自动发现、SubAsset 编辑和即时校验。
 4. 增加旧 Effect 兼容适配器。
@@ -36,11 +36,11 @@
 
 ## 当前正在进行
 
-- 无，等待下一次明确推进。
+- 实施计划已完成并通过规格覆盖、占位符和接口一致性自审；等待用户选择执行方式。
 
 ## 下一步
 
-1. 读取已批准设计并使用 `writing-plans` 编写分阶段实施计划。
+1. 读取[实施计划](../../../../docs/superpowers/plans/2026-08-21-event-rule-editor.md)，选择执行方式。
 2. 从纯 C# 规则数据模型、执行器和测试开始实施。
 
 ## 已完成
@@ -48,6 +48,7 @@
 - 完成并批准规则列表事件编辑器设计稿。
 - 确认 Unity Editor 深色三栏页面的可视化方向和主要交互层级。
 - 战斗事件因果 Debug 已可作为编辑器 Play Mode 调试区的数据来源。
+- 完成 10 个独立验收任务、69 个细分步骤的测试先行实施计划，并明确受保护 Prefab、旧 Effect 兼容和 Ground Y 豁免边界。
 
 ## 阻塞
 
@@ -62,6 +63,7 @@
 ## 涉及文件
 
 - `docs/superpowers/specs/2026-08-21-event-rule-editor-design.md`
+- `docs/superpowers/plans/2026-08-21-event-rule-editor.md`
 - 计划新增的 `Assets/Scripts/Prototype/` 规则运行时文件。
 - 计划新增的 `Assets/Scripts/Editor/` 事件规则编辑器文件。
 - 计划新增的 `Assets/Tests/EditMode/` 规则运行时与编辑器测试。
@@ -77,4 +79,5 @@
 ## 验证记录
 
 - [passed] `2026-08-21`：用户确认三栏事件配置页面的可视化方向。
+- [passed] `2026-08-21`：实施计划完成规格覆盖、占位符和跨任务接口一致性自审。
 - [not-run] `2026-08-21`：尚未开始代码实施，因此未运行本工作流的 Unity 测试。
