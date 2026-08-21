@@ -15,6 +15,23 @@ namespace DiceRevolver.Tests
             "Assets/Prefab/Projectiles/BasicRevolverBullet.prefab";
         private const string PrototypeProjectilePrefabPath = "Assets/PrototypeProjectile.prefab";
 
+        [TestCase(PlayerPrefabPath)]
+        [TestCase(RobotPrefabPath)]
+        public void ProtectedGunPrefabsKeepLegacyProjectileSpawnBaseEffects(string prefabPath)
+        {
+            GameObject prefab = LoadPrefab(prefabPath);
+            DiceFaceLoadout loadout = prefab.GetComponentInChildren<DiceFaceLoadout>(true);
+            SerializedProperty baseEffects = RequiredProperty(new SerializedObject(loadout), "baseEffects");
+
+            Assert.That(baseEffects.arraySize, Is.GreaterThan(0));
+            for (int index = 0; index < baseEffects.arraySize; index++)
+            {
+                Assert.That(
+                    baseEffects.GetArrayElementAtIndex(index).objectReferenceValue,
+                    Is.TypeOf<ProjectileSpawnEffect>());
+            }
+        }
+
         [Test]
         public void PlayerGunPrefabKeepsItsApprovedSettingsReferencesAndPose()
         {

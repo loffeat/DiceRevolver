@@ -17,6 +17,8 @@ namespace DiceRevolver.Editor
             EnsureFolder("Assets/Resources", "DiceFacePrototype");
             EnsureFolder(RootFolder, "BulletEvents");
             EnsureFolder(RootFolder, "DiceFaces");
+            EnsureFolder(RootFolder, "EventRules");
+            EnsureFolder(RootFolder + "/EventRules", "Core");
 
             ExtraShotOnFireEffect extraShot = LoadOrCreate<ExtraShotOnFireEffect>(
                 $"{RootFolder}/BulletEvents/ExtraShotOnFireEffect.asset",
@@ -122,6 +124,7 @@ namespace DiceRevolver.Editor
                 SetObjectArray(eventLibrary, "effects", extraShot, explosion, forceFour);
             }
 
+            EventRuleMigrationUtility.MigrateCoreRules();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.Log("Dice face prototype assets are ready.");
@@ -150,7 +153,7 @@ namespace DiceRevolver.Editor
             DiceFaceSlotType slotType,
             BulletEventEffect effect)
         {
-            if (entry == null || entry.Effect != null || effect == null)
+            if (entry == null || entry.Rule != null || entry.Effect != null || effect == null)
             {
                 return;
             }

@@ -17,16 +17,9 @@ MonoBehaviour:
     4\u3002"
   displayColor: {r: 0.25, g: 0.7, b: 0.95, a: 1}
   slotType: 3
-  effect: {fileID: 11400000, guid: 0d8454fee0df2a24a9badf737b5bc168, type: 2}
-  projectilePrefabOverride: {fileID: 0}
-  projectileType: Default
-  projectileTag: Default
-  damage: 1
-  flightDistance: 18
-  flightSpeed: 18
-  enemyPierceCount: 0
-  extensionPorts: []
+  rule: {fileID: 11400000, guid: a2b2b2d45a6710240814ee61461d02c2, type: 2}
+  effect: {fileID: 0}
+  passiveEffect: {fileID: 0}
   onFireEffects: []
   onHitEffects: []
-  onFireEndEffects:
-  - {fileID: 11400000, guid: 0d8454fee0df2a24a9badf737b5bc168, type: 2}
+  onFireEndEffects: []
