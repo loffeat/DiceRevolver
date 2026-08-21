@@ -3,6 +3,7 @@
 ## 当前状态
 
 - `completed`。运行时、资源、迁移、UI 和 EditMode 自动化均已完成。
+- 功能分支已合并到 `main` 并清理。
 - 新内容已进入资源库，但未自动装备到 Player 或 TestRobot。
 
 ## 当前方案及原因

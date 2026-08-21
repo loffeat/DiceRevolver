@@ -2,7 +2,7 @@
 
 - ID: `2026-08-20-lightning-build-backlog`
 - Status: `completed`
-- Branch: `codex/lightning-build-system`
+- Branch: `main`（功能分支已合并并清理）
 - Created: `2026-08-20`
 - Updated: `2026-08-21`
 
@@ -33,6 +33,7 @@
 - 链式反应在开火后消耗自身，并把当前面的非空活动槽覆盖到下一次正常抽中的骰面；空槽不覆盖目标已有内容，被动槽永不复制，奖励射击不消费覆盖。
 - 新词条和雷电资源只追加到资源库，没有自动装备到 Player 或 TestRobot。
 - 定向 Builder 可幂等补齐缺失资源和空引用，不重写已有调参，也不加载保存受保护 Prefab 或场景。
+- 功能分支已合并到 `main` 并清理；后续事件配置页面以该公开模块和资源状态为基线。
 
 ## 保护结果
 

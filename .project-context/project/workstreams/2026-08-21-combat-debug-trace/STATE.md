@@ -2,7 +2,7 @@
 
 - ID: `2026-08-21-combat-debug-trace`
 - Status: `completed`
-- Branch: `codex/combat-debug-trace`
+- Branch: `main`（功能分支已合并并清理）
 - Created: `2026-08-21`
 - Updated: `2026-08-21`
 
@@ -32,6 +32,7 @@
 - 运行时自动在玩家 HUD 左上角创建 Debug 面板，只订阅玩家枪械。
 - 增加可持久编辑的 `CombatDebugSettings.asset`，开放启用、行数、停留时间、字号和面板尺寸。
 - 完成规则列表事件编辑器正式设计方案，本工作流不实施该重构。
+- 功能分支已合并到 `main` 并清理；事件配置页面工作流已作为后续独立事项登记。
 
 ## 下一步
 
