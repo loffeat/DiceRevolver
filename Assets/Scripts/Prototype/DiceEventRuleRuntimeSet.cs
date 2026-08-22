@@ -6,13 +6,14 @@ namespace DiceRevolver.Prototype
 {
     public sealed class DiceEventRuleRuntimeSet
     {
-        private const int SlotCount = 5;
+        private const int SlotCount = 4;
         private readonly EventRuleDefinition[,] definitions =
             new EventRuleDefinition[DiceRevolverRules.FaceCount, SlotCount];
         private readonly EventRuleRuntime[,] runtimes =
             new EventRuleRuntime[DiceRevolverRules.FaceCount, SlotCount];
         private readonly ProjectileTypeDefinition[] baseProjectileTypes =
             new ProjectileTypeDefinition[DiceRevolverRules.FaceCount];
+        private readonly bool[] passiveFaces = new bool[DiceRevolverRules.FaceCount];
         private OwnedProjectileRegistry ownedProjectiles;
         private Func<BonusDiceActivationRequest, bool> bonusActivation;
         private CombatDebugTrace debugTrace;
@@ -46,6 +47,7 @@ namespace DiceRevolver.Prototype
 
             int faceIndex = face - 1;
             baseProjectileTypes[faceIndex] = ResolveBaseProjectileType(snapshot);
+            passiveFaces[faceIndex] = snapshot.IsPassiveFace;
             for (int slotIndex = 0; slotIndex < SlotCount; slotIndex++)
             {
                 DiceFaceSlotType slot = (DiceFaceSlotType)slotIndex;
@@ -151,7 +153,12 @@ namespace DiceRevolver.Prototype
             ProjectileRuntimeStats modified = stats;
             for (int faceIndex = 0; faceIndex < DiceRevolverRules.FaceCount; faceIndex++)
             {
-                EventRuleRuntime runtime = runtimes[faceIndex, (int)DiceFaceSlotType.Passive];
+                if (!passiveFaces[faceIndex])
+                {
+                    continue;
+                }
+
+                EventRuleRuntime runtime = runtimes[faceIndex, (int)DiceFaceSlotType.Base];
                 if (runtime == null)
                 {
                     continue;
@@ -299,7 +306,12 @@ namespace DiceRevolver.Prototype
         {
             for (int faceIndex = 0; faceIndex < DiceRevolverRules.FaceCount; faceIndex++)
             {
-                EventRuleRuntime runtime = runtimes[faceIndex, (int)DiceFaceSlotType.Passive];
+                if (!passiveFaces[faceIndex])
+                {
+                    continue;
+                }
+
+                EventRuleRuntime runtime = runtimes[faceIndex, (int)DiceFaceSlotType.Base];
                 if (runtime == null)
                 {
                     continue;
@@ -324,7 +336,7 @@ namespace DiceRevolver.Prototype
             {
                 try
                 {
-                    exceptionLogger?.Invoke(exception, definitions[signal.EquippedFace - 1, (int)DiceFaceSlotType.Passive]);
+                    exceptionLogger?.Invoke(exception, definitions[signal.EquippedFace - 1, (int)DiceFaceSlotType.Base]);
                 }
                 catch (Exception)
                 {
@@ -360,7 +372,7 @@ namespace DiceRevolver.Prototype
                 signalType,
                 0,
                 sourceFace,
-                DiceFaceSlotType.Passive,
+                DiceFaceSlotType.Base,
                 activation,
                 shot,
                 projectile,
@@ -380,7 +392,7 @@ namespace DiceRevolver.Prototype
                 source.SignalType,
                 faceIndex + 1,
                 source.SourceFace,
-                DiceFaceSlotType.Passive,
+                DiceFaceSlotType.Base,
                 source.Activation,
                 source.Shot,
                 source.Projectile,

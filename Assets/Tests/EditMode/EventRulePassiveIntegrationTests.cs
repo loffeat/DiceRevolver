@@ -174,20 +174,16 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
-        public void GunPassesOnlyLegacyAllowedFacesIntoRuleDrawPriority()
+        public void GunPassesRealPoolIntoRuleDrawPriorityAndDefersFinisherFace()
         {
             GameObject owner = Own(new GameObject("Passive Draw Gun"));
             DiceRevolverGun gun = owner.AddComponent<DiceRevolverGun>();
-            SelectiveLegacyDrawEffect legacy = Own(
-                ScriptableObject.CreateInstance<SelectiveLegacyDrawEffect>());
-            legacy.DeniedFace = 2;
             SetDrawPriorityResultModule priority = Own(
                 ScriptableObject.CreateInstance<SetDrawPriorityResultModule>());
             Set(priority, "priority", 1);
             SourceFaceConditionModule ownerFace = Own(
                 ScriptableObject.CreateInstance<SourceFaceConditionModule>());
             InvokePrivate(gun, "Awake");
-            GetPrivate<DicePassiveRuntime>(gun, "passiveRuntime").RebuildFace(4, legacy);
             GetPrivate<DiceEventRuleRuntimeSet>(gun, "eventRuleRuntimes").RebuildFace(
                 1,
                 PassiveSnapshot(CreateRule(
@@ -200,17 +196,15 @@ namespace DiceRevolver.Tests
                 new[] { 1, 2, 3 },
                 null);
 
-            Assert.That(result.Candidates, Is.EqualTo(new[] { 3 }),
-                "face 2 was rejected by legacy and lower-priority face 3 draws before face 1");
+            Assert.That(result.Candidates, Is.EqualTo(new[] { 2, 3 }),
+                "higher-priority face 1 must be deferred and faces 2 and 3 draw first");
         }
 
         [Test]
-        public void GunAppliesLegacyStatsBeforeRuleMultipliersInStableFaceOrder()
+        public void GunAppliesRuleMultipliersInStableFaceOrder()
         {
             GameObject owner = Own(new GameObject("Passive Rule Gun"));
             DiceRevolverGun gun = owner.AddComponent<DiceRevolverGun>();
-            LegacyAddDamageEffect legacy = Own(
-                ScriptableObject.CreateInstance<LegacyAddDamageEffect>());
             OrderedMultiplierResult first = Own(
                 ScriptableObject.CreateInstance<OrderedMultiplierResult>());
             OrderedMultiplierResult second = Own(
@@ -221,9 +215,7 @@ namespace DiceRevolver.Tests
             second.Multiplier = 3f;
             second.Order = order;
             InvokePrivate(gun, "Awake");
-            DicePassiveRuntime legacyRuntime = GetPrivate<DicePassiveRuntime>(gun, "passiveRuntime");
             DiceEventRuleRuntimeSet rules = GetPrivate<DiceEventRuleRuntimeSet>(gun, "eventRuleRuntimes");
-            legacyRuntime.RebuildFace(4, legacy);
             rules.RebuildFace(1, PassiveSnapshot(CreateRule(first)));
             rules.RebuildFace(2, PassiveSnapshot(CreateRule(second)));
 
@@ -234,8 +226,8 @@ namespace DiceRevolver.Tests
                 Stats(1f),
                 null);
 
-            Assert.That(result.Damage, Is.EqualTo(12f).Within(0.0001f),
-                "(legacy 1 + 1) must be multiplied by face 1 then face 2 rules");
+            Assert.That(result.Damage, Is.EqualTo(6f).Within(0.0001f),
+                "1 must be multiplied by face 1 then face 2 rules");
             Assert.That(order, Is.EqualTo(new[] { 1, 2 }));
         }
 
@@ -247,12 +239,13 @@ namespace DiceRevolver.Tests
             RecordingSignalResult active = Own(
                 ScriptableObject.CreateInstance<RecordingSignalResult>());
             DiceEventRuleRuntimeSet runtimes = CreateRuntimeSet();
+            DiceFaceEntry passiveEntry = Entry(DiceFaceSlotType.Base, CreateRule(passive));
+            Set(passiveEntry, "isPassiveBase", true);
             DiceFaceConfigurationSnapshot snapshot = new DiceFaceConfigurationSnapshot(
-                null,
+                passiveEntry,
                 Entry(DiceFaceSlotType.OnFire, CreateRule(active)),
                 null,
-                null,
-                Entry(DiceFaceSlotType.Passive, CreateRule(passive)));
+                null);
             runtimes.RebuildFace(3, snapshot);
 
             runtimes.NotifyProjectileSpawned(2, default, null);
@@ -369,18 +362,15 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
-        public void RuleFailureCannotStopLegacyOrAnotherFaceRuleNotification()
+        public void RuleFailureCannotStopAnotherFaceRuleNotification()
         {
             GameObject owner = Own(new GameObject("Passive Exception Gun"));
             DiceRevolverGun gun = owner.AddComponent<DiceRevolverGun>();
-            RecordingLegacyEffect legacy = Own(
-                ScriptableObject.CreateInstance<RecordingLegacyEffect>());
             ThrowingResult throwing = Own(ScriptableObject.CreateInstance<ThrowingResult>());
             RecordingSignalResult healthy = Own(
                 ScriptableObject.CreateInstance<RecordingSignalResult>());
             List<Exception> exceptions = new();
             InvokePrivate(gun, "Awake");
-            DicePassiveRuntime legacyRuntime = GetPrivate<DicePassiveRuntime>(gun, "passiveRuntime");
             DiceEventRuleRuntimeSet rules = GetPrivate<DiceEventRuleRuntimeSet>(gun, "eventRuleRuntimes");
             rules.ConfigurePassiveServices(
                 null,
@@ -389,13 +379,11 @@ namespace DiceRevolver.Tests
                 null,
                 null,
                 (exception, _) => exceptions.Add(exception));
-            legacyRuntime.RebuildFace(4, legacy);
             rules.RebuildFace(1, PassiveSnapshot(CreateRule(throwing)));
             rules.RebuildFace(2, PassiveSnapshot(CreateRule(healthy)));
 
             InvokePrivate(gun, "NotifyReloadStarted");
 
-            Assert.That(legacy.Created.ReloadStartedCount, Is.EqualTo(1));
             Assert.That(healthy.Signals, Is.EqualTo(new[] { EventSignalType.ReloadStarted }));
             Assert.That(exceptions, Has.Count.EqualTo(1));
         }
@@ -676,24 +664,26 @@ namespace DiceRevolver.Tests
             SpawnProjectileResultModule spawn = Own(
                 ScriptableObject.CreateInstance<SpawnProjectileResultModule>());
             Set(spawn, "projectileDefinition", definition);
-            EventRuleDefinition baseRule = CreateRule(spawn);
-            Set(baseRule, "allowedSlots", DiceFaceSlotMask.Base);
             SameProjectileTypeConditionModule sameType = Own(
                 ScriptableObject.CreateInstance<SameProjectileTypeConditionModule>());
             OrderedMultiplierResult multiplier = Own(
                 ScriptableObject.CreateInstance<OrderedMultiplierResult>());
             multiplier.Multiplier = 2f;
             multiplier.Order = new List<int>();
-            EventRuleDefinition passiveRule = CreateRule(
-                multiplier,
-                new EventConditionModule[] { sameType });
+            EventRuleDefinition passiveRule = CreateRule(spawn);
+            Set(passiveRule, "results", new List<EventResultEntry>
+            {
+                new EventResultEntry(null, spawn),
+                new EventResultEntry(new EventConditionModule[] { sameType }, multiplier)
+            });
             DiceEventRuleRuntimeSet runtimes = CreateRuntimeSet();
+            DiceFaceEntry passiveEntry = Entry(DiceFaceSlotType.Base, passiveRule);
+            Set(passiveEntry, "isPassiveBase", true);
             DiceFaceConfigurationSnapshot snapshot = new DiceFaceConfigurationSnapshot(
-                Entry(DiceFaceSlotType.Base, baseRule),
+                passiveEntry,
                 null,
                 null,
-                null,
-                Entry(DiceFaceSlotType.Passive, passiveRule));
+                null);
             runtimes.RebuildFace(4, snapshot);
             ProjectileRuntimeStats stats = new ProjectileRuntimeStats(
                 "Type", "Tag", type, Array.Empty<ProjectileTagDefinition>(), 3f, 4f, 5f, 0);
@@ -836,7 +826,7 @@ namespace DiceRevolver.Tests
             Set(trigger, "signals", (EventSignalMask)(-1));
             EventRuleDefinition rule = Own(ScriptableObject.CreateInstance<EventRuleDefinition>());
             Set(rule, "trigger", trigger);
-            Set(rule, "allowedSlots", DiceFaceSlotMask.Passive);
+            Set(rule, "allowedSlots", DiceFaceSlotMask.Base);
             Set(rule, "conditions", conditions == null
                 ? new List<EventConditionModule>()
                 : new List<EventConditionModule>(conditions));
@@ -855,12 +845,9 @@ namespace DiceRevolver.Tests
 
         private DiceFaceConfigurationSnapshot PassiveSnapshot(EventRuleDefinition rule)
         {
-            return new DiceFaceConfigurationSnapshot(
-                null,
-                null,
-                null,
-                null,
-                Entry(DiceFaceSlotType.Passive, rule));
+            DiceFaceEntry entry = Entry(DiceFaceSlotType.Base, rule);
+            Set(entry, "isPassiveBase", true);
+            return new DiceFaceConfigurationSnapshot(entry, null, null, null);
         }
 
         private DiceFaceEntry Entry(DiceFaceSlotType slot, EventRuleDefinition rule)

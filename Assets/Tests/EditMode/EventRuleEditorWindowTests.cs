@@ -77,6 +77,7 @@ namespace DiceRevolver.Tests
                 "Fire");
 
             EventRuleEditorSelection state = window.SelectionState;
+            state.ShowAllEvents = false;
             state.SlotFilter = DiceFaceSlotType.OnHit;
             state.TagFilter = "sHoCk";
             state.ErrorOnly = true;
@@ -174,6 +175,34 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void WindowReplacesTriggerModuleAndDestroysTheOldSubAsset()
+        {
+            EventRuleDefinition rule = window.CreateRuleAt($"{TempFolder}/ReplacedTrigger.asset");
+            ScriptableObject original = window.AddTrigger(typeof(SignalTypeTriggerModule));
+
+            ScriptableObject replacement = window.ReplaceTrigger(typeof(SignalTypeTriggerModule));
+
+            Assert.That(replacement, Is.Not.SameAs(original));
+            Assert.That(rule.Trigger, Is.SameAs(replacement));
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            Object[] subAssets = AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(rule));
+            Assert.That(subAssets.Contains(replacement), Is.True);
+            Assert.That(subAssets.Contains(original), Is.False);
+        }
+
+        [Test]
+        public void WindowReplaceTriggerWithSameTypeKeepsExistingModule()
+        {
+            EventRuleDefinition rule = window.CreateRuleAt($"{TempFolder}/SameTrigger.asset");
+            ScriptableObject original = window.AddTrigger(typeof(SignalTypeTriggerModule));
+
+            ScriptableObject same = window.ReplaceTrigger(typeof(SignalTypeTriggerModule));
+
+            Assert.That(same, Is.SameAs(original));
+            Assert.That(rule.Trigger, Is.SameAs(original));
+        }
+
+        [Test]
         public void WindowMovesResultEntriesThroughTheAssetCommandBoundary()
         {
             EventRuleDefinition rule = window.CreateRuleAt($"{TempFolder}/Ordered.asset");
@@ -189,9 +218,42 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void AllEventsFilterMatchesRulesOfAnySlotByDefault()
+        {
+            EventRuleDefinition baseRule = CreateRule("AnyBase");
+            ConfigureMetadata(baseRule, "Anything", "", DiceFaceSlotMask.Base, "base");
+            EventRuleDefinition onFireRule = CreateRule("AnyOnFire");
+            ConfigureMetadata(onFireRule, "Anything", "", DiceFaceSlotMask.OnFire, "fire");
+            EventRuleDefinition onFireEndRule = CreateRule("AnyOnFireEnd");
+            ConfigureMetadata(onFireEndRule, "Anything", "", DiceFaceSlotMask.OnFireEnd, "end");
+
+            EventRuleEditorSelection state = window.SelectionState;
+            Assert.That(state.ShowAllEvents, Is.True);
+            Assert.That(state.Matches(baseRule, Array.Empty<EventRuleValidationIssue>()), Is.True);
+            Assert.That(state.Matches(onFireRule, Array.Empty<EventRuleValidationIssue>()), Is.True);
+            Assert.That(state.Matches(onFireEndRule, Array.Empty<EventRuleValidationIssue>()), Is.True);
+        }
+
+        [Test]
+        public void SelectingASlotClearsTheAllEventsFilter()
+        {
+            EventRuleEditorSelection state = window.SelectionState;
+            state.ShowAllEvents = false;
+            state.SlotFilter = DiceFaceSlotType.OnHit;
+            EventRuleDefinition wrongSlot = CreateRule("WrongSlot");
+            ConfigureMetadata(wrongSlot, "Anything", "", DiceFaceSlotMask.OnFire, "fire");
+
+            Assert.That(state.Matches(wrongSlot, Array.Empty<EventRuleValidationIssue>()), Is.False);
+
+            state.ShowAllEvents = true;
+            Assert.That(state.Matches(wrongSlot, Array.Empty<EventRuleValidationIssue>()), Is.True);
+        }
+
+        [Test]
         public void ValidationRefreshReplacesStaleIssuesAfterCommands()
         {
             window.CreateRuleAt($"{TempFolder}/Validation.asset");
+            window.SelectionState.ShowAllEvents = false;
             window.SelectionState.SlotFilter = DiceFaceSlotType.OnFire;
             window.RefreshValidation();
             Assert.That(window.ValidationIssues.Select(issue => issue.Code),

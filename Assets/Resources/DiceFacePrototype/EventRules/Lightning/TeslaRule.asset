@@ -96,8 +96,8 @@ MonoBehaviour:
     5%\u3002"
   displayColor: {r: 1, g: 0.83, b: 0.22, a: 1}
   tags: []
-  rarity:
-  allowedSlots: 16
+  rarity: 
+  allowedSlots: 2
   trigger: {fileID: 3386625906712383117}
   conditions: []
   results:

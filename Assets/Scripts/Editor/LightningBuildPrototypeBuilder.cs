@@ -43,6 +43,8 @@ namespace DiceRevolver.Editor
             MigrateEcho();
             MigrateChainReaction();
             MigrateFinisher();
+            EventRuleMigrationUtility.MigratePassiveBaseEntries();
+            EventRuleMigrationUtility.MigratePassiveRuleSlots();
             Debug.Log("Lightning Event Rules are ready.");
         }
 
@@ -93,7 +95,7 @@ namespace DiceRevolver.Editor
         {
             EventRuleMigrationUtility.MigrateRule(
                 EntryPath("Tesla"), RulePath("Tesla"),
-                DiceFaceSlotType.Passive,
+                DiceFaceSlotType.Base,
                 EventSignalMask.ProjectileSpawned |
                 EventSignalMask.BeforeProjectileStats |
                 EventSignalMask.ReloadStarted,
@@ -106,7 +108,7 @@ namespace DiceRevolver.Editor
         {
             EventRuleMigrationUtility.MigrateRule(
                 EntryPath("EchoSynergy"), RulePath("EchoSynergy"),
-                DiceFaceSlotType.Passive,
+                DiceFaceSlotType.Base,
                 EventSignalMask.ProjectileHit |
                 EventSignalMask.FaceConsumed |
                 EventSignalMask.ReloadStarted,
@@ -129,7 +131,7 @@ namespace DiceRevolver.Editor
         {
             EventRuleMigrationUtility.MigrateRule(
                 EntryPath("Finisher"), RulePath("Finisher"),
-                DiceFaceSlotType.Passive, EventSignalMask.DrawCandidate, null,
+                DiceFaceSlotType.Base, EventSignalMask.DrawCandidate, null,
                 rule =>
                 {
                     if (rule.Results.Count == 0)

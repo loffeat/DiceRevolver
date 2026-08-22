@@ -73,7 +73,7 @@ namespace DiceRevolver.Tests
             yield return Port<CombatDebugSettings>("fontSize", "字体大小");
             yield return Port<CombatDebugSettings>("panelWidth", "面板宽度");
             yield return Port<CombatDebugSettings>("panelHeight", "面板高度");
-            yield return Port<DiceFaceLoadout>("faceConfigurations", "六面五槽位配置");
+            yield return Port<DiceFaceLoadout>("faceConfigurations", "六面四槽位配置");
         }
 
         [TestCaseSource(nameof(CoreCombatPorts))]

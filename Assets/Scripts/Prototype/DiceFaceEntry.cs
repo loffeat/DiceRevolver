@@ -15,6 +15,7 @@ namespace DiceRevolver.Prototype
         [SerializeField, InspectorName("事件规则")] private EventRuleDefinition rule;
         [SerializeField, InspectorName("事件效果")] private BulletEventEffect effect;
         [SerializeField, InspectorName("被动效果")] private PassiveEventEffect passiveEffect;
+        [SerializeField, InspectorName("被动型基础")] private bool isPassiveBase;
 
         [SerializeField, HideInInspector] private BulletEventEffect[] onFireEffects = System.Array.Empty<BulletEventEffect>();
         [SerializeField, HideInInspector] private BulletEventEffect[] onHitEffects = System.Array.Empty<BulletEventEffect>();
@@ -23,6 +24,7 @@ namespace DiceRevolver.Prototype
         public string DisplayName => displayName;
         public string Description => description;
         public Color DisplayColor => displayColor;
+        public bool IsPassiveBase => isPassiveBase;
         public DiceFaceSlotType SlotType =>
             rule != null || effect != null || passiveEffect != null ? slotType : ResolveLegacySlotType();
         public EventRuleDefinition Rule => rule;

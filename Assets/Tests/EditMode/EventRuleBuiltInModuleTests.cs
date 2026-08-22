@@ -229,18 +229,16 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
-        public void QueueOverlayCopiesNonEmptyReusableActiveSlotsAndExcludesPassiveAndSourceOnFireEnd()
+        public void QueueOverlayCopiesNonEmptyReusableActiveSlotsAndExcludesSourceOnFireEnd()
         {
             DiceFaceEntry baseEntry = Entry(DiceFaceSlotType.Base);
             DiceFaceEntry onHitEntry = Entry(DiceFaceSlotType.OnHit);
             DiceFaceEntry onFireEndEntry = Entry(DiceFaceSlotType.OnFireEnd);
-            DiceFaceEntry passiveEntry = Entry(DiceFaceSlotType.Passive);
             DiceFaceConfigurationSnapshot snapshot = new DiceFaceConfigurationSnapshot(
                 baseEntry,
                 null,
                 onHitEntry,
-                onFireEndEntry,
-                passiveEntry);
+                onFireEndEntry);
             DiceFaceActivation activation = Activation(Vector3.forward, snapshot);
             FakeServices services = new FakeServices { OverlayAccepted = true };
             QueueActiveOverlayResultModule result = Own(
@@ -256,13 +254,6 @@ namespace DiceRevolver.Tests
             Assert.That(overlay.OnFireEntry, Is.Null);
             Assert.That(overlay.OnHitEntry, Is.SameAs(onHitEntry));
             Assert.That(overlay.OnFireEndEntry, Is.Null);
-            Assert.That(new[]
-            {
-                overlay.BaseEntry,
-                overlay.OnFireEntry,
-                overlay.OnHitEntry,
-                overlay.OnFireEndEntry
-            }.Contains(passiveEntry), Is.False);
         }
 
         [Test]

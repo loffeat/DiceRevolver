@@ -7,8 +7,8 @@ namespace DiceRevolver.Prototype
     [Serializable]
     public sealed class EventResultEntry
     {
-        [SerializeField] private List<EventConditionModule> conditions = new();
-        [SerializeField] private EventResultModule result;
+        [SerializeField, InspectorName("局部条件")] private List<EventConditionModule> conditions = new();
+        [SerializeField, InspectorName("结果模块")] private EventResultModule result;
 
         public EventResultEntry(IReadOnlyList<EventConditionModule> conditions, EventResultModule result)
         {
@@ -24,17 +24,17 @@ namespace DiceRevolver.Prototype
 
     public sealed class EventRuleDefinition : ScriptableObject
     {
-        [SerializeField] private string displayName;
-        [SerializeField] [TextArea] private string description;
-        [SerializeField] private Color displayColor = Color.white;
-        [SerializeField] private List<string> tags = new();
-        [SerializeField] private string rarity;
-        [SerializeField] private DiceFaceSlotMask allowedSlots = DiceFaceSlotMask.All;
-        [SerializeField] private EventTriggerModule trigger;
-        [SerializeField] private List<EventConditionModule> conditions = new();
-        [SerializeField] private List<EventResultEntry> results = new();
-        [SerializeField] private int eventBudgetCost = 1;
-        [SerializeField] private EventRuleRecursionPolicy recursionPolicy = EventRuleRecursionPolicy.DenyReentry;
+        [SerializeField, InspectorName("显示名称")] private string displayName;
+        [SerializeField, TextArea, InspectorName("描述")] private string description;
+        [SerializeField, InspectorName("显示颜色")] private Color displayColor = Color.white;
+        [SerializeField, InspectorName("标签")] private List<string> tags = new();
+        [SerializeField, InspectorName("稀有度")] private string rarity;
+        [SerializeField, InspectorName("事件类型")] private DiceFaceSlotMask allowedSlots = DiceFaceSlotMask.All;
+        [SerializeField, InspectorName("触发器")] private EventTriggerModule trigger;
+        [SerializeField, InspectorName("规则条件")] private List<EventConditionModule> conditions = new();
+        [SerializeField, InspectorName("结果列表")] private List<EventResultEntry> results = new();
+        [SerializeField, InspectorName("事件预算消耗")] private int eventBudgetCost = 1;
+        [SerializeField, InspectorName("递归策略")] private EventRuleRecursionPolicy recursionPolicy = EventRuleRecursionPolicy.DenyReentry;
 
         public string DisplayName => displayName;
         public string Description => description;
@@ -229,7 +229,6 @@ namespace DiceRevolver.Prototype
                 DiceFaceSlotType.OnFire => DiceFaceSlotMask.OnFire,
                 DiceFaceSlotType.OnHit => DiceFaceSlotMask.OnHit,
                 DiceFaceSlotType.OnFireEnd => DiceFaceSlotMask.OnFireEnd,
-                DiceFaceSlotType.Passive => DiceFaceSlotMask.Passive,
                 _ => DiceFaceSlotMask.None
             };
         }

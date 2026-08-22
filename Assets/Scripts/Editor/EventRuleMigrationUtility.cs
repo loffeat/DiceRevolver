@@ -30,6 +30,79 @@ namespace DiceRevolver.Editor
             MigrateLoadedFour();
         }
 
+        [MenuItem("Dice Revolver/Migrate Passive Base Events")]
+        public static void MigratePassiveBaseEvents()
+        {
+            MigratePassiveBaseEntries();
+            MigratePassiveRuleSlots();
+            AssetDatabase.SaveAssets();
+        }
+
+        public static void MigratePassiveBaseEntries()
+        {
+            string[] paths = AssetDatabase.FindAssets("t:DiceFaceEntry")
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Where(path => path.StartsWith(Root + "/DiceFaces/", StringComparison.Ordinal))
+                .ToArray();
+            foreach (string path in paths)
+            {
+                DiceFaceEntry entry = AssetDatabase.LoadAssetAtPath<DiceFaceEntry>(path);
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                SerializedObject serialized = new SerializedObject(entry);
+                SerializedProperty slotType = serialized.FindProperty("slotType");
+                SerializedProperty isPassiveBase = serialized.FindProperty("isPassiveBase");
+                if (slotType != null &&
+                    slotType.intValue == (int)DiceFaceSlotType.Passive)
+                {
+                    slotType.intValue = (int)DiceFaceSlotType.Base;
+                    if (isPassiveBase != null)
+                    {
+                        isPassiveBase.boolValue = true;
+                    }
+
+                    serialized.ApplyModifiedPropertiesWithoutUndo();
+                    EditorUtility.SetDirty(entry);
+                }
+            }
+
+            AssetDatabase.SaveAssets();
+        }
+
+        public static void MigratePassiveRuleSlots()
+        {
+            string[] ruleNames = { "TeslaRule", "EchoSynergyRule", "FinisherRule" };
+            string[] paths = AssetDatabase.FindAssets("t:EventRuleDefinition")
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Where(path => ruleNames.Contains(
+                    System.IO.Path.GetFileName(path),
+                    StringComparer.Ordinal))
+                .ToArray();
+            foreach (string path in paths)
+            {
+                EventRuleDefinition rule = AssetDatabase.LoadAssetAtPath<EventRuleDefinition>(path);
+                if (rule == null)
+                {
+                    continue;
+                }
+
+                SerializedObject serialized = new SerializedObject(rule);
+                SerializedProperty allowedSlots = serialized.FindProperty("allowedSlots");
+                if (allowedSlots != null &&
+                    allowedSlots.intValue != (int)DiceFaceSlotMask.Base)
+                {
+                    allowedSlots.intValue = (int)DiceFaceSlotMask.Base;
+                    serialized.ApplyModifiedPropertiesWithoutUndo();
+                    EditorUtility.SetDirty(rule);
+                }
+            }
+
+            AssetDatabase.SaveAssets();
+        }
+
         public static EventRuleDefinition MigrateRule(
             string entryPath,
             string rulePath,
@@ -288,16 +361,11 @@ namespace DiceRevolver.Editor
                 return;
             }
 
-            string legacyProperty = slot == DiceFaceSlotType.Passive
-                ? "passiveEffect"
-                : "effect";
-            serializedEntry.FindProperty(legacyProperty).objectReferenceValue = null;
-            if (slot != DiceFaceSlotType.Passive)
-            {
-                ClearArray(serializedEntry.FindProperty("onFireEffects"));
-                ClearArray(serializedEntry.FindProperty("onHitEffects"));
-                ClearArray(serializedEntry.FindProperty("onFireEndEffects"));
-            }
+            SerializedProperty legacyProperty = serializedEntry.FindProperty("effect");
+            legacyProperty.objectReferenceValue = null;
+            ClearArray(serializedEntry.FindProperty("onFireEffects"));
+            ClearArray(serializedEntry.FindProperty("onHitEffects"));
+            ClearArray(serializedEntry.FindProperty("onFireEndEffects"));
 
             serializedEntry.ApplyModifiedPropertiesWithoutUndo();
             AssetDatabase.SaveAssetIfDirty(entry);
@@ -318,25 +386,16 @@ namespace DiceRevolver.Editor
                     ArrayContainsOnly(serializedEntry.FindProperty("onFireEndEffects"), null);
             }
 
-            if ((slot == DiceFaceSlotType.Passive && expectedLegacyEffect is not PassiveEventEffect) ||
-                (slot != DiceFaceSlotType.Passive && expectedLegacyEffect is not BulletEventEffect))
+            if (expectedLegacyEffect is not BulletEventEffect)
             {
                 return false;
             }
 
-            string legacyProperty = slot == DiceFaceSlotType.Passive
-                ? "passiveEffect"
-                : "effect";
-            UnityEngine.Object direct = serializedEntry.FindProperty(legacyProperty)
+            UnityEngine.Object direct = serializedEntry.FindProperty("effect")
                 .objectReferenceValue;
             if (direct != null && direct != expectedLegacyEffect)
             {
                 return false;
-            }
-
-            if (slot == DiceFaceSlotType.Passive)
-            {
-                return true;
             }
 
             return ArrayContainsOnly(serializedEntry.FindProperty("onFireEffects"), expectedLegacyEffect) &&
@@ -452,7 +511,6 @@ namespace DiceRevolver.Editor
                 DiceFaceSlotType.OnFire => DiceFaceSlotMask.OnFire,
                 DiceFaceSlotType.OnHit => DiceFaceSlotMask.OnHit,
                 DiceFaceSlotType.OnFireEnd => DiceFaceSlotMask.OnFireEnd,
-                DiceFaceSlotType.Passive => DiceFaceSlotMask.Passive,
                 _ => DiceFaceSlotMask.None
             };
         }

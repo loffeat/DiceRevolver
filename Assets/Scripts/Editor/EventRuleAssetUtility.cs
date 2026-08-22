@@ -60,6 +60,48 @@ namespace DiceRevolver.Editor
                 "Add Event Rule Module");
         }
 
+        public static ScriptableObject ReplaceTrigger(
+            EventRuleDefinition rule,
+            Type moduleType)
+        {
+            EnsureSavedRule(rule);
+            ValidateModuleType(moduleType);
+            if (!typeof(EventTriggerModule).IsAssignableFrom(moduleType))
+            {
+                throw new ArgumentException(
+                    $"Type {moduleType.FullName} is not an Event Trigger module.",
+                    nameof(moduleType));
+            }
+
+            SerializedObject serializedRule = new SerializedObject(rule);
+            SerializedProperty reference = RequireObjectReference(serializedRule, "trigger");
+            Object oldModule = reference.objectReferenceValue;
+            if (oldModule != null && oldModule.GetType() == moduleType)
+            {
+                return (ScriptableObject)oldModule;
+            }
+
+            IReadOnlyList<Object> oldClosure = CollectReachableModules(oldModule);
+            int undoGroup = BeginUndoGroup("Replace Event Rule Trigger");
+            ScriptableObject module = null;
+            try
+            {
+                Undo.RecordObject(rule, "Replace Event Rule Trigger");
+                module = CreateModuleSubAsset(rule, moduleType, "Replace Event Rule Trigger");
+                reference.objectReferenceValue = module;
+                serializedRule.ApplyModifiedProperties();
+                DestroyOwnedModuleClosureIfUnreferenced(rule, oldClosure);
+                SaveChanged(rule, module);
+                Undo.CollapseUndoOperations(undoGroup);
+                return module;
+            }
+            catch
+            {
+                RollbackUndoGroup(undoGroup, new Object[] { module }, rule);
+                throw;
+            }
+        }
+
         public static ScriptableObject AddModuleToArray(
             EventRuleDefinition rule,
             Type moduleType,

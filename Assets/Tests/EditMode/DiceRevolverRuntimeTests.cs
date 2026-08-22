@@ -167,5 +167,55 @@ namespace DiceRevolver.Tests
 
             Assert.That(runtime.ReloadDuration, Is.EqualTo(0.05f));
         }
+
+        [Test]
+        public void PassiveFacesAreExcludedFromTheRoundPool()
+        {
+            DiceRevolverRuntime runtime = new(5f, 2f, true, true);
+            runtime.RebuildActiveFaces(new[] { 2, 5 });
+
+            Assert.That(runtime.RemainingRounds, Is.EqualTo(4));
+            Assert.That(runtime.CreateRemainingFacesSnapshot(), Is.EqualTo(new[] { 1, 3, 4, 6 }));
+        }
+
+        [Test]
+        public void RoundEndsWhenActivePoolIsExhausted()
+        {
+            DiceRevolverRuntime runtime = new(5f, 2f, true, true);
+            runtime.RebuildActiveFaces(new[] { 2, 5 });
+
+            for (int i = 0; i < 4; i++)
+            {
+                Assert.That(runtime.TryBeginShot(i).Status, Is.EqualTo(DiceRevolverDrawStatus.Fired));
+            }
+
+            Assert.That(runtime.TryBeginShot(4f).Status, Is.EqualTo(DiceRevolverDrawStatus.Empty));
+        }
+
+        [Test]
+        public void ManualReloadIsAllowedOnceActivePoolIsExhausted()
+        {
+            DiceRevolverRuntime runtime = new(5f, 2f, false, true);
+            runtime.RebuildActiveFaces(new[] { 2 });
+
+            for (int i = 0; i < 5; i++)
+            {
+                runtime.TryBeginShot(i);
+            }
+
+            Assert.That(runtime.Tick(5f, true).ReloadStarted, Is.True);
+        }
+
+        [Test]
+        public void RebuildActiveFacesRefillsOnlyActiveFaces()
+        {
+            DiceRevolverRuntime runtime = new(5f, 2f, true, true);
+            runtime.RebuildActiveFaces(new[] { 2 });
+            Assert.That(runtime.RemainingRounds, Is.EqualTo(5));
+
+            runtime.RebuildActiveFaces(new[] { 2, 5 });
+            Assert.That(runtime.RemainingRounds, Is.EqualTo(4));
+            Assert.That(runtime.CreateRemainingFacesSnapshot(), Is.EqualTo(new[] { 1, 3, 4, 6 }));
+        }
     }
 }

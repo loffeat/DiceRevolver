@@ -19,7 +19,6 @@ namespace DiceRevolver.Prototype
                 DiceFaceSlotType.OnFire => "开火",
                 DiceFaceSlotType.OnHit => "命中",
                 DiceFaceSlotType.OnFireEnd => "开火后",
-                DiceFaceSlotType.Passive => "被动",
                 _ => "未知"
             };
         }

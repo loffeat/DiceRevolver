@@ -51,11 +51,11 @@ MonoBehaviour:
   m_Name: FinisherRule
   m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.EventRuleDefinition
   displayName: "\u6536\u5C3E\u8005"
-  description: "\u8BE5\u9AB0\u9762\u4F1A\u7B49\u5F85\u666E\u901A\u9AB0\u9762\u6D88\u8017\u540E\u518D\u8FDB\u5165\u62BD\u53D6\u6C60\u3002"
-  displayColor: {r: 0.94, g: 0.32, b: 0.28, a: 1}
+  description: "\u8BE5\u9AB0\u9762\u4F1A\u7B49\u5F85\u666E\u901A\u9AB0\u9762\u6D88\u8017\u540E\u518D\u8FDB\u5165\u62BD\u53D6\u6C60"
+  displayColor: {r: 0.18867922, g: 0.18867922, b: 0.18867922, a: 1}
   tags: []
-  rarity:
-  allowedSlots: 16
+  rarity: 
+  allowedSlots: 1
   trigger: {fileID: -5665818756794723623}
   conditions: []
   results:

@@ -6,11 +6,11 @@ namespace DiceRevolver.Prototype
 {
     public enum CounterComparisonOperator
     {
-        Equal,
-        NotEqual,
-        LessThan,
-        LessThanOrEqual,
-        GreaterThan,
-        GreaterThanOrEqual
+        [InspectorName("等于")] Equal,
+        [InspectorName("不等于")] NotEqual,
+        [InspectorName("小于")] LessThan,
+        [InspectorName("小于等于")] LessThanOrEqual,
+        [InspectorName("大于")] GreaterThan,
+        [InspectorName("大于等于")] GreaterThanOrEqual
     }
 }

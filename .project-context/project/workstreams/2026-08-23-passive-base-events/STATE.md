@@ -25,16 +25,22 @@
 
 - brainstorming 全部决策（D1–D6）经用户确认；设计规格已写入 `docs/superpowers/specs/2026-08-23-passive-base-events-design.md` 并提交（`daec3e0`）。
 - 规格经用户评审批准（含允许把 3 个被动规则 allowedSlots 归一为"基础(1)"）。
-- 实施计划已写入 `docs/superpowers/plans/2026-08-23-passive-base-events.md`（9 个任务，writing-plans 自审通过）。
+- 实施计划已写入 `docs/superpowers/plans/2026-08-23-passive-base-events.md`（9 个任务，writing-plans 自审通过，含跨任务编译断点修正）。
+- 用户选择内联执行（executing-plans）并在 main 上实施。
+- **T1–T8 代码与测试已实现**：数据模型（删被动槽/词条标志/快照 IsPassiveFace）、Loadout 被动面集合、骰池池级排除（RebuildActiveFaces/ActiveFaceCount）、Gun 接线（legacy 被动路径摘除）、规则运行时被动绑定（被动面 base 槽）、校验器清理、编辑器 4 分类、构筑 UI 被动徽标、迁移工具（MigratePassiveBaseEvents/MigratePassiveBaseEntries/MigratePassiveRuleSlots）与 LightningBuildPrototypeBuilder 新语义、被动集成测试改造（含 MSBuild 发现并修复的 4 处测试编译错误）。
+- **编译门禁已验证**：MSBuild 2022 编译 `DiceRevolver.Prototype`、`DiceRevolver.Editor`、`DiceRevolver.EditMode.Tests` 三个程序集全部 exit 0（期间修复 `DiceFaceLoadout` 缺失 `using System.Collections.Generic` 与 4 处测试编译错误）。
+- **资产迁移已应用**：3 词条 `slotType: 0` + `isPassiveBase: 1`；3 规则 `allowedSlots: 1`；`slotType: 4` 零残留。
+- 静态门禁（代码侧）：`DiceFaceSlotMask.Passive` 零引用；`DiceFaceSlotType.Passive` 仅剩迁移工具的 legacy 读取（文档化豁免）。
 
 ## 当前正在进行
 
-- 等待用户选择执行方式（子代理驱动 / 内联执行）。
+- 等待 EditMode 测试执行（被打开的 Unity 编辑器阻塞：批处理模式因 UPM 单实例锁失败——"Could not establish a connection with the Unity Package Manager local server process"；需用户在 Test Runner 运行或关闭编辑器后批处理）。
 
 ## 下一步
 
-1. 用户选择执行方式后，按 writing-plans 交接规则调用 `subagent-driven-development` 或 `executing-plans`。
-2. 逐任务实现与测试（T1 数据模型 → T9 回归门禁）。
+1. 用户在 Unity 中刷新并运行聚焦 EditMode 测试（DiceFacePassiveSlotTests、DiceRevolverRuntimeTests、EventRulePassiveIntegrationTests、EventRuleLightningMigrationTests、LightningBuildAssetTests、EventRuleBuiltInModuleTests 等）。
+2. 全量回归 + 受保护资产 SHA256 复核。
+3. 提交（注意与事件规则编辑器工作流文件的提交拆分）。
 
 ## 阻塞
 

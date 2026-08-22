@@ -94,8 +94,8 @@ MonoBehaviour:
   description: "\u540C\u7C7B\u578B\u5F39\u5E55\u547D\u4E2D\u65F6\u7ACB\u5373\u989D\u5916\u6FC0\u6D3B\u8BE5\u9AB0\u9762\uFF0C\u6BCF\u8F6E\u6700\u591A\u56DB\u6B21\u3002"
   displayColor: {r: 0.48, g: 0.64, b: 1, a: 1}
   tags: []
-  rarity:
-  allowedSlots: 16
+  rarity: 
+  allowedSlots: 1
   trigger: {fileID: -1911133578281889725}
   conditions: []
   results:

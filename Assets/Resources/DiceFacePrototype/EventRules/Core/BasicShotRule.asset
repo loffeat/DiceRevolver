@@ -47,7 +47,7 @@ MonoBehaviour:
   description: "\u53D1\u5C04\u4E00\u53D1\u57FA\u7840\u5DE6\u8F6E\u5B50\u5F39\u3002"
   displayColor: {r: 0.82, g: 0.86, b: 0.9, a: 1}
   tags: []
-  rarity:
+  rarity: 
   allowedSlots: 1
   trigger: {fileID: -4650417887641966980}
   conditions: []

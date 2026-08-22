@@ -69,7 +69,9 @@ namespace DiceRevolver.Prototype
 
             if (faceLabel != null)
             {
-                faceLabel.text = face.ToString();
+                faceLabel.text = configuration.IsPassiveFace
+                    ? $"{face}（被动）"
+                    : face.ToString();
             }
 
             SetConfiguration(configuration);
@@ -81,7 +83,6 @@ namespace DiceRevolver.Prototype
             SetSlotLabel(onFireLabel, DiceFaceSlotType.OnFire, configuration);
             SetSlotLabel(onHitLabel, DiceFaceSlotType.OnHit, configuration);
             SetSlotLabel(onFireEndLabel, DiceFaceSlotType.OnFireEnd, configuration);
-            SetSlotLabel(passiveLabel, DiceFaceSlotType.Passive, configuration);
         }
 
         private static void SetSlotLabel(

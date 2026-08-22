@@ -58,6 +58,32 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void PassiveBaseMigrationNormalizesEntriesAndRulesIdempotently()
+        {
+            string[] names = { "Tesla", "EchoSynergy", "Finisher" };
+
+            EventRuleMigrationUtility.MigratePassiveBaseEvents();
+            AssertPassiveBaseState(names);
+
+            EventRuleMigrationUtility.MigratePassiveBaseEvents();
+            AssertPassiveBaseState(names);
+        }
+
+        private static void AssertPassiveBaseState(string[] names)
+        {
+            foreach (string name in names)
+            {
+                DiceFaceEntry entry = Load<DiceFaceEntry>($"{Root}/DiceFaces/{name}.asset");
+                Assert.That(entry.SlotType, Is.EqualTo(DiceFaceSlotType.Base), name);
+                Assert.That(entry.IsPassiveBase, Is.True, name);
+                EventRuleDefinition rule = Load<EventRuleDefinition>(
+                    $"{Root}/EventRules/Lightning/{name}Rule.asset");
+                Assert.That(rule.AllowedSlots, Is.EqualTo(DiceFaceSlotMask.Base), name);
+                Assert.That(entry.Rule, Is.SameAs(rule), name);
+            }
+        }
+
+        [Test]
         public void LightningOrbRuleSpawnsTheIdentityMatchedPrimaryDefinition()
         {
             EventRuleDefinition rule = Rule("LightningOrb");
@@ -240,9 +266,8 @@ namespace DiceRevolver.Tests
             DiceFaceEntry baseEntry = Entry(DiceFaceSlotType.Base);
             DiceFaceEntry hitEntry = Entry(DiceFaceSlotType.OnHit);
             DiceFaceEntry sourceEntry = Load<DiceFaceEntry>($"{Root}/DiceFaces/ChainReaction.asset");
-            DiceFaceEntry passiveEntry = Entry(DiceFaceSlotType.Passive);
             DiceFaceConfigurationSnapshot snapshot = new(
-                baseEntry, null, hitEntry, sourceEntry, passiveEntry);
+                baseEntry, null, hitEntry, sourceEntry);
             DiceFaceActivation activation = Activation(4, new DiceEventBudget(32), snapshot);
             CapturingServices services = new() { OverlayAccepted = true };
 
@@ -257,17 +282,16 @@ namespace DiceRevolver.Tests
             Assert.That(overlay.BaseEntry, Is.SameAs(baseEntry));
             Assert.That(overlay.OnHitEntry, Is.SameAs(hitEntry));
             Assert.That(overlay.OnFireEndEntry, Is.Null);
-            Assert.That(new[] { overlay.BaseEntry, overlay.OnFireEntry, overlay.OnHitEntry,
-                overlay.OnFireEndEntry }.Contains(passiveEntry), Is.False);
         }
 
         [Test]
         public void FinisherRuleKeepsBoundFaceAtPriorityOneUntilItIsEligible()
         {
+            EventRuleMigrationUtility.MigratePassiveBaseEvents();
             DiceFaceEntry finisher = Load<DiceFaceEntry>($"{Root}/DiceFaces/Finisher.asset");
             DiceEventRuleRuntimeSet runtimes = new();
             runtimes.RebuildFace(6, new DiceFaceConfigurationSnapshot(
-                null, null, null, null, finisher));
+                finisher, null, null, null));
 
             DiceDrawConstraintResult before = runtimes.FilterDrawCandidates(
                 new[] { 1, 6 }, new[] { 1, 6 }, 6);

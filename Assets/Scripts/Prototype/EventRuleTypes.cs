@@ -6,53 +6,51 @@ namespace DiceRevolver.Prototype
     [Flags]
     public enum DiceFaceSlotMask
     {
-        None = 0,
-        Base = 1 << 0,
-        OnFire = 1 << 1,
-        OnHit = 1 << 2,
-        OnFireEnd = 1 << 3,
-        Passive = 1 << 4,
-        Active = Base | OnFire | OnHit | OnFireEnd,
-        All = Active | Passive
+        [InspectorName("无")] None = 0,
+        [InspectorName("基础事件")] Base = 1 << 0,
+        [InspectorName("开火时事件")] OnFire = 1 << 1,
+        [InspectorName("命中时事件")] OnHit = 1 << 2,
+        [InspectorName("开火后事件")] OnFireEnd = 1 << 3,
+        [InspectorName("所有事件")] All = Base | OnFire | OnHit | OnFireEnd
     }
 
     [Flags]
     public enum EventSignalMask
     {
-        None = 0,
-        Base = 1 << 0,
-        OnFire = 1 << 1,
-        OnHit = 1 << 2,
-        OnFireEnd = 1 << 3,
-        ProjectileSpawned = 1 << 4,
-        ProjectileHit = 1 << 5,
-        ReloadStarted = 1 << 6,
-        ReloadCompleted = 1 << 7,
-        FaceConsumed = 1 << 8,
-        DrawCandidate = 1 << 9,
-        BeforeProjectileStats = 1 << 10
+        [InspectorName("无")] None = 0,
+        [InspectorName("基础")] Base = 1 << 0,
+        [InspectorName("开火时")] OnFire = 1 << 1,
+        [InspectorName("命中时")] OnHit = 1 << 2,
+        [InspectorName("开火后")] OnFireEnd = 1 << 3,
+        [InspectorName("弹丸生成")] ProjectileSpawned = 1 << 4,
+        [InspectorName("弹丸命中")] ProjectileHit = 1 << 5,
+        [InspectorName("开始换弹")] ReloadStarted = 1 << 6,
+        [InspectorName("换弹完成")] ReloadCompleted = 1 << 7,
+        [InspectorName("骰面消耗")] FaceConsumed = 1 << 8,
+        [InspectorName("抽面候选")] DrawCandidate = 1 << 9,
+        [InspectorName("弹丸属性前")] BeforeProjectileStats = 1 << 10
     }
 
     public enum EventSignalType
     {
-        Base,
-        OnFire,
-        OnHit,
-        OnFireEnd,
-        ProjectileSpawned,
-        ProjectileHit,
-        ReloadStarted,
-        ReloadCompleted,
-        FaceConsumed,
-        DrawCandidate,
-        BeforeProjectileStats
+        [InspectorName("基础")] Base,
+        [InspectorName("开火时")] OnFire,
+        [InspectorName("命中时")] OnHit,
+        [InspectorName("开火后")] OnFireEnd,
+        [InspectorName("弹丸生成")] ProjectileSpawned,
+        [InspectorName("弹丸命中")] ProjectileHit,
+        [InspectorName("开始换弹")] ReloadStarted,
+        [InspectorName("换弹完成")] ReloadCompleted,
+        [InspectorName("骰面消耗")] FaceConsumed,
+        [InspectorName("抽面候选")] DrawCandidate,
+        [InspectorName("弹丸属性前")] BeforeProjectileStats
     }
 
     public enum EventRuleRecursionPolicy
     {
-        DenyReentry = 0,
-        AllowWithBudget = 1,
-        IgnoreBonusActivation = 2
+        [InspectorName("禁止重入")] DenyReentry = 0,
+        [InspectorName("预算内允许")] AllowWithBudget = 1,
+        [InspectorName("忽略奖励激活")] IgnoreBonusActivation = 2
     }
 
     public readonly struct EventConditionResult

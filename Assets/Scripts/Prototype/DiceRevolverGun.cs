@@ -34,7 +34,6 @@ namespace DiceRevolver.Prototype
 
         private DiceRevolverRuntime runtime;
         private DiceShotPipeline shotPipeline;
-        private DicePassiveRuntime passiveRuntime;
         private readonly DiceEventRuleRuntimeSet eventRuleRuntimes = new DiceEventRuleRuntimeSet();
         private readonly OwnedProjectileRegistry ownedProjectiles = new OwnedProjectileRegistry();
         private readonly BonusShotSpreadAllocator bonusShotSpread = new BonusShotSpreadAllocator();
@@ -90,12 +89,6 @@ namespace DiceRevolver.Prototype
                 loadout = GetComponentInParent<DiceFaceLoadout>();
             }
 
-            passiveRuntime?.Dispose();
-            passiveRuntime = new DicePassiveRuntime(
-                message => Debug.LogWarning(message, this),
-                exception => Debug.LogException(exception, this));
-            passiveRuntime.ConfigureBonusActivation(ExecuteBonusActivation);
-            passiveRuntime.ConfigureDebugTrace(debugTrace, () => Time.time);
             eventRuleRuntimes.ConfigurePassiveServices(
                 ownedProjectiles,
                 ExecuteBonusActivation,
@@ -111,11 +104,10 @@ namespace DiceRevolver.Prototype
                 {
                     DiceFaceConfigurationSnapshot snapshot = loadout.GetSnapshot(face);
                     eventRuleRuntimes.RebuildFace(face, snapshot);
-                    passiveRuntime.RebuildFace(
-                        face,
-                        snapshot.GetPassiveEffect(),
-                        GetBaseProjectileType(snapshot));
                 }
+
+                runtime.RebuildActiveFaces(loadout.GetPassiveFaceSet());
+                WarnIfAllFacesPassive();
             }
 
             if (player != null)
@@ -196,7 +188,6 @@ namespace DiceRevolver.Prototype
                 loadout.SlotChanged -= HandleLoadoutSlotChanged;
             }
 
-            passiveRuntime?.Dispose();
             shotPipeline?.Clear();
         }
 
@@ -315,11 +306,6 @@ namespace DiceRevolver.Prototype
                     hitCollider,
                     hitPosition,
                     hit => ProjectileHit?.Invoke(hit));
-                TryNotifyPassive(() => passiveRuntime?.NotifyProjectileHit(
-                    shot,
-                    hitCollider,
-                    hitPosition,
-                    activation.SuppressedPassiveInstanceId));
                 TryNotifyPassive(
                     () => eventRuleRuntimes.NotifyProjectileHit(
                         shot,
@@ -496,7 +482,6 @@ namespace DiceRevolver.Prototype
         private void NotifyReloadStarted()
         {
             shotPipeline?.ClearForReload();
-            TryNotifyPassive(() => passiveRuntime?.NotifyReloadStarted());
             TryNotifyPassive(eventRuleRuntimes.NotifyReloadStarted);
             debugTrace.RecordStandalone(
                 CombatDebugEventType.ReloadStarted,
@@ -517,20 +502,21 @@ namespace DiceRevolver.Prototype
                 : default;
             eventRuleRuntimes.RebuildFace(face, snapshot);
 
-            if (slotType == DiceFaceSlotType.Base)
+            if (slotType != DiceFaceSlotType.Base)
             {
-                passiveRuntime?.UpdateBaseProjectileType(
-                    face,
-                    GetBaseProjectileType(snapshot));
                 return;
             }
 
-            if (slotType == DiceFaceSlotType.Passive)
+            runtime?.RebuildActiveFaces(loadout != null ? loadout.GetPassiveFaceSet() : null);
+            WarnIfAllFacesPassive();
+        }
+
+        private void WarnIfAllFacesPassive()
+        {
+            if (loadout != null &&
+                loadout.GetPassiveFaceSet().Count >= DiceRevolverRules.FaceCount)
             {
-                passiveRuntime?.RebuildFace(
-                    face,
-                    snapshot.GetPassiveEffect(),
-                    GetBaseProjectileType(snapshot));
+                Debug.LogWarning("弹巢全部为被动面，每轮无法射击。", this);
             }
         }
 
@@ -551,13 +537,10 @@ namespace DiceRevolver.Prototype
             IReadOnlyList<int> realChamberPool,
             int? forcedFace)
         {
-            DiceDrawConstraintResult legacy = passiveRuntime != null
-                ? passiveRuntime.FilterDrawCandidates(realChamberPool, forcedFace, false)
-                : new DiceDrawConstraintResult(realChamberPool, forcedFace.HasValue);
             try
             {
                 return eventRuleRuntimes.FilterDrawCandidates(
-                    legacy.Candidates,
+                    realChamberPool,
                     realChamberPool,
                     forcedFace);
             }
@@ -578,18 +561,6 @@ namespace DiceRevolver.Prototype
             ProjectileRuntimeStats modified = stats;
             try
             {
-                if (passiveRuntime != null)
-                {
-                    modified = passiveRuntime.ModifyProjectileStats(sourceFace, modified);
-                }
-            }
-            catch (Exception exception)
-            {
-                Debug.LogException(exception, this);
-            }
-
-            try
-            {
                 modified = eventRuleRuntimes.ModifyProjectileStats(
                     sourceFace,
                     modified,
@@ -608,10 +579,6 @@ namespace DiceRevolver.Prototype
             ProjectileHandle projectile,
             DiceFaceActivation activation)
         {
-            TryNotifyPassive(() => passiveRuntime?.NotifyProjectileSpawned(
-                sourceFace,
-                projectile,
-                activation));
             TryNotifyPassive(() => eventRuleRuntimes.NotifyProjectileSpawned(
                 sourceFace,
                 projectile,
@@ -620,13 +587,11 @@ namespace DiceRevolver.Prototype
 
         private void NotifyReloadCompletedPassives()
         {
-            TryNotifyPassive(() => passiveRuntime?.NotifyReloadCompleted());
             TryNotifyPassive(eventRuleRuntimes.NotifyReloadCompleted);
         }
 
         private void NotifyFaceConsumedPassives(int face)
         {
-            TryNotifyPassive(() => passiveRuntime?.NotifyFaceConsumed(face));
             TryNotifyPassive(() => eventRuleRuntimes.NotifyFaceConsumed(face));
         }
 

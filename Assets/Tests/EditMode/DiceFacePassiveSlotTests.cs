@@ -10,48 +10,37 @@ namespace DiceRevolver.Tests
     public sealed class DiceFacePassiveSlotTests
     {
         [Test]
-        public void PassiveEntryCoexistsWithEveryActiveSlot()
+        public void PassiveBaseEntryMarksFaceAsPassiveAndEquipsIntoBaseSlot()
         {
             DiceFaceConfiguration configuration = new DiceFaceConfiguration();
             DiceFaceEntry baseEntry = CreateActiveEntry(DiceFaceSlotType.Base);
-            DiceFaceEntry onFireEntry = CreateActiveEntry(DiceFaceSlotType.OnFire);
-            DiceFaceEntry onHitEntry = CreateActiveEntry(DiceFaceSlotType.OnHit);
-            DiceFaceEntry onFireEndEntry = CreateActiveEntry(DiceFaceSlotType.OnFireEnd);
-            DiceFaceEntry passiveEntry = CreatePassiveEntry();
+            DiceFaceEntry passiveBaseEntry = CreatePassiveBaseEntry();
 
             try
             {
-                configuration.Equip(baseEntry);
-                configuration.Equip(onFireEntry);
-                configuration.Equip(onHitEntry);
-                configuration.Equip(onFireEndEntry);
-                configuration.Equip(passiveEntry);
+                Assert.That(configuration.Equip(baseEntry), Is.True);
+                DiceFaceConfigurationSnapshot normal = configuration.CreateSnapshot();
+                Assert.That(normal.IsPassiveFace, Is.False);
 
-                DiceFaceConfigurationSnapshot snapshot = configuration.CreateSnapshot();
-                Assert.That(snapshot.GetEntry(DiceFaceSlotType.Base), Is.SameAs(baseEntry));
-                Assert.That(snapshot.GetEntry(DiceFaceSlotType.OnFire), Is.SameAs(onFireEntry));
-                Assert.That(snapshot.GetEntry(DiceFaceSlotType.OnHit), Is.SameAs(onHitEntry));
-                Assert.That(snapshot.GetEntry(DiceFaceSlotType.OnFireEnd), Is.SameAs(onFireEndEntry));
-                Assert.That(snapshot.GetEntry(DiceFaceSlotType.Passive), Is.SameAs(passiveEntry));
-                Assert.That(snapshot.GetPassiveEffect(), Is.SameAs(passiveEntry.PassiveEffect));
+                Assert.That(configuration.Equip(passiveBaseEntry), Is.True);
+                DiceFaceConfigurationSnapshot passive = configuration.CreateSnapshot();
+                Assert.That(passive.IsPassiveFace, Is.True);
+                Assert.That(passive.GetEntry(DiceFaceSlotType.Base), Is.SameAs(passiveBaseEntry));
             }
             finally
             {
-                DestroyEntry(passiveEntry);
-                DestroyEntry(onFireEndEntry);
-                DestroyEntry(onHitEntry);
-                DestroyEntry(onFireEntry);
+                DestroyEntry(passiveBaseEntry);
                 DestroyEntry(baseEntry);
             }
         }
 
         [Test]
-        public void PassiveSnapshotRemainsStableAfterLoadoutReplacement()
+        public void PassiveBaseSnapshotRemainsStableAfterLoadoutReplacement()
         {
             GameObject owner = new GameObject("Loadout");
             DiceFaceLoadout loadout = owner.AddComponent<DiceFaceLoadout>();
-            DiceFaceEntry original = CreatePassiveEntry();
-            DiceFaceEntry replacement = CreatePassiveEntry();
+            DiceFaceEntry original = CreatePassiveBaseEntry();
+            DiceFaceEntry replacement = CreatePassiveBaseEntry();
 
             try
             {
@@ -59,8 +48,8 @@ namespace DiceRevolver.Tests
                 DiceFaceConfigurationSnapshot snapshot = loadout.GetSnapshot(2);
                 loadout.Equip(2, replacement);
 
-                Assert.That(snapshot.GetEntry(DiceFaceSlotType.Passive), Is.SameAs(original));
-                Assert.That(loadout.GetEntry(2, DiceFaceSlotType.Passive), Is.SameAs(replacement));
+                Assert.That(snapshot.IsPassiveFace, Is.True);
+                Assert.That(loadout.GetEntry(2, DiceFaceSlotType.Base), Is.SameAs(replacement));
             }
             finally
             {
@@ -71,9 +60,84 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
-        public void PassiveSlotUsesChineseLabel()
+        public void SnapshotIsPassiveFaceFollowsBaseEntryFlag()
         {
-            Assert.That(DiceFaceSlotType.Passive.ToChineseLabel(), Is.EqualTo("被动"));
+            DiceFaceEntry passive = ScriptableObject.CreateInstance<DiceFaceEntry>();
+            SetField(passive, "isPassiveBase", true);
+            DiceFaceEntry normal = ScriptableObject.CreateInstance<DiceFaceEntry>();
+
+            try
+            {
+                DiceFaceConfigurationSnapshot passiveSnapshot =
+                    new DiceFaceConfigurationSnapshot(passive, null, null, null);
+                DiceFaceConfigurationSnapshot normalSnapshot =
+                    new DiceFaceConfigurationSnapshot(normal, null, null, null);
+                Assert.That(passiveSnapshot.IsPassiveFace, Is.True);
+                Assert.That(normalSnapshot.IsPassiveFace, Is.False);
+            }
+            finally
+            {
+                DestroyEntry(passive);
+                DestroyEntry(normal);
+            }
+        }
+
+        [Test]
+        public void PassiveBaseEntryWithoutRuleEquipsWithoutValidation()
+        {
+            DiceFaceConfiguration configuration = new DiceFaceConfiguration();
+            DiceFaceEntry passiveBaseEntry = CreatePassiveBaseEntry();
+
+            try
+            {
+                Assert.That(configuration.Equip(passiveBaseEntry), Is.True);
+            }
+            finally
+            {
+                DestroyEntry(passiveBaseEntry);
+            }
+        }
+
+        [Test]
+        public void PassiveBaseEntryIsRejectedOutsideTheBaseSlot()
+        {
+            DiceFaceConfiguration configuration = new DiceFaceConfiguration();
+            DiceFaceEntry passiveBaseEntry = ScriptableObject.CreateInstance<DiceFaceEntry>();
+            SetField(passiveBaseEntry, "slotType", DiceFaceSlotType.OnFire);
+            SetField(passiveBaseEntry, "isPassiveBase", true);
+
+            try
+            {
+                Assert.That(configuration.Equip(passiveBaseEntry), Is.False);
+                Assert.That(configuration.GetEntry(DiceFaceSlotType.OnFire), Is.Null);
+            }
+            finally
+            {
+                DestroyEntry(passiveBaseEntry);
+            }
+        }
+
+        [Test]
+        public void LoadoutCollectsPassiveFacesFromBaseEntryFlags()
+        {
+            GameObject owner = new GameObject("Loadout");
+            DiceFaceLoadout loadout = owner.AddComponent<DiceFaceLoadout>();
+            DiceFaceEntry passiveFace1 = CreatePassiveBaseEntry();
+            DiceFaceEntry passiveFace3 = CreatePassiveBaseEntry();
+
+            try
+            {
+                loadout.Equip(1, passiveFace1);
+                loadout.Equip(3, passiveFace3);
+
+                Assert.That(loadout.GetPassiveFaceSet(), Is.EqualTo(new[] { 1, 3 }));
+            }
+            finally
+            {
+                DestroyEntry(passiveFace3);
+                DestroyEntry(passiveFace1);
+                UnityEngine.Object.DestroyImmediate(owner);
+            }
         }
 
         [Test]
@@ -129,12 +193,11 @@ namespace DiceRevolver.Tests
             return entry;
         }
 
-        private static DiceFaceEntry CreatePassiveEntry()
+        private static DiceFaceEntry CreatePassiveBaseEntry()
         {
             DiceFaceEntry entry = ScriptableObject.CreateInstance<DiceFaceEntry>();
-            EmptyPassiveEffect effect = ScriptableObject.CreateInstance<EmptyPassiveEffect>();
-            SetField(entry, "slotType", DiceFaceSlotType.Passive);
-            SetField(entry, "passiveEffect", effect);
+            SetField(entry, "slotType", DiceFaceSlotType.Base);
+            SetField(entry, "isPassiveBase", true);
             return entry;
         }
 
@@ -221,38 +284,6 @@ namespace DiceRevolver.Tests
         private sealed class EmptyBulletEffect : BulletEventEffect
         {
             public override void Trigger(BulletEventContext context)
-            {
-            }
-        }
-
-        private sealed class EmptyPassiveEffect : PassiveEventEffect
-        {
-            public override IDicePassiveEffectRuntime CreateRuntime(PassiveBindingContext context)
-            {
-                return new EmptyPassiveRuntime();
-            }
-        }
-
-        private sealed class EmptyPassiveRuntime : IDicePassiveEffectRuntime
-        {
-            public bool AllowsDraw(int face, IReadOnlyList<int> remainingFaces)
-            {
-                return true;
-            }
-
-            public void OnReloadStarted()
-            {
-            }
-
-            public void OnReloadCompleted()
-            {
-            }
-
-            public void OnFaceConsumed(int face)
-            {
-            }
-
-            public void Dispose()
             {
             }
         }

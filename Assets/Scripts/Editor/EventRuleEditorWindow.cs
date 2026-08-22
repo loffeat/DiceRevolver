@@ -19,12 +19,11 @@ namespace DiceRevolver.Editor
             DiceFaceSlotType.Base,
             DiceFaceSlotType.OnFire,
             DiceFaceSlotType.OnHit,
-            DiceFaceSlotType.OnFireEnd,
-            DiceFaceSlotType.Passive
+            DiceFaceSlotType.OnFireEnd
         };
         private static readonly string[] SlotNames =
         {
-            "基础", "开火时", "命中时", "开火后", "被动"
+            "基础事件", "开火时事件", "命中时事件", "开火后事件"
         };
 
         [SerializeField] private EventRuleEditorSelection selectionState = new();
@@ -100,7 +99,7 @@ namespace DiceRevolver.Editor
             visibleRules = allRules
                 .Where(rule => SelectionState.Matches(
                     rule,
-                    EventRuleValidator.Validate(rule, SelectionState.SlotFilter)))
+                    EventRuleValidator.Validate(rule, ResolveValidationSlot(rule))))
                 .ToList();
             return visibleRules.AsReadOnly();
         }
@@ -152,6 +151,10 @@ namespace DiceRevolver.Editor
             Mutate(() => EventRuleAssetUtility.AddModule(
                 RequireSelectedRule(), moduleType, "trigger"));
 
+        internal ScriptableObject ReplaceTrigger(Type moduleType) =>
+            Mutate(() => EventRuleAssetUtility.ReplaceTrigger(
+                RequireSelectedRule(), moduleType));
+
         internal bool RemoveTrigger() =>
             Mutate(() => EventRuleAssetUtility.RemoveModule(
                 RequireSelectedRule(), "trigger"));
@@ -192,8 +195,41 @@ namespace DiceRevolver.Editor
         {
             EventRuleDefinition selected = SelectedRule;
             validationIssues = selected != null
-                ? EventRuleValidator.Validate(selected, SelectionState.SlotFilter)
+                ? EventRuleValidator.Validate(selected, ResolveValidationSlot(selected))
                 : Array.Empty<EventRuleValidationIssue>();
+        }
+
+        private DiceFaceSlotType ResolveValidationSlot(EventRuleDefinition rule)
+        {
+            if (!SelectionState.ShowAllEvents)
+            {
+                return SelectionState.SlotFilter;
+            }
+
+            DiceFaceSlotMask mask = rule != null
+                ? rule.AllowedSlots
+                : DiceFaceSlotMask.None;
+            if ((mask & DiceFaceSlotMask.Base) != 0)
+            {
+                return DiceFaceSlotType.Base;
+            }
+
+            if ((mask & DiceFaceSlotMask.OnFire) != 0)
+            {
+                return DiceFaceSlotType.OnFire;
+            }
+
+            if ((mask & DiceFaceSlotMask.OnHit) != 0)
+            {
+                return DiceFaceSlotType.OnHit;
+            }
+
+            if ((mask & DiceFaceSlotMask.OnFireEnd) != 0)
+            {
+                return DiceFaceSlotType.OnFireEnd;
+            }
+
+            return SelectionState.SlotFilter;
         }
 
         private void RefreshReferences()
@@ -247,11 +283,20 @@ namespace DiceRevolver.Editor
                 GUILayout.ExpandHeight(true));
             EditorGUILayout.LabelField("事件类型", EditorStyles.boldLabel);
             leftScroll = EditorGUILayout.BeginScrollView(leftScroll);
+            bool allSelected = SelectionState.ShowAllEvents;
+            if (GUILayout.Toggle(allSelected, "所有事件", "Button") && !allSelected)
+            {
+                SelectionState.ShowAllEvents = true;
+                FiltersChanged();
+            }
+
             for (int index = 0; index < SlotFilters.Length; index++)
             {
-                bool selected = SelectionState.SlotFilter == SlotFilters[index];
+                bool selected = !SelectionState.ShowAllEvents &&
+                    SelectionState.SlotFilter == SlotFilters[index];
                 if (GUILayout.Toggle(selected, SlotNames[index], "Button") && !selected)
                 {
+                    SelectionState.ShowAllEvents = false;
                     SelectionState.SlotFilter = SlotFilters[index];
                     FiltersChanged();
                 }
@@ -375,7 +420,7 @@ namespace DiceRevolver.Editor
 
         private void DrawRuleMetadata(EventRuleDefinition rule)
         {
-            EditorGUILayout.LabelField("基础信息与允许槽位", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("基础信息与事件类型", EditorStyles.boldLabel);
             SerializedObject serialized = new SerializedObject(rule);
             EditorGUI.BeginChangeCheck();
             DrawProperty(serialized, "displayName");
@@ -400,10 +445,10 @@ namespace DiceRevolver.Editor
         private void DrawTrigger(EventRuleDefinition rule)
         {
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Trigger", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("触发器", EditorStyles.boldLabel);
             if (rule.Trigger == null)
             {
-                if (GUILayout.Button("添加 Trigger"))
+                if (GUILayout.Button("添加触发器"))
                 {
                     ShowModuleMenu<EventTriggerModule>(type => AddTrigger(type));
                 }
@@ -411,16 +456,24 @@ namespace DiceRevolver.Editor
             }
 
             DrawModule(rule.Trigger);
-            if (GUILayout.Button("移除 Trigger"))
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("更换类型"))
+            {
+                ShowModuleMenu<EventTriggerModule>(type => ReplaceTrigger(type));
+            }
+
+            if (GUILayout.Button("移除触发器"))
             {
                 RemoveTrigger();
             }
+
+            GUILayout.EndHorizontal();
         }
 
         private void DrawRuleConditions(EventRuleDefinition rule)
         {
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("规则 Conditions（AND）", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("规则条件（AND）", EditorStyles.boldLabel);
             for (int index = 0; index < rule.Conditions.Count; index++)
             {
                 DrawModule(rule.Conditions[index]);
@@ -431,7 +484,7 @@ namespace DiceRevolver.Editor
                 }
             }
 
-            if (GUILayout.Button("添加规则 Condition"))
+            if (GUILayout.Button("添加规则条件"))
             {
                 ShowModuleMenu<EventConditionModule>(type => AddRuleCondition(type));
             }
@@ -440,13 +493,13 @@ namespace DiceRevolver.Editor
         private void DrawResults(EventRuleDefinition rule)
         {
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("有序 ResultEntries", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("有序结果列表", EditorStyles.boldLabel);
             for (int resultIndex = 0; resultIndex < rule.Results.Count; resultIndex++)
             {
                 EventResultEntry entry = rule.Results[resultIndex];
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 Rect header = EditorGUILayout.GetControlRect(false, 20f);
-                GUI.Label(header, $"Result {resultIndex + 1}", EditorStyles.boldLabel);
+                GUI.Label(header, $"结果 {resultIndex + 1}", EditorStyles.boldLabel);
                 HandleResultDrag(header, resultIndex);
                 GUILayout.BeginHorizontal();
                 EditorGUI.BeginDisabledGroup(resultIndex == 0);
@@ -470,7 +523,7 @@ namespace DiceRevolver.Editor
                 }
                 GUILayout.EndHorizontal();
 
-                EditorGUILayout.LabelField("局部 Conditions（AND）", EditorStyles.miniBoldLabel);
+                EditorGUILayout.LabelField("局部条件（AND）", EditorStyles.miniBoldLabel);
                 if (entry != null)
                 {
                     for (int conditionIndex = 0; conditionIndex < entry.Conditions.Count; conditionIndex++)
@@ -483,21 +536,21 @@ namespace DiceRevolver.Editor
                         }
                     }
 
-                    if (GUILayout.Button("添加局部 Condition"))
+                    if (GUILayout.Button("添加局部条件"))
                     {
                         int capturedResult = resultIndex;
                         ShowModuleMenu<EventConditionModule>(
                             type => AddResultCondition(capturedResult, type));
                     }
 
-                    EditorGUILayout.LabelField("Result", EditorStyles.miniBoldLabel);
+                    EditorGUILayout.LabelField("结果模块", EditorStyles.miniBoldLabel);
                     DrawModule(entry.Result);
                 }
 
                 EditorGUILayout.EndVertical();
             }
 
-            if (GUILayout.Button("添加 Result"))
+            if (GUILayout.Button("添加结果"))
             {
                 ShowModuleMenu<EventResultModule>(type => AddResult(type));
             }
@@ -510,7 +563,7 @@ namespace DiceRevolver.Editor
             {
                 DragAndDrop.PrepareStartDrag();
                 DragAndDrop.SetGenericData("DiceRevolver.EventRuleResultIndex", targetIndex);
-                DragAndDrop.StartDrag($"Result {targetIndex + 1}");
+                DragAndDrop.StartDrag($"结果 {targetIndex + 1}");
                 current.Use();
             }
             else if ((current.type == EventType.DragUpdated || current.type == EventType.DragPerform) &&
@@ -539,7 +592,12 @@ namespace DiceRevolver.Editor
             }
 
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-            EditorGUILayout.LabelField(module.GetType().Name, EditorStyles.miniBoldLabel);
+            EventRuleModuleMenuAttribute menu =
+                (EventRuleModuleMenuAttribute)Attribute.GetCustomAttribute(
+                    module.GetType(),
+                    typeof(EventRuleModuleMenuAttribute));
+            string moduleDisplayName = menu != null ? menu.Path : module.GetType().Name;
+            EditorGUILayout.LabelField(moduleDisplayName, EditorStyles.miniBoldLabel);
             SerializedObject serialized = new SerializedObject(module);
             SerializedProperty property = serialized.GetIterator();
             bool enterChildren = true;

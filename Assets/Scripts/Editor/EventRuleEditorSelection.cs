@@ -9,11 +9,18 @@ namespace DiceRevolver.Editor
     [Serializable]
     internal sealed class EventRuleEditorSelection
     {
+        [SerializeField] private bool showAllEvents = true;
         [SerializeField] private DiceFaceSlotType slotFilter = DiceFaceSlotType.Base;
         [SerializeField] private string tagFilter = string.Empty;
         [SerializeField] private bool errorOnly;
         [SerializeField] private string searchText = string.Empty;
         [SerializeField] private string selectedAssetGuid = string.Empty;
+
+        internal bool ShowAllEvents
+        {
+            get => showAllEvents;
+            set => showAllEvents = value;
+        }
 
         internal DiceFaceSlotType SlotFilter
         {
@@ -66,7 +73,8 @@ namespace DiceRevolver.Editor
             EventRuleDefinition rule,
             IReadOnlyList<EventRuleValidationIssue> issues)
         {
-            if (rule == null || !rule.AllowsSlot(slotFilter))
+            if (rule == null ||
+                (!showAllEvents && !rule.AllowsSlot(slotFilter)))
             {
                 return false;
             }

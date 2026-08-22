@@ -76,11 +76,16 @@ Expected: 编译失败（`IsPassiveFace` 不存在）或断言失败。
 
 `DiceFaceConfiguration.cs`：
 - 删除字段 `[SerializeField, InspectorName("被动事件")] private DiceFaceEntry passiveEntry;`
-- `GetEntry` 删除 `DiceFaceSlotType.Passive => passiveEntry` 分支
+- `GetEntry` 的 `DiceFaceSlotType.Passive => passiveEntry` 分支改为**垫片** `DiceFaceSlotType.Passive => null`（T7 移除该分支）
 - `SetEntry` 删除 `case DiceFaceSlotType.Passive: passiveEntry = entry; break;`
-- `CreateSnapshot` 的 `passiveEntry` 实参删除（含 5 参重载删除或改为 4 参 + 保留 5 参签名但忽略；以最小改动为准）
-- 快照结构体：删除 `passiveEntry` 字段与 5 参构造的对应参数；删除 `GetPassiveEffect()`；删除 `FromEntry` 的 `DiceFaceSlotType.Passive` 分支；`FirstEntry` 删除 `passiveEntry` 兜底；`HasAnyEffect` 删除 Passive 相关项；`MergeActiveOverlay` 删除 `passiveEntry` 参数
+- `CreateSnapshot` 的 `passiveEntry` 实参删除（5 参重载删除或改为忽略该参数；以最小改动为准）
+- 快照结构体：删除 `passiveEntry` 字段与 5 参构造的对应参数；`GetPassiveEffect()` 改为垫片 `=> null`（T4 移除）；`FromEntry` 的 `DiceFaceSlotType.Passive` 分支改为返回 `default`（编译兼容）；`FirstEntry` 删除 `passiveEntry` 兜底；`HasAnyEffect` 删除 Passive 相关项；`MergeActiveOverlay` 删除 `passiveEntry` 参数
 - 新增 `public bool IsPassiveFace => baseEntry != null && baseEntry.IsPassiveBase;`
+
+`EventRuleDefinition.cs`：
+- `ToMask` 删除 `DiceFaceSlotType.Passive => DiceFaceSlotMask.Passive` 分支（返回 `DiceFaceSlotMask.None` 默认）——必须与掩码位删除同任务，否则编译失败。
+
+> **编译兼容说明**：`GetEntry(Passive)`/`GetEffect(Passive)`/`GetRule(Passive)` 的 Passive 分支在本任务保留为返回 null 的垫片，待 T7（UI/编辑器）移除其调用后一并删除；`GetPassiveEffect()` 垫片待 T4 移除。本任务结束时代码必须可编译。
 
 - [ ] **Step 4: 运行测试确认通过**
 
@@ -312,7 +317,7 @@ if (slotType == DiceFaceSlotType.Base)
 }
 ```
 
-- 删除 `slotType == DiceFaceSlotType.Passive` 分支（约 528–534）与初始化循环中 `passiveRuntime.RebuildFace(face, snapshot.GetPassiveEffect(), ...)`（约 114–117）；`snapshot.GetPassiveEffect()` 已不存在（Task 1 删除）。
+- 删除 `slotType == DiceFaceSlotType.Passive` 分支（约 528–534）与初始化循环中 `passiveRuntime.RebuildFace(face, snapshot.GetPassiveEffect(), ...)`（约 114–117）；`DiceFaceConfigurationSnapshot.GetPassiveEffect()` 垫片（Task 1 保留）此时一并删除。
 - `FilterPassiveDrawCandidates` 简化为只走规则被动路径（legacy `passiveRuntime.FilterDrawCandidates` 调用删除）：
 
 ```csharp
@@ -415,8 +420,7 @@ git commit -m "feat: 被动规则运行时绑定到被动面基础槽"
 - `EventRuleValidationEnvironment` 删除 `passiveStateSupported` 字段与构造参数；`Default` 改为 `new EventRuleValidationEnvironment(true)`；删除 `PassiveStateSupported` 属性与常量 `PassiveStateUnsupported`。
 - 删除 `Validate` 中 `slot == DiceFaceSlotType.Passive && !environment.PassiveStateSupported` 分支（约 79–86）。
 
-`EventRuleDefinition.cs`：
-- `ToMask` 删除 `DiceFaceSlotType.Passive => DiceFaceSlotMask.Passive` 分支（返回 `DiceFaceSlotMask.None` 默认）。
+（`EventRuleDefinition.ToMask` 的 Passive 分支已在 Task 1 删除，本任务不再处理。）
 
 - [ ] **Step 4: 运行测试确认通过**
 - [ ] **Step 5: 提交**

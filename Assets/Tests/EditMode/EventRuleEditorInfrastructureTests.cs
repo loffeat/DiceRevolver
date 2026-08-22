@@ -405,8 +405,7 @@ namespace DiceRevolver.Tests
 
             SetEnum(owner, "recursionPolicy", (int)EventRuleRecursionPolicy.AllowWithBudget);
             EventRuleValidationEnvironment unavailable = new EventRuleValidationEnvironment(
-                optionalServicesAvailable: false,
-                passiveStateSupported: true);
+                optionalServicesAvailable: false);
             IReadOnlyList<EventRuleValidationIssue> warnings =
                 EventRuleValidator.Validate(owner, DiceFaceSlotType.OnFire, unavailable);
             AssertIssue(warnings, EventRuleValidationSeverity.Warning, "RULE_RECURSION_RISK");

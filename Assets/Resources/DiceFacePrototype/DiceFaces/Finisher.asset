@@ -15,7 +15,8 @@ MonoBehaviour:
   displayName: "\u6536\u5C3E\u8005"
   description: "\u8BE5\u9AB0\u9762\u4F1A\u7B49\u5F85\u666E\u901A\u9AB0\u9762\u6D88\u8017\u540E\u518D\u8FDB\u5165\u62BD\u53D6\u6C60\u3002"
   displayColor: {r: 0.94, g: 0.32, b: 0.28, a: 1}
-  slotType: 4
+  slotType: 0
+  isPassiveBase: 1
   rule: {fileID: 11400000, guid: d61ffd80584c19e478f2765e6875a757, type: 2}
   effect: {fileID: 0}
   passiveEffect: {fileID: 0}

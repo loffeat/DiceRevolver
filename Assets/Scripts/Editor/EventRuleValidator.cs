@@ -10,18 +10,15 @@ namespace DiceRevolver.Editor
     public readonly struct EventRuleValidationEnvironment
     {
         public EventRuleValidationEnvironment(
-            bool optionalServicesAvailable,
-            bool passiveStateSupported)
+            bool optionalServicesAvailable)
         {
             OptionalServicesAvailable = optionalServicesAvailable;
-            PassiveStateSupported = passiveStateSupported;
         }
 
         public bool OptionalServicesAvailable { get; }
-        public bool PassiveStateSupported { get; }
 
         public static EventRuleValidationEnvironment Default =>
-            new EventRuleValidationEnvironment(true, true);
+            new EventRuleValidationEnvironment(true);
     }
 
     public static class EventRuleValidator
@@ -32,7 +29,6 @@ namespace DiceRevolver.Editor
         public const string ModuleReferenceMissing = "MODULE_REFERENCE_MISSING";
         public const string ModuleForeignSubAsset = "MODULE_FOREIGN_SUBASSET";
         public const string RuleRecursionRisk = "RULE_RECURSION_RISK";
-        public const string PassiveStateUnsupported = "PASSIVE_STATE_UNSUPPORTED";
         public const string ServiceUnavailable = "SERVICE_UNAVAILABLE";
 
         public static IReadOnlyList<EventRuleValidationIssue> Validate(
@@ -74,15 +70,6 @@ namespace DiceRevolver.Editor
                     RuleRecursionRisk,
                     "该规则允许在预算内重入，延迟或奖励激活仍可能形成递归链。",
                     rule);
-            }
-
-            if (slot == DiceFaceSlotType.Passive && !environment.PassiveStateSupported)
-            {
-                issues.Add(new EventRuleValidationIssue(
-                    EventRuleValidationSeverity.Error,
-                    PassiveStateUnsupported,
-                    "当前宿主不支持被动规则的持久状态。",
-                    rule));
             }
 
             if (!environment.OptionalServicesAvailable)

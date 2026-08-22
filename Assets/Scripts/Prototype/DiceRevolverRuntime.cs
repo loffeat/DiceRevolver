@@ -39,6 +39,7 @@ namespace DiceRevolver.Prototype
     public sealed class DiceRevolverRuntime
     {
         private readonly List<int> remainingFaces = new(DiceRevolverRules.FaceCount);
+        private readonly HashSet<int> passiveFaces = new();
         private readonly float shotInterval;
         private readonly bool automaticReloadWhenEmpty;
         private readonly bool allowManualReload;
@@ -62,7 +63,19 @@ namespace DiceRevolver.Prototype
         }
 
         public int RemainingRounds => remainingFaces.Count;
+        public int ActiveFaceCount => DiceRevolverRules.FaceCount - passiveFaces.Count;
         public bool IsReloading { get; private set; }
+
+        public void RebuildActiveFaces(IReadOnlyCollection<int> passiveFaceSet)
+        {
+            passiveFaces.Clear();
+            if (passiveFaceSet != null)
+            {
+                passiveFaces.UnionWith(passiveFaceSet);
+            }
+
+            RefillAllFaces();
+        }
 
         public IReadOnlyList<int> CreateRemainingFacesSnapshot()
         {
@@ -142,7 +155,7 @@ namespace DiceRevolver.Prototype
 
         private bool TryBeginManualReload(float currentTime)
         {
-            return allowManualReload && RemainingRounds < DiceRevolverRules.FaceCount && BeginReload(currentTime);
+            return allowManualReload && RemainingRounds < ActiveFaceCount && BeginReload(currentTime);
         }
 
         private bool BeginReload(float currentTime)
@@ -242,7 +255,10 @@ namespace DiceRevolver.Prototype
             remainingFaces.Clear();
             for (int face = 1; face <= DiceRevolverRules.FaceCount; face++)
             {
-                remainingFaces.Add(face);
+                if (!passiveFaces.Contains(face))
+                {
+                    remainingFaces.Add(face);
+                }
             }
         }
     }

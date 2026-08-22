@@ -1,4 +1,5 @@
 using System.Linq;
+using DiceRevolver.Editor;
 using DiceRevolver.Prototype;
 using NUnit.Framework;
 using UnityEditor;
@@ -87,11 +88,12 @@ namespace DiceRevolver.Tests
         [Test]
         public void LightningEntriesUseApprovedIndependentSlots()
         {
+            EventRuleMigrationUtility.MigratePassiveBaseEvents();
             AssertEntry("LightningOrb", DiceFaceSlotType.Base);
-            AssertEntry("Finisher", DiceFaceSlotType.Passive);
+            AssertEntry("Finisher", DiceFaceSlotType.Base, true);
             AssertEntry("ElectromagneticResonance", DiceFaceSlotType.OnFire);
-            AssertEntry("Tesla", DiceFaceSlotType.Passive);
-            AssertEntry("EchoSynergy", DiceFaceSlotType.Passive);
+            AssertEntry("Tesla", DiceFaceSlotType.Base, true);
+            AssertEntry("EchoSynergy", DiceFaceSlotType.Base, true);
             AssertEntry("ChainReaction", DiceFaceSlotType.OnFireEnd);
         }
 
@@ -138,12 +140,14 @@ namespace DiceRevolver.Tests
 
         private static void AssertEntry(
             string name,
-            DiceFaceSlotType expectedSlot)
+            DiceFaceSlotType expectedSlot,
+            bool passiveBase = false)
         {
             DiceFaceEntry entry = AssetDatabase.LoadAssetAtPath<DiceFaceEntry>(
                 $"{Root}/DiceFaces/{name}.asset");
             Assert.That(entry, Is.Not.Null);
             Assert.That(entry.SlotType, Is.EqualTo(expectedSlot));
+            Assert.That(entry.IsPassiveBase, Is.EqualTo(passiveBase));
             Assert.That(entry.Rule, Is.Not.Null);
             Assert.That(entry.Rule.AllowsSlot(expectedSlot), Is.True);
             Assert.That(entry.Effect, Is.Null);
