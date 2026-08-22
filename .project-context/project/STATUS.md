@@ -35,10 +35,12 @@
 - BlastRound 命中事件已绑定独立爆炸弹丸：默认半径 `2.5`、伤害 `3`、视觉持续 `0.35` 秒；直击目标会同时承受直击和爆炸伤害，发射者自身层级免疫爆炸，共享场景父节点下的兄弟角色仍可受伤。
 - 可移植上下文系统已集成 `main`；原功能分支和隔离工作树已清理。
 - 项目上下文框架位于 `.project-context/framework/`，项目实例资料位于 `.project-context/project/`。
+- `.dsh/skills/` 已安装 [obra/superpowers](https://github.com/obra/superpowers) 全部 14 个技能（brainstorming、writing-plans、executing-plans、subagent-driven-development、test-driven-development、systematic-debugging 等），DSH 文件系统技能提供者即时识别，`using-superpowers` 为入口技能。
 
 ## 活跃工作流
 
-- 无。
+- [2026-08-23 被动事件迁移为被动型基础事件](workstreams/2026-08-23-passive-base-events/STATE.md)（`planned`；brainstorming 完成、规格已写，等待用户评审）
+- [2026-08-22 事件规则编辑器类型更换与中文可编辑字段](workstreams/2026-08-22-event-rule-editor-type-switch-i18n/STATE.md)（`active`；代码与测试已实现，等待编译验证与人工验收）
 
 ## 完成历史
 
