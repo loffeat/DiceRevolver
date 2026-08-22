@@ -23,17 +23,18 @@
 
 ## 已完成
 
-- brainstorming 全部决策（D1–D6）经用户确认；设计规格已写入 `docs/superpowers/specs/2026-08-23-passive-base-events-design.md`。
+- brainstorming 全部决策（D1–D6）经用户确认；设计规格已写入 `docs/superpowers/specs/2026-08-23-passive-base-events-design.md` 并提交（`daec3e0`）。
+- 规格经用户评审批准（含允许把 3 个被动规则 allowedSlots 归一为"基础(1)"）。
+- 实施计划已写入 `docs/superpowers/plans/2026-08-23-passive-base-events.md`（9 个任务，writing-plans 自审通过）。
 
 ## 当前正在进行
 
-- 规格用户评审（等待用户确认规格文件）。
+- 等待用户选择执行方式（子代理驱动 / 内联执行）。
 
 ## 下一步
 
-1. 用户评审规格；按反馈修订。
-2. 调用 `writing-plans` 技能产出实施计划。
-3. 实现与测试。
+1. 用户选择执行方式后，按 writing-plans 交接规则调用 `subagent-driven-development` 或 `executing-plans`。
+2. 逐任务实现与测试（T1 数据模型 → T9 回归门禁）。
 
 ## 阻塞
 
