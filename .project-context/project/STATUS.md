@@ -39,8 +39,9 @@
 
 ## 活跃工作流
 
-- [2026-08-23 被动事件迁移为被动型基础事件](workstreams/2026-08-23-passive-base-events/STATE.md)（`planned`；brainstorming 完成、规格已写，等待用户评审）
-- [2026-08-22 事件规则编辑器类型更换与中文可编辑字段](workstreams/2026-08-22-event-rule-editor-type-switch-i18n/STATE.md)（`active`；代码与测试已实现，等待编译验证与人工验收）
+- [2026-08-23 状态·遗物·收尾者·特斯拉·呼应协同战斗系统](workstreams/2026-08-23-status-relic-combat-systems/STATE.md)（`planned`；brainstorming 完成、规格已写，等待用户评审）
+- [2026-08-23 被动事件迁移为被动型基础事件](workstreams/2026-08-23-passive-base-events/STATE.md)（`blocked`；T1–T8 实现完成、编译门禁通过，测试执行被打开的编辑器 UPM 单实例锁阻塞）
+- [2026-08-22 事件规则编辑器类型更换与中文可编辑字段](workstreams/2026-08-22-event-rule-editor-type-switch-i18n/STATE.md)（`active`；含"所有事件"分类，代码已实现，等待测试与人工验收）
 
 ## 完成历史
 
