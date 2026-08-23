@@ -24,11 +24,13 @@
 
 ## 已完成
 
-- brainstorming 澄清 6 问 + 设计 5 节全部经用户确认；规格已写入 `docs/superpowers/specs/2026-08-23-status-relic-combat-systems-design.md`。
+- brainstorming 澄清 6 问 + 设计 5 节全部经用户确认；规格已写入 `docs/superpowers/specs/2026-08-23-status-relic-combat-systems-design.md` 并提交（`a16736b`）。
+- 规格经用户评审批准。
+- 实施计划已写入 `docs/superpowers/plans/2026-08-23-status-relic-combat-systems.md`（9 个任务，writing-plans 自审通过）。
 
 ## 当前正在进行
 
-- 规格用户评审（等待用户确认规格文件）。
+- 等待用户选择执行方式（子代理驱动 / 内联执行）。
 
 ## 下一步
 
