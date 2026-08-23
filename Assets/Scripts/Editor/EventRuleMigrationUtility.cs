@@ -35,7 +35,6 @@ namespace DiceRevolver.Editor
         {
             MigratePassiveBaseEntries();
             MigratePassiveRuleSlots();
-            AssetDatabase.SaveAssets();
         }
 
         public static void MigratePassiveBaseEntries()
@@ -44,7 +43,6 @@ namespace DiceRevolver.Editor
             SetEntryState("Tesla", DiceFaceSlotType.OnFire, false);
             SetEntryState("EchoSynergy", DiceFaceSlotType.Base, true);
             SetEntryState("Finisher", DiceFaceSlotType.Base, false);
-            AssetDatabase.SaveAssets();
         }
 
         private static void SetEntryState(string name, DiceFaceSlotType slotType, bool passiveBase)
@@ -76,6 +74,7 @@ namespace DiceRevolver.Editor
             {
                 serialized.ApplyModifiedPropertiesWithoutUndo();
                 EditorUtility.SetDirty(entry);
+                AssetDatabase.SaveAssetIfDirty(entry);
             }
         }
 
@@ -84,7 +83,6 @@ namespace DiceRevolver.Editor
             SetRuleSlot("TeslaRule", DiceFaceSlotMask.OnFire);
             SetRuleSlot("EchoSynergyRule", DiceFaceSlotMask.Base);
             SetRuleSlot("FinisherRule", DiceFaceSlotMask.Base);
-            AssetDatabase.SaveAssets();
         }
 
         private static void SetRuleSlot(string ruleName, DiceFaceSlotMask expectedMask)
@@ -111,6 +109,7 @@ namespace DiceRevolver.Editor
                     allowedSlots.intValue = (int)expectedMask;
                     serialized.ApplyModifiedPropertiesWithoutUndo();
                     EditorUtility.SetDirty(rule);
+                    AssetDatabase.SaveAssetIfDirty(rule);
                 }
             }
         }

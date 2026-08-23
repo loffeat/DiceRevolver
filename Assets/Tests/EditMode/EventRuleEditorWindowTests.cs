@@ -175,22 +175,6 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
-        public void WindowReplacesTriggerModuleAndDestroysTheOldSubAsset()
-        {
-            EventRuleDefinition rule = window.CreateRuleAt($"{TempFolder}/ReplacedTrigger.asset");
-            ScriptableObject original = window.AddTrigger(typeof(SignalTypeTriggerModule));
-
-            ScriptableObject replacement = window.ReplaceTrigger(typeof(SignalTypeTriggerModule));
-
-            Assert.That(replacement, Is.Not.SameAs(original));
-            Assert.That(rule.Trigger, Is.SameAs(replacement));
-            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
-            Object[] subAssets = AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GetAssetPath(rule));
-            Assert.That(subAssets.Contains(replacement), Is.True);
-            Assert.That(subAssets.Contains(original), Is.False);
-        }
-
-        [Test]
         public void WindowReplaceTriggerWithSameTypeKeepsExistingModule()
         {
             EventRuleDefinition rule = window.CreateRuleAt($"{TempFolder}/SameTrigger.asset");

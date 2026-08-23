@@ -41,6 +41,7 @@ namespace DiceRevolver.Prototype
                 EventSignalType.FaceConsumed => EventSignalMask.FaceConsumed,
                 EventSignalType.DrawCandidate => EventSignalMask.DrawCandidate,
                 EventSignalType.BeforeProjectileStats => EventSignalMask.BeforeProjectileStats,
+                EventSignalType.EnemyStatusApplied => EventSignalMask.EnemyStatusApplied,
                 _ => EventSignalMask.None
             };
         }

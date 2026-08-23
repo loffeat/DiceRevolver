@@ -23,6 +23,7 @@ namespace DiceRevolver.Tests
             GameObject go = new GameObject("Host");
             EnemyHealth health = go.AddComponent<EnemyHealth>();
             health.MaxHealth = 100;
+            InvokePrivate(health, "Awake");
             EnemyStatusHost host = go.AddComponent<EnemyStatusHost>();
             EnemyStatusDefinition ignite = CreateIgnite();
             try
@@ -50,6 +51,7 @@ namespace DiceRevolver.Tests
             GameObject go = new GameObject("Host");
             EnemyHealth health = go.AddComponent<EnemyHealth>();
             health.MaxHealth = 100;
+            InvokePrivate(health, "Awake");
             EnemyStatusHost host = go.AddComponent<EnemyStatusHost>();
             EnemyStatusDefinition ignite = CreateIgnite(duration: 2f, dps: 5f, maxStacks: 3);
             try
@@ -113,6 +115,16 @@ namespace DiceRevolver.Tests
                 Object.DestroyImmediate(go);
                 Object.DestroyImmediate(ignite);
             }
+        }
+
+        private static void InvokePrivate(object owner, string methodName)
+        {
+            System.Reflection.MethodInfo method = owner.GetType().GetMethod(
+                methodName,
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic);
+            Assert.That(method, Is.Not.Null, $"Missing method {owner.GetType().Name}.{methodName}");
+            method.Invoke(owner, null);
         }
 
         private static void SetField(object target, string name, object value)

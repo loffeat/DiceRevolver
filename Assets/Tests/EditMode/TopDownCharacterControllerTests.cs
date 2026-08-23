@@ -46,6 +46,9 @@ namespace DiceRevolver.Tests
             robotOwner.AddComponent<CharacterController>();
             TestRobotController robot = robotOwner.AddComponent<TestRobotController>();
             robot.Target = target;
+            SerializedObject serialized = new SerializedObject(robot);
+            serialized.FindProperty("autoMove").boolValue = true;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
 
             try
             {

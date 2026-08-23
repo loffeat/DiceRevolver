@@ -159,122 +159,148 @@ namespace DiceRevolver.Tests
             ProjectileDefinition definition = Load<ProjectileDefinition>(
                 $"{Root}/Projectiles/LightningOrb.asset");
             ProjectileRuntimeStats stats = definition.BuildRuntimeStats().WithDamage(10f);
-            EventRuleRuntime runtime = new(rule, 2, DiceFaceSlotType.Passive);
+            RoundProjectileStatistic statistic = new RoundProjectileStatistic();
+            statistic.Increment(definition); // 本轮已生成 1 颗雷电球
+            CapturingServices services = new() { RoundProjectileStatistic = statistic };
+            DiceFaceActivation activation = Activation(2, new DiceEventBudget(32));
+            EventRuleRuntime runtime = new(rule, 2, DiceFaceSlotType.OnFire);
 
             runtime.TryHandle(
-                Signal(EventSignalType.ProjectileSpawned, DiceFaceSlotType.Passive,
-                    sourceFace: 5, stats: stats),
-                new CapturingServices());
-            CapturingServices stacked = new();
-            runtime.TryHandle(
-                Signal(EventSignalType.BeforeProjectileStats, DiceFaceSlotType.Passive,
-                    sourceFace: 2, stats: stats, equippedBaseType: definition.ProjectileTypeDefinition),
-                stacked);
+                Signal(EventSignalType.OnFire, DiceFaceSlotType.OnFire,
+                    sourceFace: 2, activation: activation, stats: stats),
+                services);
+            Assert.That(activation.DamageMultiplier, Is.EqualTo(1.05f).Within(0.0001f));
 
-            Assert.That(stacked.DamageMultiplier, Is.EqualTo(1.05f).Within(0.0001f));
-
+            statistic.Reset(); // 换弹重置统计
+            DiceFaceActivation resetActivation = Activation(2, new DiceEventBudget(32));
+            CapturingServices reset = new() { RoundProjectileStatistic = statistic };
             runtime.TryHandle(
-                Signal(EventSignalType.ReloadStarted, DiceFaceSlotType.Passive),
-                new CapturingServices());
-            CapturingServices reset = new();
-            runtime.TryHandle(
-                Signal(EventSignalType.BeforeProjectileStats, DiceFaceSlotType.Passive,
-                    sourceFace: 2, stats: stats, equippedBaseType: definition.ProjectileTypeDefinition),
+                Signal(EventSignalType.OnFire, DiceFaceSlotType.OnFire,
+                    sourceFace: 2, activation: resetActivation, stats: stats),
                 reset);
-
-            Assert.That(reset.DamageMultiplier, Is.EqualTo(1f));
+            Assert.That(resetActivation.DamageMultiplier, Is.EqualTo(1f));
         }
 
         [Test]
         public void EchoRulePreservesSourceIdentityAndSharedBudgetAndStopsAfterConsumption()
         {
             EventRuleDefinition rule = Rule("EchoSynergy");
-            ProjectileDefinition definition = Load<ProjectileDefinition>(
-                $"{Root}/Projectiles/LightningOrb.asset");
-            ProjectileRuntimeStats stats = definition.BuildRuntimeStats();
+            GameObject target = CreateIgnitedTarget();
             DiceEventBudget budget = new(32);
             DiceFaceActivation activation = Activation(3, budget);
             List<BonusDiceActivationRequest> requests = new();
-            EventRuleRuntime runtime = new(rule, 3, DiceFaceSlotType.Passive);
+            EventRuleRuntime runtime = new(rule, 3, DiceFaceSlotType.Base);
 
-            for (int index = 0; index < 5; index++)
+            try
             {
-                EventSignal signal = Signal(
-                    EventSignalType.ProjectileHit,
-                    DiceFaceSlotType.Passive,
+                for (int index = 0; index < 5; index++)
+                {
+                    EventSignal signal = Signal(
+                        EventSignalType.EnemyStatusApplied,
+                        DiceFaceSlotType.Base,
+                        equippedFace: 3,
+                        sourceFace: 5,
+                        activation: activation,
+                        statusTarget: target.GetComponent<EnemyStatusHost>());
+                    PassiveEventRuleServices services = new(
+                        signal,
+                        null,
+                        request =>
+                        {
+                            requests.Add(request);
+                            return true;
+                        },
+                        null,
+                        null,
+                        null);
+                    runtime.TryHandle(signal, services);
+                }
+
+                // 面 3 相邻 {1,2,4,6}：每轮最多 4 次触发（maximumTriggers=4），每次触发请求 4 个相邻面。
+                Assert.That(requests, Has.Count.EqualTo(4 * 4));
+                Assert.That(requests, Is.All.Matches<BonusDiceActivationRequest>(request =>
+                    request.EventBudget == budget &&
+                    request.SourceActivation == activation &&
+                    request.SourceRule == rule &&
+                    request.MaximumSpreadAngle == 0f &&
+                    request.MinimumSpreadSeparation == 0f));
+
+                runtime.TryHandle(
+                    Signal(EventSignalType.FaceConsumed, DiceFaceSlotType.Base,
+                        equippedFace: 3, sourceFace: 3),
+                    new CapturingServices());
+                EventSignal afterConsumption = Signal(
+                    EventSignalType.EnemyStatusApplied,
+                    DiceFaceSlotType.Base,
                     equippedFace: 3,
                     sourceFace: 5,
                     activation: activation,
-                    stats: stats,
-                    equippedBaseType: definition.ProjectileTypeDefinition);
-                PassiveEventRuleServices services = new(
-                    signal,
-                    null,
-                    request =>
+                    statusTarget: target.GetComponent<EnemyStatusHost>());
+                runtime.TryHandle(afterConsumption, new PassiveEventRuleServices(
+                    afterConsumption, null, request =>
                     {
                         requests.Add(request);
                         return true;
-                    },
-                    null,
-                    null,
-                    null);
-                runtime.TryHandle(signal, services);
+                    }, null, null, null));
+
+                Assert.That(requests, Has.Count.EqualTo(4 * 4));
             }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(target);
+            }
+        }
 
-            Assert.That(requests, Has.Count.EqualTo(4));
-            Assert.That(requests, Is.All.Matches<BonusDiceActivationRequest>(request =>
-                request.EventBudget == budget &&
-                request.SourceActivation == activation &&
-                request.SourceRule == rule &&
-                request.MaximumSpreadAngle == 8f &&
-                request.MinimumSpreadSeparation == 2f));
+        private static GameObject CreateIgnitedTarget()
+        {
+            GameObject target = new GameObject("IgnitedTarget");
+            target.AddComponent<EnemyHealth>();
+            EnemyStatusHost host = target.AddComponent<EnemyStatusHost>();
+            EnemyStatusDefinition ignite = ScriptableObject.CreateInstance<EnemyStatusDefinition>();
+            SetField(ignite, "statusId", "ignite");
+            SetField(ignite, "displayName", "点燃");
+            host.ApplyStatus(ignite);
+            return target;
+        }
 
-            runtime.TryHandle(
-                Signal(EventSignalType.FaceConsumed, DiceFaceSlotType.Passive,
-                    equippedFace: 3, sourceFace: 3),
-                new CapturingServices());
-            EventSignal afterConsumption = Signal(
-                EventSignalType.ProjectileHit,
-                DiceFaceSlotType.Passive,
-                equippedFace: 3,
-                sourceFace: 5,
-                activation: activation,
-                stats: stats,
-                equippedBaseType: definition.ProjectileTypeDefinition);
-            runtime.TryHandle(afterConsumption, new PassiveEventRuleServices(
-                afterConsumption, null, request =>
-                {
-                    requests.Add(request);
-                    return true;
-                }, null, null, null));
-
-            Assert.That(requests, Has.Count.EqualTo(4));
+        private static void SetField(object target, string name, object value)
+        {
+            System.Reflection.FieldInfo field = target.GetType().GetField(
+                name,
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, $"Missing field {target.GetType().Name}.{name}");
+            field.SetValue(target, value);
         }
 
         [Test]
         public void EchoResultPassesTheOriginatingRuleIdentityToTheBonusService()
         {
             EventRuleDefinition rule = Rule("EchoSynergy");
-            ProjectileDefinition definition = Load<ProjectileDefinition>(
-                $"{Root}/Projectiles/LightningOrb.asset");
+            GameObject target = CreateIgnitedTarget();
             DiceFaceActivation activation = Activation(3, new DiceEventBudget(32));
             CapturingServices services = new() { BonusAccepted = true };
 
-            new EventRuleRuntime(rule, 3, DiceFaceSlotType.Passive).TryHandle(
-                Signal(
-                    EventSignalType.ProjectileHit,
-                    DiceFaceSlotType.Passive,
-                    equippedFace: 3,
-                    sourceFace: 5,
-                    activation: activation,
-                    stats: definition.BuildRuntimeStats(),
-                    equippedBaseType: definition.ProjectileTypeDefinition),
-                services);
+            try
+            {
+                new EventRuleRuntime(rule, 3, DiceFaceSlotType.Base).TryHandle(
+                    Signal(
+                        EventSignalType.EnemyStatusApplied,
+                        DiceFaceSlotType.Base,
+                        equippedFace: 3,
+                        sourceFace: 5,
+                        activation: activation,
+                        statusTarget: target.GetComponent<EnemyStatusHost>()),
+                    services);
 
-            Assert.That(services.RequestedSourceRule, Is.SameAs(rule));
-            Assert.That(services.RequestedBonusFace, Is.EqualTo(3));
-            Assert.That(services.RequestedMaximumSpread, Is.EqualTo(8f));
-            Assert.That(services.RequestedMinimumSeparation, Is.EqualTo(2f));
+                Assert.That(services.RequestedSourceRule, Is.SameAs(rule));
+                Assert.That(services.RequestedBonusFace, Is.EqualTo(6));
+                Assert.That(services.RequestedMaximumSpread, Is.EqualTo(0f));
+                Assert.That(services.RequestedMinimumSeparation, Is.EqualTo(0f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(target);
+            }
         }
 
         [Test]
@@ -436,7 +462,8 @@ namespace DiceRevolver.Tests
             DiceFaceActivation activation = null,
             ProjectileHandle projectile = default,
             ProjectileRuntimeStats stats = default,
-            ProjectileTypeDefinition equippedBaseType = null)
+            ProjectileTypeDefinition equippedBaseType = null,
+            EnemyStatusHost statusTarget = null)
         {
             return new EventSignal(
                 type,
@@ -454,7 +481,8 @@ namespace DiceRevolver.Tests
                 activation?.EventBudget,
                 activation != null && activation.IsBonusActivation,
                 default,
-                equippedBaseType);
+                equippedBaseType,
+                statusTarget);
         }
 
         private T Own<T>(T value) where T : UnityEngine.Object
@@ -511,7 +539,7 @@ namespace DiceRevolver.Tests
             public readonly List<LightningRequest> LightningRequests = new();
             public readonly List<DiceFaceActiveOverlay> Overlays = new();
             public DiceEventBudget EventBudget { get; } = new(32);
-            public RoundProjectileStatistic RoundProjectileStatistic => null;
+            public RoundProjectileStatistic RoundProjectileStatistic { get; set; }
             public IReadOnlyList<ProjectileHandle> OwnedProjectiles { get; set; } =
                 Array.Empty<ProjectileHandle>();
             public bool LightningAccepted { get; set; }

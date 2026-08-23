@@ -452,6 +452,7 @@ namespace DiceRevolver.Tests
         public void BaseRuleWithoutResolvablePrimaryProjectileReportsValidationError()
         {
             SignalTypeTriggerModule trigger = Own(ScriptableObject.CreateInstance<SignalTypeTriggerModule>());
+            Set(trigger, "signals", EventSignalMask.Base);
             ForceFaceResultModule force = Own(ScriptableObject.CreateInstance<ForceFaceResultModule>());
             EventRuleDefinition rule = Rule(
                 DiceFaceSlotMask.Base,

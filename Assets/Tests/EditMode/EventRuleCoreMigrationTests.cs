@@ -75,7 +75,8 @@ namespace DiceRevolver.Tests
             Assert.That(faceLibrary.Entries.Select(entry => entry.name), Is.EquivalentTo(new[]
             {
                 "BasicShot", "DoubleTap", "BlastRound", "LoadedFour", "LightningOrb",
-                "Finisher", "ElectromagneticResonance", "Tesla", "EchoSynergy", "ChainReaction"
+                "Finisher", "ElectromagneticResonance", "Tesla", "EchoSynergy", "ChainReaction",
+                "BurningBullet"
             }));
 
             foreach (DiceFaceEntry entry in faceLibrary.Entries)

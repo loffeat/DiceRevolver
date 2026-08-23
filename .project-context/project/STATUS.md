@@ -39,8 +39,8 @@
 
 ## 活跃工作流
 
-- [2026-08-23 状态·遗物·收尾者·特斯拉·呼应协同战斗系统](workstreams/2026-08-23-status-relic-combat-systems/STATE.md)（`planned`；brainstorming 完成、规格已写，等待用户评审）
-- [2026-08-23 被动事件迁移为被动型基础事件](workstreams/2026-08-23-passive-base-events/STATE.md)（`blocked`；T1–T8 实现完成、编译门禁通过，测试执行被打开的编辑器 UPM 单实例锁阻塞）
+- [2026-08-23 状态·遗物·收尾者·特斯拉·呼应协同战斗系统](workstreams/2026-08-23-status-relic-combat-systems/STATE.md)（`active`；五系统 + 用户后续需求全部实现、编译门禁通过，等待 Unity EditMode 测试与提交）
+- [2026-08-23 被动事件迁移为被动型基础事件](workstreams/2026-08-23-passive-base-events/STATE.md)（`active`；T1–T8 实现完成、编译门禁通过、词条终态修正完毕，测试执行受编辑器 UPM 单实例限制待用户配合）
 - [2026-08-22 事件规则编辑器类型更换与中文可编辑字段](workstreams/2026-08-22-event-rule-editor-type-switch-i18n/STATE.md)（`active`；含"所有事件"分类，代码已实现，等待测试与人工验收）
 
 ## 完成历史
@@ -78,6 +78,12 @@
 
 ## 最近项目级验证
 
+- [passed] `2026-08-23`：MSBuild 2022 编译 Prototype/Editor/EditMode.Tests 三程序集多次全量 exit 0（状态/遗物五系统 + 燃烧子弹 + 构筑页同步/清除 + 弹丸立绘 + TestRobot 自动移动 + Debug 格式简化全部代码与测试）。
+- [passed] `2026-08-23`：静态门禁——`DiceFaceSlotType.Passive`/`DiceFaceSlotMask.Passive` 代码零引用；受保护 Prefab git 干净；词条槽位/规则掩码终态核验（燃烧子弹=命中时、特斯拉=开火时、收尾者=基础非被动、呼应协同=基础被动）。
+- [passed] `2026-08-23`：GUID 链核验（新脚本/资产 meta 与引用一致）；Unity 程序集确认含全部新类型；`BurningBulletRule`/`BurningBullet`/`Ignite`/`DiceFaceLibrary` 已导入。
+- [passed] `2026-08-23`：Unity EditMode 聚焦 `DiceFacePassiveSlotTests` 12/12；全量 EditMode 回归 `388/389`，唯一失败为已批准 Ground `Y=-0.01` 豁免项（`RenderingLayerContractTests`），无新增失败。修复了首次真实运行暴露的 13 个失败：EditMode 测试中 `AddComponent` 不触发 Awake（EnemyHealth/EnemyStatusHost/TargetDummy 测试改用显式 `InvokePrivate("Awake")` 并先设 MaxHealth）、`SignalTypeTriggerModule`/`SignalTypeConditionModule` 缺失 `EnemyStatusApplied` 信号映射（呼应协同触发器永不匹配）、迁移后资产语义与旧测试不同步（Tesla=OnFire+统计服务、Echo=EnemyStatusApplied+点燃条件+相邻面触发）、`ForceFaceRejectsPassiveFaces` 池满时 refill 语义错误、`BaseRuleWithoutResolvablePrimaryProjectileReportsValidationError` 触发器未设 signals、迁移工具新增 `AssetDatabase.SaveAssets()` 违反定向保存契约（改 `SaveAssetIfDirty`）、词条库新增 BurningBullet（11 词条）、`WindowReplacesTriggerModuleAndDestroysTheOldSubAsset` 与同类型保留语义矛盾的调试测试（删除）、TestRobot 测试未设置 `autoMove`。
+- [passed] `2026-08-23`：测试后受保护 SHA256 复核——Player/TestRobot/TargetDummy 与基线一致，场景与其余六个受保护文件 git 干净（批处理测试未触碰）。
+- [not-run] `2026-08-23`：呼应协同含面 4 触发的 PlayMode 链式反应人工验收；特斯拉增伤公式与点燃参数占位待调。
 - [passed] `2026-08-21`：Task 9 fix 聚焦 `EventRuleLightningMigrationTests` 为 `12/12`、`0 skipped`，覆盖 custom legacy 参数复制与幂等。
 - [passed] `2026-08-21`：Task 9 fix 十套联合 EditMode 回归为 `43/43`、`0 skipped`（含新增 custom-value 测试）。
 - [failed] `2026-08-21`：清理前完整 EditMode `374/373`，唯一失败为已批准 Ground `Y=-0.01` 豁免项，无新增失败。

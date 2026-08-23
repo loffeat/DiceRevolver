@@ -223,9 +223,16 @@ namespace DiceRevolver.Tests
         {
             DiceRevolverRuntime runtime = new(5f, 2f, true, true);
             runtime.RebuildActiveFaces(new[] { 4 });
+            // 抽空池（5 个活动面），面 2 已消耗
+            for (int i = 0; i < 5; i++)
+            {
+                runtime.TryBeginShot(i * 0.2f);
+            }
+
+            Assert.That(runtime.RemainingRounds, Is.Zero);
             Assert.That(runtime.TryRefillAndForceNextFace(4), Is.False);
             Assert.That(runtime.TryRefillAndForceNextFace(2), Is.True);
-            Assert.That(runtime.TryBeginShot(0f).Face, Is.EqualTo(2));
+            Assert.That(runtime.TryBeginShot(1f).Face, Is.EqualTo(2));
         }
 
         [Test]

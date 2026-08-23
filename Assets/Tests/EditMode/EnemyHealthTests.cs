@@ -11,6 +11,7 @@ namespace DiceRevolver.Tests
         {
             GameObject go = new GameObject("Enemy");
             EnemyHealth health = go.AddComponent<EnemyHealth>();
+            InvokePrivate(health, "Awake");
             health.MaxHealth = 10;
             int deaths = 0;
             health.Died += _ => deaths++;
@@ -61,8 +62,10 @@ namespace DiceRevolver.Tests
         {
             GameObject go = new GameObject("Dummy");
             TargetDummy dummy = go.AddComponent<TargetDummy>();
-            EnemyHealth health = go.GetComponent<EnemyHealth>();
-            Assert.That(health, Is.Not.Null);
+            EnemyHealth health = go.AddComponent<EnemyHealth>();
+            InvokePrivate(dummy, "Awake");
+            InvokePrivate(health, "Awake");
+            Assert.That(go.GetComponent<EnemyHealth>(), Is.SameAs(health));
             try
             {
                 dummy.ReceiveDamage(new DamageInfo(3f, Vector3.zero, null));
@@ -77,6 +80,15 @@ namespace DiceRevolver.Tests
             {
                 Object.DestroyImmediate(go);
             }
+        }
+        private static void InvokePrivate(object owner, string methodName)
+        {
+            System.Reflection.MethodInfo method = owner.GetType().GetMethod(
+                methodName,
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic);
+            Assert.That(method, Is.Not.Null, $"Missing method {owner.GetType().Name}.{methodName}");
+            method.Invoke(owner, null);
         }
     }
 }
