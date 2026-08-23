@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-1000000000000000033
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60000000000000000000000000000001, type: 3}
+  m_Name: SignalTypeTriggerModule
+  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.SignalTypeTriggerModule
+  signals: 4
+--- !u!114 &-1000000000000000032
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d591b8c330e44e96aae884a0f6cd78ea, type: 3}
+  m_Name: ApplyEnemyStatusResultModule
+  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.ApplyEnemyStatusResultModule
+  statusDefinition: {fileID: 11400000, guid: 06eda3350431c1949b54b3c83d702f64, type: 2}
+--- !u!114 &-1000000000000000031
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60000000000000000000000000000024, type: 3}
+  m_Name: SignalTypeConditionModule
+  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.SignalTypeConditionModule
+  signals: 4
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e176f45915a8377408017d87df4b9d20, type: 3}
+  m_Name: BurningBulletRule
+  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.EventRuleDefinition
+  displayName: "\u71C3\u70E7\u5B50\u5F39"
+  description: "\u547D\u4E2D\u65F6\u70B9\u71C3\u654C\u4EBA\uFF0C\u8BA9\u5176\u6301\u7EED\u53D7\u5230\u706B\u7130\u4F24\u5BB3\u3002"
+  displayColor: {r: 1, g: 0.55, b: 0.2, a: 1}
+  tags: []
+  rarity: 
+  allowedSlots: 4
+  trigger: {fileID: -1000000000000000033}
+  conditions: []
+  results:
+  - conditions:
+    - {fileID: -1000000000000000031}
+    result: {fileID: -1000000000000000032}
+  eventBudgetCost: 1
+  recursionPolicy: 0

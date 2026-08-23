@@ -460,6 +460,7 @@ namespace DiceRevolver.Tests
             public List<RuleDebugRecord> DebugRecords { get; } = new();
             public bool ThrowOnRecordRuleDebug { get; set; }
             public DiceEventBudget EventBudget => null;
+            public RoundProjectileStatistic RoundProjectileStatistic => null;
             public bool RequestProjectile(ProjectileDefinition definition, Vector3 origin, Vector3 direction, AttackEffectOverride attackEffectOverride, bool isPrimary) => false;
             public bool Schedule(float delaySeconds, Action callback) => false;
             public bool RequestBonusActivation(int face, float maximumSpreadAngle, float minimumSpreadSeparation, EventRuleDefinition sourceRule) => false;

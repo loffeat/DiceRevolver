@@ -217,5 +217,28 @@ namespace DiceRevolver.Tests
             Assert.That(runtime.RemainingRounds, Is.EqualTo(4));
             Assert.That(runtime.CreateRemainingFacesSnapshot(), Is.EqualTo(new[] { 1, 3, 4, 6 }));
         }
+
+        [Test]
+        public void ForceFaceRejectsPassiveFaces()
+        {
+            DiceRevolverRuntime runtime = new(5f, 2f, true, true);
+            runtime.RebuildActiveFaces(new[] { 4 });
+            Assert.That(runtime.TryRefillAndForceNextFace(4), Is.False);
+            Assert.That(runtime.TryRefillAndForceNextFace(2), Is.True);
+            Assert.That(runtime.TryBeginShot(0f).Face, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void SetFirstDrawForceWorksOnlyForActiveFacesInThePool()
+        {
+            DiceRevolverRuntime runtime = new(5f, 2f, true, true);
+            runtime.RebuildActiveFaces(new[] { 4 });
+            Assert.That(runtime.SetFirstDrawForce(4), Is.False); // 被动面
+            Assert.That(runtime.SetFirstDrawForce(1), Is.True);
+            Assert.That(runtime.TryBeginShot(0f).Face, Is.EqualTo(1));
+
+            // 已被抽出的面不在剩余池，拒绝
+            Assert.That(runtime.SetFirstDrawForce(1), Is.False);
+        }
     }
 }

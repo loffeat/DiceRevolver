@@ -24,7 +24,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60000000000000000000000000000001, type: 3}
   m_Name: SignalTypeTriggerModule
   m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.SignalTypeTriggerModule
-  signals: 512
+  signals: 513
 --- !u!114 &-4001630380593466439
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -38,6 +38,50 @@ MonoBehaviour:
   m_Name: SetDrawPriorityResultModule
   m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.SetDrawPriorityResultModule
   priority: 1
+--- !u!114 &-1000000000000000011
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60000000000000000000000000000024, type: 3}
+  m_Name: SignalTypeConditionModule
+  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.SignalTypeConditionModule
+  signals: 512
+--- !u!114 &-1000000000000000012
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60000000000000000000000000000024, type: 3}
+  m_Name: SignalTypeConditionModule
+  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.SignalTypeConditionModule
+  signals: 1
+--- !u!114 &-1000000000000000013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60000000000000000000000000000008, type: 3}
+  m_Name: SpawnProjectileResultModule
+  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.SpawnProjectileResultModule
+  projectileDefinition: {fileID: 11400000, guid: 26858bed7288f0e4f95aafc76cb44d6a, type: 2}
+  useCurrentPrimaryDefinition: 0
+  useHitOrigin: 0
+  delaySeconds: 0
+  attackEffectOverride: 0
+  primaryProjectile: 1
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -51,7 +95,7 @@ MonoBehaviour:
   m_Name: FinisherRule
   m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.EventRuleDefinition
   displayName: "\u6536\u5C3E\u8005"
-  description: "\u8BE5\u9AB0\u9762\u4F1A\u7B49\u5F85\u666E\u901A\u9AB0\u9762\u6D88\u8017\u540E\u518D\u8FDB\u5165\u62BD\u53D6\u6C60"
+  description: "\u8BE5\u9AB0\u9762\u4F1A\u7B49\u5F85\u666E\u901A\u9AB0\u9762\u6D88\u8017\u540E\u518D\u8FDB\u5165\u62BD\u53D6\u6C60\uFF0C\u4F7F\u7528\u65F6\u751F\u6210\u4E00\u9897\u7A7F\u7532\u5F39\u3002"
   displayColor: {r: 0.18867922, g: 0.18867922, b: 0.18867922, a: 1}
   tags: []
   rarity: 
@@ -60,7 +104,11 @@ MonoBehaviour:
   conditions: []
   results:
   - conditions:
+    - {fileID: -1000000000000000011}
     - {fileID: -6718642504264944742}
     result: {fileID: -4001630380593466439}
+  - conditions:
+    - {fileID: -1000000000000000012}
+    result: {fileID: -1000000000000000013}
   eventBudgetCost: 1
   recursionPolicy: 0

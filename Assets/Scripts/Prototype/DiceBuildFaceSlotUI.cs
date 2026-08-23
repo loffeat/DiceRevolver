@@ -7,6 +7,7 @@ namespace DiceRevolver.Prototype
     public sealed class DiceBuildFaceSlotUI : MonoBehaviour
     {
         [SerializeField] private Button button;
+        [SerializeField] private Button clearButton;
         [SerializeField] private Text faceLabel;
         [SerializeField] private Text baseLabel;
         [SerializeField] private Text onFireLabel;
@@ -16,6 +17,7 @@ namespace DiceRevolver.Prototype
 
         private int face;
         private Action<int> clicked;
+        private Action<int> clearClicked;
         private bool isWired;
 
         public void Configure(
@@ -25,9 +27,11 @@ namespace DiceRevolver.Prototype
             Text configuredOnFireLabel,
             Text configuredOnHitLabel,
             Text configuredOnFireEndLabel,
-            Text configuredPassiveLabel = null)
+            Text configuredPassiveLabel = null,
+            Button configuredClearButton = null)
         {
             button = configuredButton;
+            clearButton = configuredClearButton;
             faceLabel = configuredFaceLabel;
             baseLabel = configuredBaseLabel;
             onFireLabel = configuredOnFireLabel;
@@ -58,13 +62,23 @@ namespace DiceRevolver.Prototype
                 button.onClick.RemoveListener(HandleClicked);
             }
 
+            if (clearButton != null)
+            {
+                clearButton.onClick.RemoveListener(HandleClearClicked);
+            }
+
             isWired = false;
         }
 
-        public void Bind(int face, DiceFaceConfigurationSnapshot configuration, Action<int> clicked)
+        public void Bind(
+            int face,
+            DiceFaceConfigurationSnapshot configuration,
+            Action<int> clicked,
+            Action<int> clearClicked = null)
         {
             this.face = face;
             this.clicked = clicked;
+            this.clearClicked = clearClicked;
             EnsureButtonWired();
 
             if (faceLabel != null)
@@ -108,6 +122,11 @@ namespace DiceRevolver.Prototype
             clicked?.Invoke(face);
         }
 
+        private void HandleClearClicked()
+        {
+            clearClicked?.Invoke(face);
+        }
+
         private void EnsureButtonWired()
         {
             if (isWired)
@@ -127,6 +146,13 @@ namespace DiceRevolver.Prototype
 
             button.onClick.RemoveListener(HandleClicked);
             button.onClick.AddListener(HandleClicked);
+
+            if (clearButton != null)
+            {
+                clearButton.onClick.RemoveListener(HandleClearClicked);
+                clearButton.onClick.AddListener(HandleClearClicked);
+            }
+
             isWired = true;
         }
     }

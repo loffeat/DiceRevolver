@@ -132,7 +132,12 @@ namespace DiceRevolver.Prototype
                 entry.Result.CollectValidationIssues(issues);
             }
 
-            if (slot == DiceFaceSlotType.Base && FindPrimaryProjectileDefinition() == null)
+            // 仅在规则会随抽面发射（触发器含基础信号）时要求主弹丸定义；
+            // 被动监听规则（触发器不含基础信号，如呼应协同）不发射弹丸，无需主弹丸。
+            bool firesOnDraw = trigger is SignalTypeTriggerModule signalTrigger &&
+                (signalTrigger.Signals & EventSignalMask.Base) != 0;
+            if (slot == DiceFaceSlotType.Base && firesOnDraw &&
+                FindPrimaryProjectileDefinition() == null)
             {
                 issues.Add(new EventRuleValidationIssue(
                     EventRuleValidationSeverity.Error,

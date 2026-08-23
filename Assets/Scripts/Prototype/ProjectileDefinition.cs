@@ -9,6 +9,7 @@ namespace DiceRevolver.Prototype
     {
         [Header("显示")]
         [SerializeField, InspectorName("显示名称")] private string displayName = "New Projectile";
+        [SerializeField, InspectorName("弹丸立绘（可选，覆盖默认形状）")] private Sprite projectileSprite;
 
         [Header("运行时")]
         [SerializeField, InspectorName("弹丸 Prefab")] private Projectile projectilePrefab;
@@ -29,6 +30,7 @@ namespace DiceRevolver.Prototype
         [SerializeField, InspectorName("默认视为攻击特效")] private bool defaultAttackEffect;
 
         public string DisplayName => displayName;
+        public Sprite ProjectileSprite => projectileSprite;
         public Projectile ProjectilePrefab => projectilePrefab;
         public bool DefaultAttackEffect => defaultAttackEffect;
         public ProjectileTypeDefinition ProjectileTypeDefinition => projectileTypeDefinition;

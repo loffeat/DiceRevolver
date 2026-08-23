@@ -201,6 +201,110 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void NormalFaceBaseRuleParticipatesInDrawPriority()
+        {
+            SetDrawPriorityResultModule priority = Own(
+                ScriptableObject.CreateInstance<SetDrawPriorityResultModule>());
+            Set(priority, "priority", 1);
+            SourceFaceConditionModule ownerFace = Own(
+                ScriptableObject.CreateInstance<SourceFaceConditionModule>());
+            EventRuleDefinition finisherRule = CreateRule(
+                priority,
+                new EventConditionModule[] { ownerFace });
+            DiceEventRuleRuntimeSet runtimes = CreateRuntimeSet();
+            DiceFaceEntry baseEntry = Entry(DiceFaceSlotType.Base, finisherRule);
+            runtimes.RebuildFace(2, new DiceFaceConfigurationSnapshot(baseEntry, null, null, null));
+
+            DiceDrawConstraintResult result = runtimes.FilterDrawCandidates(
+                new[] { 1, 2, 3 },
+                new[] { 1, 2, 3 },
+                null);
+
+            Assert.That(result.Candidates, Is.EqualTo(new[] { 1, 3 }),
+                "普通面基础槽规则必须参与抽牌优先级（面2被推迟）");
+        }
+
+        [Test]
+        public void AdjacentFacesMatchBuildUiLayout()
+        {
+            Assert.That(DiceFaceAdjacency.AdjacentFaces(3), Is.EqualTo(new[] { 1, 2, 4, 6 }));
+            Assert.That(DiceFaceAdjacency.AdjacentFaces(5), Is.EqualTo(new[] { 4 }));
+            Assert.That(DiceFaceAdjacency.AdjacentFaces(0), Is.Empty);
+        }
+
+        [Test]
+        public void TriggerAdjacentFacesRequestsBonusActivationForEachNeighbor()
+        {
+            TriggerAdjacentFacesResultModule module = Own(
+                ScriptableObject.CreateInstance<TriggerAdjacentFacesResultModule>());
+            Set(module, "maximumTriggers", 4);
+            Set(module, "counterKey", "adjacent");
+            RecordingBonusServices services = new RecordingBonusServices();
+            EventRuleStateStore state = new EventRuleStateStore();
+            DiceEventBudget budget = new DiceEventBudget(32);
+            DiceFaceActivation activation = new DiceFaceActivation(
+                3,
+                default,
+                Vector3.zero,
+                Vector3.forward,
+                null,
+                null,
+                null,
+                null,
+                budget,
+                false,
+                0);
+            EventSignal signal = Signal(
+                EventSignalType.EnemyStatusApplied,
+                equippedFace: 3,
+                activation: activation,
+                budget: budget);
+
+            EventResult result = module.Execute(new EventExecutionContext(signal, state, services));
+
+            Assert.That(result.Status, Is.EqualTo(EventResultStatus.Success));
+            Assert.That(services.RequestedFaces, Is.EqualTo(new[] { 1, 2, 4, 6 }));
+            Assert.That(state.GetInt("adjacent"), Is.EqualTo(1));
+
+            // 达到每轮上限后跳过
+            state.SetInt("adjacent", 4);
+            EventResult capped = module.Execute(new EventExecutionContext(signal, state, services));
+            Assert.That(capped.Status, Is.EqualTo(EventResultStatus.Skipped));
+        }
+
+        private sealed class RecordingBonusServices : IEventRuleServices
+        {
+            public readonly List<int> RequestedFaces = new();
+
+            public DiceEventBudget EventBudget => null;
+            public RoundProjectileStatistic RoundProjectileStatistic => null;
+
+            public bool RequestProjectile(ProjectileDefinition definition, Vector3 origin, Vector3 direction,
+                AttackEffectOverride attackEffectOverride, bool isPrimary) => false;
+            public bool Schedule(float delaySeconds, Action callback) => false;
+            public bool RequestBonusActivation(int face, float maximumSpreadAngle,
+                float minimumSpreadSeparation, EventRuleDefinition sourceRule)
+            {
+                RequestedFaces.Add(face);
+                return true;
+            }
+
+            public bool RequestRefillAndForceNextFace(int face) => false;
+            public bool RequestLightningChain(ProjectileHandle origin,
+                IReadOnlyList<ProjectileHandle> targets, LightningChainDefinition definition) => false;
+            public bool QueueNextShotOverlay(DiceFaceActiveOverlay overlay) => false;
+            public IReadOnlyList<ProjectileHandle> FindOwnedProjectiles(Vector3 origin, float radius,
+                ProjectileTagDefinition requiredTag, Projectile excludedProjectile) =>
+                Array.Empty<ProjectileHandle>();
+            public void SetDrawPriority(int priority) { }
+            public void RejectDrawCandidate(string reason) { }
+            public void MultiplyProjectileDamage(float multiplier) { }
+            public void RecordRuleDebug(EventRuleDefinition rule, string stage,
+                string description, EventResultStatus status) { }
+            public void ReportException(Exception exception, ScriptableObject module) { }
+        }
+
+        [Test]
         public void GunAppliesRuleMultipliersInStableFaceOrder()
         {
             GameObject owner = Own(new GameObject("Passive Rule Gun"));

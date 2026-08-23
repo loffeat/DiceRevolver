@@ -132,13 +132,27 @@ namespace DiceRevolver.Prototype
 
         public bool TryRefillAndForceNextFace(int face)
         {
-            if (face < 1 || face > DiceRevolverRules.FaceCount || remainingFaces.Contains(face))
+            if (face < 1 || face > DiceRevolverRules.FaceCount ||
+                remainingFaces.Contains(face) || passiveFaces.Contains(face))
             {
                 return false;
             }
 
             remainingFaces.Add(face);
             remainingFaces.Sort();
+            forcedNextFace = face;
+            return true;
+        }
+
+        /// <summary>在换弹完成后设置首抽强制面；拒绝越界、被动面或不在剩余池中的面。</summary>
+        public bool SetFirstDrawForce(int face)
+        {
+            if (face < 1 || face > DiceRevolverRules.FaceCount ||
+                passiveFaces.Contains(face) || !remainingFaces.Contains(face))
+            {
+                return false;
+            }
+
             forcedNextFace = face;
             return true;
         }

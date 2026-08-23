@@ -95,7 +95,7 @@ namespace DiceRevolver.Prototype
                         candidate,
                         default);
                     PassiveEventRuleServices services = CreateServices(signal);
-                    ExecutePassive(signal, services);
+                    ExecuteDrawEvaluation(signal, services);
                     if (!services.DrawRejected)
                     {
                         allowed.Add(candidate);
@@ -250,6 +250,16 @@ namespace DiceRevolver.Prototype
             ExecutePassive(CreateSignal(EventSignalType.FaceConsumed, face));
         }
 
+        public void NotifyEnemyStatusApplied(EnemyStatusHost host, EnemyStatusDefinition definition)
+        {
+            if (host == null || definition == null)
+            {
+                return;
+            }
+
+            ExecutePassive(CreateSignal(EventSignalType.EnemyStatusApplied, statusTarget: host));
+        }
+
         public bool ExecuteActive(
             int face,
             DiceFaceSlotType slot,
@@ -323,6 +333,23 @@ namespace DiceRevolver.Prototype
             }
         }
 
+        // 抽牌候选评估：所有面（含普通面）的基础槽规则都参与优先级/拒绝判定。
+        private void ExecuteDrawEvaluation(EventSignal signal, PassiveEventRuleServices sharedServices)
+        {
+            for (int faceIndex = 0; faceIndex < DiceRevolverRules.FaceCount; faceIndex++)
+            {
+                EventRuleRuntime runtime = runtimes[faceIndex, (int)DiceFaceSlotType.Base];
+                if (runtime == null)
+                {
+                    continue;
+                }
+
+                EventSignal equippedSignal = CreateSignalForEquippedFace(signal, faceIndex);
+                PassiveEventRuleServices services = sharedServices ?? CreateServices(equippedSignal);
+                TryExecute(runtime, equippedSignal, services);
+            }
+        }
+
         private void TryExecute(
             EventRuleRuntime runtime,
             EventSignal signal,
@@ -366,7 +393,8 @@ namespace DiceRevolver.Prototype
             Vector3 hitPosition = default,
             IReadOnlyList<int> remainingFaces = null,
             int drawCandidate = 0,
-            ProjectileRuntimeStats currentStats = default)
+            ProjectileRuntimeStats currentStats = default,
+            EnemyStatusHost statusTarget = null)
         {
             return new EventSignal(
                 signalType,
@@ -383,7 +411,9 @@ namespace DiceRevolver.Prototype
                 currentStats,
                 activation?.EventBudget,
                 activation != null && activation.IsBonusActivation,
-                activation != null ? activation.DebugScope : default);
+                activation != null ? activation.DebugScope : default,
+                null,
+                statusTarget);
         }
 
         private EventSignal CreateSignalForEquippedFace(EventSignal source, int faceIndex)

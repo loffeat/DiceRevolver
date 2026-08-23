@@ -1,57 +1,5 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-5092506389785781669
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60000000000000000000000000000021, type: 3}
-  m_Name: BooleanStateConditionModule
-  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.BooleanStateConditionModule
-  stateKey: consumed
-  expectedValue: 0
---- !u!114 &-4632572033612472192
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60000000000000000000000000000023, type: 3}
-  m_Name: SameProjectileTypeConditionModule
-  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.SameProjectileTypeConditionModule
---- !u!114 &-4472879712463009113
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60000000000000000000000000000024, type: 3}
-  m_Name: SignalTypeConditionModule
-  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.SignalTypeConditionModule
-  signals: 256
---- !u!114 &-2349924487778903191
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60000000000000000000000000000024, type: 3}
-  m_Name: SignalTypeConditionModule
-  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.SignalTypeConditionModule
-  signals: 64
 --- !u!114 &-1911133578281889725
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -64,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60000000000000000000000000000001, type: 3}
   m_Name: SignalTypeTriggerModule
   m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.SignalTypeTriggerModule
-  signals: 352
---- !u!114 &-1856790627508069740
+  signals: 2048
+--- !u!114 &-1000000000000000021
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -74,10 +22,24 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60000000000000000000000000000024, type: 3}
-  m_Name: SignalTypeConditionModule
-  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.SignalTypeConditionModule
-  signals: 32
+  m_Script: {fileID: 11500000, guid: 02ef3ab50f3a4d3482441a8efbb8fb79, type: 3}
+  m_Name: HasEnemyStatusConditionModule
+  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.HasEnemyStatusConditionModule
+  statusDefinition: {fileID: 11400000, guid: 06eda3350431c1949b54b3c83d702f64, type: 2}
+--- !u!114 &-1000000000000000022
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8bf2181dc65892f459c2f29110ee320f, type: 3}
+  m_Name: TriggerAdjacentFacesResultModule
+  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.TriggerAdjacentFacesResultModule
+  maximumTriggers: 4
+  counterKey: bonusActivationTriggers
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -91,110 +53,16 @@ MonoBehaviour:
   m_Name: EchoSynergyRule
   m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.EventRuleDefinition
   displayName: "\u547C\u5E94\u534F\u540C"
-  description: "\u540C\u7C7B\u578B\u5F39\u5E55\u547D\u4E2D\u65F6\u7ACB\u5373\u989D\u5916\u6FC0\u6D3B\u8BE5\u9AB0\u9762\uFF0C\u6BCF\u8F6E\u6700\u591A\u56DB\u6B21\u3002"
+  description: "\u5F53\u654C\u4EBA\u88AB\u70B9\u71C3\u65F6\uFF0C\u4E0D\u6D88\u8017\u9AB0\u9762\u89E6\u53D1\u4E00\u6B21\u76F8\u90BB\u9AB0\u9762\u7684\u5B8C\u6574\u6FC0\u6D3B\uFF0C\u6BCF\u8F6E\u4E0A\u9650\u56DB\u6B21\u3002"
   displayColor: {r: 0.48, g: 0.64, b: 1, a: 1}
   tags: []
   rarity: 
   allowedSlots: 1
   trigger: {fileID: -1911133578281889725}
-  conditions: []
+  conditions:
+  - {fileID: -1000000000000000021}
   results:
-  - conditions:
-    - {fileID: -1856790627508069740}
-    - {fileID: -4632572033612472192}
-    - {fileID: -5092506389785781669}
-    result: {fileID: 6357902017082713977}
-  - conditions:
-    - {fileID: -4472879712463009113}
-    - {fileID: 7340543250491132296}
-    result: {fileID: 8716036135006867911}
-  - conditions:
-    - {fileID: -2349924487778903191}
-    result: {fileID: 2975319250426845677}
-  - conditions:
-    - {fileID: 2407366989283571034}
-    result: {fileID: 575072908545166347}
+  - conditions: []
+    result: {fileID: -1000000000000000022}
   eventBudgetCost: 1
   recursionPolicy: 0
---- !u!114 &575072908545166347
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60000000000000000000000000000018, type: 3}
-  m_Name: SetBooleanStateResultModule
-  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.SetBooleanStateResultModule
-  stateKey: consumed
-  value: 0
---- !u!114 &2407366989283571034
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60000000000000000000000000000024, type: 3}
-  m_Name: SignalTypeConditionModule
-  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.SignalTypeConditionModule
-  signals: 64
---- !u!114 &2975319250426845677
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60000000000000000000000000000017, type: 3}
-  m_Name: ResetCounterResultModule
-  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.ResetCounterResultModule
-  counterKey: bonusActivationTriggers
---- !u!114 &6357902017082713977
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60000000000000000000000000000019, type: 3}
-  m_Name: RequestBonusActivationResultModule
-  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.RequestBonusActivationResultModule
-  maximumTriggers: 4
-  maximumSpreadAngle: 8
-  minimumSpreadSeparation: 2
-  counterKey: bonusActivationTriggers
---- !u!114 &7340543250491132296
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60000000000000000000000000000022, type: 3}
-  m_Name: SourceFaceConditionModule
-  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.SourceFaceConditionModule
---- !u!114 &8716036135006867911
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60000000000000000000000000000018, type: 3}
-  m_Name: SetBooleanStateResultModule
-  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.SetBooleanStateResultModule
-  stateKey: consumed
-  value: 1

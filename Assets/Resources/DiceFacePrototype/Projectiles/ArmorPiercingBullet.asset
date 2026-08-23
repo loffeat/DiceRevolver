@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8bc4015b2c59dcae80b375fc2946da2f, type: 3}
+  m_Name: ArmorPiercingBullet
+  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.ProjectileDefinition
+  displayName: "\u7A7F\u7532\u5F39"
+  projectilePrefab: {fileID: 1005, guid: 145d9a84b5e26537194c0e85a2df63b8, type: 3}
+  projectileType: Revolver
+  projectileTag: PlayerBullet
+  damage: 3
+  flightDistance: 18
+  flightSpeed: 18
+  enemyPierceCount: 3
+  extensionPorts: []
+  defaultAttackEffect: 0

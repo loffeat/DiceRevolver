@@ -723,6 +723,7 @@ namespace DiceRevolver.Tests
         private sealed class FakeServices : IEventRuleServices
         {
             public DiceEventBudget EventBudget { get; set; }
+            public RoundProjectileStatistic RoundProjectileStatistic => null;
             public IReadOnlyList<ProjectileHandle> OwnedProjectiles { get; set; } =
                 Array.Empty<ProjectileHandle>();
             public bool RefillAndForceAccepted { get; set; }

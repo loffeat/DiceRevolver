@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -80,6 +81,11 @@ namespace DiceRevolver.Prototype
             if (pageRoot != null)
             {
                 pageRoot.SetActive(visible);
+                if (visible)
+                {
+                    // 每次打开时重建词条列表与骰面展示，反映词条库/规则的最新状态。
+                    Build();
+                }
             }
         }
 
@@ -138,7 +144,7 @@ namespace DiceRevolver.Prototype
                 DiceFaceConfigurationSnapshot configuration = loadout != null
                     ? loadout.GetSnapshot(face)
                     : default;
-                slot.Bind(face, configuration, HandleFaceClicked);
+                slot.Bind(face, configuration, HandleFaceClicked, HandleClearClicked);
             }
         }
 
@@ -235,7 +241,33 @@ namespace DiceRevolver.Prototype
                 return;
             }
 
-            loadout.Equip(face, selectedEntry);
+            if (!loadout.Equip(face, selectedEntry))
+            {
+                string detail = "未知原因";
+                if (selectedEntry.Rule != null)
+                {
+                    IReadOnlyList<EventRuleValidationIssue> issues =
+                        selectedEntry.Rule.CollectValidationIssues(selectedEntry.SlotType);
+                    if (issues != null && issues.Count > 0)
+                    {
+                        detail = string.Join("；", issues.Select(issue => $"[{issue.Code}] {issue.Message}"));
+                    }
+                }
+
+                Debug.LogWarning(
+                    $"装备失败：{selectedEntry.DisplayName} 无法装到骰面 {face} 的 {selectedEntry.SlotType.ToChineseLabel()} 槽。{detail}",
+                    this);
+            }
+        }
+
+        private void HandleClearClicked(int face)
+        {
+            if (loadout == null)
+            {
+                return;
+            }
+
+            loadout.ClearFace(face);
         }
 
         private void HandleSlotChanged(int face, DiceFaceSlotType slotType, DiceFaceEntry entry)

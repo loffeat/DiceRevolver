@@ -90,9 +90,9 @@ namespace DiceRevolver.Tests
         {
             EventRuleMigrationUtility.MigratePassiveBaseEvents();
             AssertEntry("LightningOrb", DiceFaceSlotType.Base);
-            AssertEntry("Finisher", DiceFaceSlotType.Base, true);
+            AssertEntry("Finisher", DiceFaceSlotType.Base, false);
             AssertEntry("ElectromagneticResonance", DiceFaceSlotType.OnFire);
-            AssertEntry("Tesla", DiceFaceSlotType.Base, true);
+            AssertEntry("Tesla", DiceFaceSlotType.OnFire, false);
             AssertEntry("EchoSynergy", DiceFaceSlotType.Base, true);
             AssertEntry("ChainReaction", DiceFaceSlotType.OnFireEnd);
         }

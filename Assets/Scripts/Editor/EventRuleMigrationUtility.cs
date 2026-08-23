@@ -40,46 +40,61 @@ namespace DiceRevolver.Editor
 
         public static void MigratePassiveBaseEntries()
         {
-            string[] paths = AssetDatabase.FindAssets("t:DiceFaceEntry")
-                .Select(AssetDatabase.GUIDToAssetPath)
-                .Where(path => path.StartsWith(Root + "/DiceFaces/", StringComparison.Ordinal))
-                .ToArray();
-            foreach (string path in paths)
+            // 终态：EchoSynergy 为被动基础（基础槽 + 被动标志）；Tesla 为开火时普通词条；Finisher 为普通基础事件（最后抽到 + 穿甲弹，不占被动面）。
+            SetEntryState("Tesla", DiceFaceSlotType.OnFire, false);
+            SetEntryState("EchoSynergy", DiceFaceSlotType.Base, true);
+            SetEntryState("Finisher", DiceFaceSlotType.Base, false);
+            AssetDatabase.SaveAssets();
+        }
+
+        private static void SetEntryState(string name, DiceFaceSlotType slotType, bool passiveBase)
+        {
+            string path = Root + "/DiceFaces/" + name + ".asset";
+            DiceFaceEntry entry = AssetDatabase.LoadAssetAtPath<DiceFaceEntry>(path);
+            if (entry == null)
             {
-                DiceFaceEntry entry = AssetDatabase.LoadAssetAtPath<DiceFaceEntry>(path);
-                if (entry == null)
-                {
-                    continue;
-                }
-
-                SerializedObject serialized = new SerializedObject(entry);
-                SerializedProperty slotType = serialized.FindProperty("slotType");
-                SerializedProperty isPassiveBase = serialized.FindProperty("isPassiveBase");
-                if (slotType != null &&
-                    slotType.intValue == (int)DiceFaceSlotType.Passive)
-                {
-                    slotType.intValue = (int)DiceFaceSlotType.Base;
-                    if (isPassiveBase != null)
-                    {
-                        isPassiveBase.boolValue = true;
-                    }
-
-                    serialized.ApplyModifiedPropertiesWithoutUndo();
-                    EditorUtility.SetDirty(entry);
-                }
+                return;
             }
 
-            AssetDatabase.SaveAssets();
+            SerializedObject serialized = new SerializedObject(entry);
+            SerializedProperty slotTypeProperty = serialized.FindProperty("slotType");
+            SerializedProperty isPassiveBase = serialized.FindProperty("isPassiveBase");
+            bool changed = false;
+            if (slotTypeProperty != null && slotTypeProperty.intValue != (int)slotType)
+            {
+                slotTypeProperty.intValue = (int)slotType;
+                changed = true;
+            }
+
+            if (isPassiveBase != null && isPassiveBase.boolValue != passiveBase)
+            {
+                isPassiveBase.boolValue = passiveBase;
+                changed = true;
+            }
+
+            if (changed)
+            {
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(entry);
+            }
         }
 
         public static void MigratePassiveRuleSlots()
         {
-            string[] ruleNames = { "TeslaRule", "EchoSynergyRule", "FinisherRule" };
+            SetRuleSlot("TeslaRule", DiceFaceSlotMask.OnFire);
+            SetRuleSlot("EchoSynergyRule", DiceFaceSlotMask.Base);
+            SetRuleSlot("FinisherRule", DiceFaceSlotMask.Base);
+            AssetDatabase.SaveAssets();
+        }
+
+        private static void SetRuleSlot(string ruleName, DiceFaceSlotMask expectedMask)
+        {
             string[] paths = AssetDatabase.FindAssets("t:EventRuleDefinition")
                 .Select(AssetDatabase.GUIDToAssetPath)
-                .Where(path => ruleNames.Contains(
+                .Where(path => string.Equals(
                     System.IO.Path.GetFileName(path),
-                    StringComparer.Ordinal))
+                    ruleName,
+                    StringComparison.Ordinal))
                 .ToArray();
             foreach (string path in paths)
             {
@@ -91,16 +106,13 @@ namespace DiceRevolver.Editor
 
                 SerializedObject serialized = new SerializedObject(rule);
                 SerializedProperty allowedSlots = serialized.FindProperty("allowedSlots");
-                if (allowedSlots != null &&
-                    allowedSlots.intValue != (int)DiceFaceSlotMask.Base)
+                if (allowedSlots != null && allowedSlots.intValue != (int)expectedMask)
                 {
-                    allowedSlots.intValue = (int)DiceFaceSlotMask.Base;
+                    allowedSlots.intValue = (int)expectedMask;
                     serialized.ApplyModifiedPropertiesWithoutUndo();
                     EditorUtility.SetDirty(rule);
                 }
             }
-
-            AssetDatabase.SaveAssets();
         }
 
         public static EventRuleDefinition MigrateRule(

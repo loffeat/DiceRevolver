@@ -143,6 +143,7 @@ namespace DiceRevolver.Prototype
             Text onHitLabel = CreateSlotText("OnHit", owner.transform, new Vector2(0.05f, 0.35f), new Vector2(0.95f, 0.50f));
             Text onFireEndLabel = CreateSlotText("OnFireEnd", owner.transform, new Vector2(0.05f, 0.20f), new Vector2(0.95f, 0.35f));
             Text passiveLabel = CreateSlotText("Passive", owner.transform, new Vector2(0.05f, 0.05f), new Vector2(0.95f, 0.20f));
+            Button clearButton = CreateSmallButton("Clear", owner.transform, "清空");
             DiceBuildFaceSlotUI slot = owner.AddComponent<DiceBuildFaceSlotUI>();
             slot.Configure(
                 button,
@@ -151,7 +152,23 @@ namespace DiceRevolver.Prototype
                 onFireLabel,
                 onHitLabel,
                 onFireEndLabel,
-                passiveLabel);
+                passiveLabel,
+                clearButton);
+        }
+
+        private static Button CreateSmallButton(string name, Transform parent, string label)
+        {
+            GameObject owner = CreateImageObject(name, parent, new Color(0.55f, 0.22f, 0.22f, 1f));
+            RectTransform rect = owner.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(1f, 1f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(1f, 1f);
+            rect.sizeDelta = new Vector2(48f, 24f);
+            Button button = owner.AddComponent<Button>();
+            button.targetGraphic = owner.GetComponent<Image>();
+            CreateText("ClearLabel", owner.transform, label, 12, TextAnchor.MiddleCenter,
+                Vector2.zero, Vector2.one);
+            return button;
         }
 
         private static Transform CreateEntryList(Transform parent)

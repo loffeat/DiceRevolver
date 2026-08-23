@@ -28,7 +28,8 @@ namespace DiceRevolver.Prototype
         [InspectorName("换弹完成")] ReloadCompleted = 1 << 7,
         [InspectorName("骰面消耗")] FaceConsumed = 1 << 8,
         [InspectorName("抽面候选")] DrawCandidate = 1 << 9,
-        [InspectorName("弹丸属性前")] BeforeProjectileStats = 1 << 10
+        [InspectorName("弹丸属性前")] BeforeProjectileStats = 1 << 10,
+        [InspectorName("敌人状态施加")] EnemyStatusApplied = 1 << 11
     }
 
     public enum EventSignalType
@@ -43,7 +44,8 @@ namespace DiceRevolver.Prototype
         [InspectorName("换弹完成")] ReloadCompleted,
         [InspectorName("骰面消耗")] FaceConsumed,
         [InspectorName("抽面候选")] DrawCandidate,
-        [InspectorName("弹丸属性前")] BeforeProjectileStats
+        [InspectorName("弹丸属性前")] BeforeProjectileStats,
+        [InspectorName("敌人状态施加")] EnemyStatusApplied
     }
 
     public enum EventRuleRecursionPolicy

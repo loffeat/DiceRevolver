@@ -18,7 +18,7 @@ namespace DiceRevolver.Editor
         // 设计默认参数：只在新规则或缺失模块创建时使用；既有非空模块参数保持不变。
         private const float ResonanceSearchRadius = 6f;
         private const int ResonanceMaximumConnections = 3;
-        private const float TeslaDamagePerStack = 0.05f;
+        private const float TeslaDamagePerOrb = 0.05f;
         private const int EchoMaximumTriggersPerChamber = 4;
         private const float EchoMaximumSpreadAngle = 8f;
         private const float EchoMinimumSpreadSeparation = 2f;
@@ -39,10 +39,13 @@ namespace DiceRevolver.Editor
 
             MigrateLightningOrb(legacyOrb);
             MigrateResonance(lightningTag, chainDefinition);
-            MigrateTesla(lightningTag);
-            MigrateEcho();
+            MigrateTesla(LoadRequired<ProjectileDefinition>(
+                Root + "/Projectiles/LightningOrb.asset"));
+            MigrateEcho(LoadRequired<EnemyStatusDefinition>(
+                Root + "/Statuses/Ignite.asset"));
             MigrateChainReaction();
-            MigrateFinisher();
+            MigrateFinisher(LoadRequired<ProjectileDefinition>(
+                Root + "/Projectiles/ArmorPiercingBullet.asset"));
             EventRuleMigrationUtility.MigratePassiveBaseEntries();
             EventRuleMigrationUtility.MigratePassiveRuleSlots();
             Debug.Log("Lightning Event Rules are ready.");
@@ -91,30 +94,76 @@ namespace DiceRevolver.Editor
                     TrySingleResult(rule, out CreateLightningChainResultModule _));
         }
 
-        private static void MigrateTesla(ProjectileTagDefinition lightningTag)
+        private static void MigrateTesla(ProjectileDefinition lightningOrb)
         {
             EventRuleMigrationUtility.MigrateRule(
                 EntryPath("Tesla"), RulePath("Tesla"),
-                DiceFaceSlotType.Base,
-                EventSignalMask.ProjectileSpawned |
-                EventSignalMask.BeforeProjectileStats |
-                EventSignalMask.ReloadStarted,
+                DiceFaceSlotType.OnFire,
+                EventSignalMask.OnFire,
                 null,
-                rule => EnsureTeslaResults(rule, lightningTag),
+                rule => EnsureTeslaResults(rule, lightningOrb),
                 rule => HasTeslaStructure(rule));
         }
 
-        private static void MigrateEcho()
+        private static void MigrateEcho(EnemyStatusDefinition ignite)
         {
             EventRuleMigrationUtility.MigrateRule(
                 EntryPath("EchoSynergy"), RulePath("EchoSynergy"),
                 DiceFaceSlotType.Base,
-                EventSignalMask.ProjectileHit |
-                EventSignalMask.FaceConsumed |
-                EventSignalMask.ReloadStarted,
+                EventSignalMask.EnemyStatusApplied,
                 null,
-                rule => EnsureEchoResults(rule),
+                rule => EnsureEchoResults(rule, ignite),
                 rule => HasEchoStructure(rule));
+        }
+
+        private static void EnsureEchoResults(
+            EventRuleDefinition rule,
+            EnemyStatusDefinition ignite)
+        {
+            SerializedObject serialized = new SerializedObject(rule);
+            if (rule.Trigger is SignalTypeTriggerModule trigger &&
+                trigger.Signals != EventSignalMask.EnemyStatusApplied)
+            {
+                Set(trigger, "signals", EventSignalMask.EnemyStatusApplied);
+            }
+
+            if (HasEchoStructure(rule))
+            {
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+                return;
+            }
+
+            SerializedProperty conditions = serialized.FindProperty("conditions");
+            conditions.arraySize = 0;
+            conditions.arraySize = 1;
+            HasEnemyStatusConditionModule igniteCondition =
+                CreateCondition<HasEnemyStatusConditionModule>(rule,
+                    condition => Set(condition, "statusDefinition", ignite));
+            conditions.GetArrayElementAtIndex(0).objectReferenceValue = igniteCondition;
+
+            SerializedProperty results = serialized.FindProperty("results");
+            results.arraySize = 0;
+            AppendResult(results,
+                CreateResult<TriggerAdjacentFacesResultModule>(rule, result =>
+                {
+                    Set(result, "maximumTriggers", EchoMaximumTriggersPerChamber);
+                    Set(result, "counterKey", EchoCounterKey);
+                }));
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static bool HasEchoStructure(EventRuleDefinition rule)
+        {
+            if (rule.Conditions.Count != 1 || rule.Results.Count != 1 ||
+                rule.Conditions[0] is not HasEnemyStatusConditionModule ||
+                rule.Trigger is not SignalTypeTriggerModule trigger ||
+                trigger.Signals != EventSignalMask.EnemyStatusApplied)
+            {
+                return false;
+            }
+
+            return rule.Results[0].Conditions.Count == 0 &&
+                   rule.Results[0].Result is TriggerAdjacentFacesResultModule;
         }
 
         private static void MigrateChainReaction()
@@ -127,165 +176,119 @@ namespace DiceRevolver.Editor
                     TrySingleResult(rule, out QueueActiveOverlayResultModule _));
         }
 
-        private static void MigrateFinisher()
+        private static void MigrateFinisher(ProjectileDefinition armorPiercingBullet)
         {
             EventRuleMigrationUtility.MigrateRule(
                 EntryPath("Finisher"), RulePath("Finisher"),
-                DiceFaceSlotType.Base, EventSignalMask.DrawCandidate, null,
-                rule =>
+                DiceFaceSlotType.Base,
+                EventSignalMask.DrawCandidate | EventSignalMask.Base,
+                null,
+                rule => EnsureFinisherResults(rule, armorPiercingBullet),
+                rule => HasFinisherStructure(rule));
+        }
+
+        private static void EnsureFinisherResults(
+            EventRuleDefinition rule,
+            ProjectileDefinition armorPiercingBullet)
+        {
+            SerializedObject serialized = new SerializedObject(rule);
+            if (rule.Trigger is SignalTypeTriggerModule trigger)
+            {
+                EventSignalMask signals = Read<EventSignalMask>(trigger, "signals");
+                if ((signals & EventSignalMask.Base) == 0)
                 {
-                    if (rule.Results.Count == 0)
-                    {
-                        EnsureSingleResult(
-                            rule,
-                            CreateCondition<SourceFaceConditionModule>(rule, _ => { }),
-                            CreateResult<SetDrawPriorityResultModule>(rule,
-                                result => Set(result, "priority", FinisherPriority)));
-                    }
-                },
-                rule => rule.Conditions.Count == 0 && rule.Results.Count == 1 &&
-                    HasConditions<SourceFaceConditionModule>(rule.Results[0]) &&
-                    rule.Results[0].Result is SetDrawPriorityResultModule);
+                    Set(trigger, "signals", signals | EventSignalMask.Base);
+                }
+            }
+
+            if (HasFinisherStructure(rule))
+            {
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+                return;
+            }
+
+            SerializedProperty results = serialized.FindProperty("results");
+            results.arraySize = 0;
+            AppendResult(results,
+                CreateResult<SetDrawPriorityResultModule>(rule,
+                    result => Set(result, "priority", FinisherPriority)),
+                CreateSignalCondition(rule, EventSignalMask.DrawCandidate),
+                CreateCondition<SourceFaceConditionModule>(rule, _ => { }));
+            AppendResult(results,
+                CreateResult<SpawnProjectileResultModule>(rule, result =>
+                {
+                    Set(result, "projectileDefinition", armorPiercingBullet);
+                    Set(result, "primaryProjectile", true);
+                }),
+                CreateSignalCondition(rule, EventSignalMask.Base));
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static bool HasFinisherStructure(EventRuleDefinition rule)
+        {
+            if (rule.Conditions.Count != 0 || rule.Results.Count != 2)
+            {
+                return false;
+            }
+
+            if (rule.Trigger is not SignalTypeTriggerModule trigger ||
+                (trigger.Signals & EventSignalMask.Base) == 0)
+            {
+                return false;
+            }
+
+            EventResultEntry priorityEntry = rule.Results[0];
+            EventResultEntry spawnEntry = rule.Results[1];
+            return HasConditions<SignalTypeConditionModule, SourceFaceConditionModule>(priorityEntry) &&
+                   priorityEntry.Result is SetDrawPriorityResultModule &&
+                   HasConditions<SignalTypeConditionModule>(spawnEntry) &&
+                   spawnEntry.Result is SpawnProjectileResultModule;
         }
 
         private static void EnsureTeslaResults(
             EventRuleDefinition rule,
-            ProjectileTagDefinition lightningTag)
+            ProjectileDefinition lightningOrb)
         {
-            if (rule.Results.Count != 0)
+            SerializedObject serialized = new SerializedObject(rule);
+            if (rule.Trigger is SignalTypeTriggerModule trigger &&
+                trigger.Signals != EventSignalMask.OnFire)
             {
+                Set(trigger, "signals", EventSignalMask.OnFire);
+            }
+
+            if (HasTeslaStructure(rule))
+            {
+                serialized.ApplyModifiedPropertiesWithoutUndo();
                 return;
             }
 
-            SerializedObject serialized = new(rule);
             SerializedProperty results = serialized.FindProperty("results");
+            results.arraySize = 0;
             AppendResult(results,
-                CreateResult<IncrementCounterResultModule>(rule, result =>
+                CreateResult<ScaleActivationDamageFromStatisticResultModule>(rule, result =>
                 {
-                    Set(result, "counterKey", StacksKey);
-                    Set(result, "amount", 1);
+                    Set(result, "statisticDefinition", lightningOrb);
+                    Set(result, "damagePerCount", TeslaDamagePerOrb);
                 }),
-                CreateSignalCondition(rule, EventSignalMask.ProjectileSpawned),
-                CreateCondition<ProjectileTagConditionModule>(rule,
-                    condition => Set(condition, "projectileTag", lightningTag)));
-            AppendResult(results,
-                CreateResult<MultiplyProjectileDamageFromCounterResultModule>(rule, result =>
-                {
-                    Set(result, "counterKey", StacksKey);
-                    Set(result, "damagePerStack", TeslaDamagePerStack);
-                }),
-                CreateSignalCondition(rule, EventSignalMask.BeforeProjectileStats),
-                CreateCondition<SourceFaceConditionModule>(rule, _ => { }),
-                CreateCondition<SameProjectileTypeConditionModule>(rule, _ => { }));
-            AppendResult(results,
-                CreateResult<ResetCounterResultModule>(rule,
-                    result => Set(result, "counterKey", StacksKey)),
-                CreateSignalCondition(rule, EventSignalMask.ReloadStarted));
+                CreateSignalCondition(rule, EventSignalMask.OnFire));
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static bool HasTeslaStructure(EventRuleDefinition rule)
         {
-            if (rule.Conditions.Count != 0 || rule.Results.Count != 3)
+            if (rule.Conditions.Count != 0 || rule.Results.Count != 1)
             {
                 return false;
             }
 
-            EventResultEntry incrementEntry = rule.Results[0];
-            EventResultEntry damageEntry = rule.Results[1];
-            EventResultEntry resetEntry = rule.Results[2];
-            return HasConditions<SignalTypeConditionModule, ProjectileTagConditionModule>(
-                       incrementEntry) &&
-                   incrementEntry.Result is IncrementCounterResultModule &&
-                   HasConditions<SignalTypeConditionModule, SourceFaceConditionModule,
-                       SameProjectileTypeConditionModule>(damageEntry) &&
-                   damageEntry.Result is MultiplyProjectileDamageFromCounterResultModule &&
-                   HasConditions<SignalTypeConditionModule>(resetEntry) &&
-                   resetEntry.Result is ResetCounterResultModule;
-        }
-
-        private static void EnsureEchoResults(EventRuleDefinition rule)
-        {
-            if (rule.Results.Count != 0)
-            {
-                return;
-            }
-
-            SerializedObject serialized = new(rule);
-            SerializedProperty results = serialized.FindProperty("results");
-            AppendResult(results,
-                CreateResult<RequestBonusActivationResultModule>(rule, result =>
-                {
-                    Set(result, "maximumTriggers", EchoMaximumTriggersPerChamber);
-                    Set(result, "maximumSpreadAngle", EchoMaximumSpreadAngle);
-                    Set(result, "minimumSpreadSeparation", EchoMinimumSpreadSeparation);
-                    Set(result, "counterKey", EchoCounterKey);
-                }),
-                CreateSignalCondition(rule, EventSignalMask.ProjectileHit),
-                CreateCondition<SameProjectileTypeConditionModule>(rule, _ => { }),
-                CreateCondition<BooleanStateConditionModule>(rule, condition =>
-                {
-                    Set(condition, "stateKey", EchoConsumedKey);
-                    Set(condition, "expectedValue", false);
-                }));
-            AppendResult(results,
-                CreateResult<SetBooleanStateResultModule>(rule, result =>
-                {
-                    Set(result, "stateKey", EchoConsumedKey);
-                    Set(result, "value", true);
-                }),
-                CreateSignalCondition(rule, EventSignalMask.FaceConsumed),
-                CreateCondition<SourceFaceConditionModule>(rule, _ => { }));
-            AppendResult(results,
-                CreateResult<ResetCounterResultModule>(rule,
-                    result => Set(result, "counterKey", EchoCounterKey)),
-                CreateSignalCondition(rule, EventSignalMask.ReloadStarted));
-            AppendResult(results,
-                CreateResult<SetBooleanStateResultModule>(rule, result =>
-                {
-                    Set(result, "stateKey", EchoConsumedKey);
-                    Set(result, "value", false);
-                }),
-                CreateSignalCondition(rule, EventSignalMask.ReloadStarted));
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-        }
-
-        private static bool HasEchoStructure(EventRuleDefinition rule)
-        {
-            if (rule.Conditions.Count != 0 || rule.Results.Count != 4)
+            if (rule.Trigger is not SignalTypeTriggerModule trigger ||
+                trigger.Signals != EventSignalMask.OnFire)
             {
                 return false;
             }
 
-            EventResultEntry bonusEntry = rule.Results[0];
-            EventResultEntry consumedEntry = rule.Results[1];
-            EventResultEntry resetEntry = rule.Results[2];
-            EventResultEntry reactivateEntry = rule.Results[3];
-            return HasConditions<SignalTypeConditionModule, SameProjectileTypeConditionModule,
-                       BooleanStateConditionModule>(bonusEntry) &&
-                   bonusEntry.Result is RequestBonusActivationResultModule &&
-                   HasConditions<SignalTypeConditionModule, SourceFaceConditionModule>(
-                       consumedEntry) &&
-                   IsBooleanResult(consumedEntry, EchoConsumedKey, true) &&
-                   HasSignalReset(resetEntry, EchoCounterKey) &&
-                   HasConditions<SignalTypeConditionModule>(reactivateEntry) &&
-                   IsBooleanResult(reactivateEntry, EchoConsumedKey, false);
-        }
-
-        private static bool HasSignalReset(EventResultEntry entry, string key)
-        {
-            return HasConditions<SignalTypeConditionModule>(entry) &&
-                   Read<EventSignalMask>(entry.Conditions[0], "signals") ==
-                       EventSignalMask.ReloadStarted &&
-                   entry.Result is ResetCounterResultModule reset &&
-                   Read<string>(reset, "counterKey") == key;
-        }
-
-        private static bool IsBooleanResult(EventResultEntry entry, string key, bool value)
-        {
-            return entry.Result is SetBooleanStateResultModule set &&
-                   Read<string>(set, "stateKey") == key &&
-                   Read<bool>(set, "value") == value;
+            return HasConditions<SignalTypeConditionModule>(rule.Results[0]) &&
+                   rule.Results[0].Result is ScaleActivationDamageFromStatisticResultModule;
         }
 
         private static void EnsureSingleRuleCondition<T>(

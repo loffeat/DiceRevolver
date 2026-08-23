@@ -27,6 +27,9 @@ namespace DiceRevolver.Prototype
         [SerializeField, Min(1), InspectorName("单次骰面事件预算")]
         private int eventBudgetPerActivation = DiceFaceActivation.DefaultEventBudget;
 
+        [Header("遗物")]
+        [SerializeField, InspectorName("遗物列表")] private List<RelicDefinition> relics = new();
+
         [Header("换弹视觉")]
         [SerializeField, InspectorName("换弹闪烁速度")] private float reloadBlinkSpeed = 8f;
         [SerializeField, InspectorName("换弹暗色")] private Color reloadDimColor =
@@ -35,6 +38,8 @@ namespace DiceRevolver.Prototype
         private DiceRevolverRuntime runtime;
         private DiceShotPipeline shotPipeline;
         private readonly DiceEventRuleRuntimeSet eventRuleRuntimes = new DiceEventRuleRuntimeSet();
+        private readonly RelicRuntime relicRuntime = new RelicRuntime();
+        private readonly RoundProjectileStatistic roundStatistic = new RoundProjectileStatistic();
         private readonly OwnedProjectileRegistry ownedProjectiles = new OwnedProjectileRegistry();
         private readonly BonusShotSpreadAllocator bonusShotSpread = new BonusShotSpreadAllocator();
         private readonly CombatDebugTrace debugTrace = new CombatDebugTrace();
@@ -110,6 +115,11 @@ namespace DiceRevolver.Prototype
                 WarnIfAllFacesPassive();
             }
 
+            relicRuntime.SetRelics(relics);
+            ApplyRelicsAtRoundStart();
+            EnemyStatusHost.StatusAppliedGlobal -= HandleEnemyStatusApplied;
+            EnemyStatusHost.StatusAppliedGlobal += HandleEnemyStatusApplied;
+
             if (player != null)
             {
                 aimRig = player.GetComponentInChildren<TopDownAimHandRig>();
@@ -158,6 +168,8 @@ namespace DiceRevolver.Prototype
                     null,
                     Time.time);
                 ReloadCompleted?.Invoke();
+                roundStatistic.Reset();
+                ApplyRelicsAtRoundStart();
             }
 
             if (runtime.IsReloading)
@@ -188,7 +200,15 @@ namespace DiceRevolver.Prototype
                 loadout.SlotChanged -= HandleLoadoutSlotChanged;
             }
 
+            EnemyStatusHost.StatusAppliedGlobal -= HandleEnemyStatusApplied;
             shotPipeline?.Clear();
+        }
+
+        private void HandleEnemyStatusApplied(
+            EnemyStatusHost host,
+            EnemyStatusDefinition definition)
+        {
+            eventRuleRuntimes.NotifyEnemyStatusApplied(host, definition);
         }
 
         private void UpdatePose()
@@ -279,13 +299,20 @@ namespace DiceRevolver.Prototype
 
             ProjectileRuntimeStats stats = definition.BuildRuntimeStats();
             stats = ModifyPassiveProjectileStats(activation.Face, stats, activation);
+            if (activation.DamageMultiplier != 1f)
+            {
+                stats = stats.WithDamage(stats.Damage * activation.DamageMultiplier);
+            }
             Quaternion rotation = GetShotRotation(request.Direction, transform.rotation);
             Vector3 origin = request.Origin;
             origin.y = 0f;
             Projectile projectile = Instantiate(prefab, origin, rotation);
             projectile.Configure(stats);
             projectile.Launch(request.Direction, ownerCollider);
+            ProjectileSpriteVisual spriteVisual = projectile.gameObject.AddComponent<ProjectileSpriteVisual>();
+            spriteVisual.SetDefinition(definition);
             ProjectileHandle handle = ownedProjectiles.Register(projectile, stats);
+            roundStatistic.Increment(definition);
             NotifyProjectileSpawnedPassives(activation.Face, handle, activation);
 
             DiceRevolverShotContext shot = new DiceRevolverShotContext(
@@ -452,7 +479,8 @@ namespace DiceRevolver.Prototype
                 activation.DebugScope);
             BulletEventRuleServices services = new BulletEventRuleServices(
                 context,
-                shotPipeline.ReportRuleException);
+                shotPipeline.ReportRuleException,
+                roundStatistic);
             return eventRuleRuntimes.ExecuteActive(face, slot, rule, signal, services);
         }
 
@@ -518,6 +546,19 @@ namespace DiceRevolver.Prototype
             {
                 Debug.LogWarning("弹巢全部为被动面，每轮无法射击。", this);
             }
+        }
+
+        private void ApplyRelicsAtRoundStart()
+        {
+            if (runtime == null)
+            {
+                return;
+            }
+
+            relicRuntime.ApplyRoundStart(new RelicContext(
+                runtime,
+                loadout != null ? loadout.GetPassiveFaceSet() : Array.Empty<int>(),
+                DiceRevolverRules.FaceCount));
         }
 
         private static ProjectileTypeDefinition GetBaseProjectileType(

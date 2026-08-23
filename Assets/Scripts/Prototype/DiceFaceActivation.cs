@@ -133,6 +133,7 @@ namespace DiceRevolver.Prototype
         public long SuppressedPassiveInstanceId { get; }
         public CombatDebugScope DebugScope { get; private set; }
         public int RemainingEventBudget => EventBudget.Remaining;
+        public float DamageMultiplier { get; set; } = 1f;
 
         public void ConfigureDebugScope(
             CombatDebugTrace trace,

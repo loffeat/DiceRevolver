@@ -21,6 +21,7 @@ namespace DiceRevolver.Prototype
         [SerializeField, InspectorName("弹幕 Sorting Order")] private int sortingOrder;
 
         public GameObject VisualPrefab => visualPrefab;
+        public GameObject VisualInstance { get; private set; }
 
         private void Awake()
         {
@@ -31,6 +32,7 @@ namespace DiceRevolver.Prototype
 
             GameObject instance = Instantiate(visualPrefab, transform);
             instance.name = visualPrefab.name;
+            VisualInstance = instance;
             instance.transform.localPosition = Vector3.zero;
             instance.transform.localRotation = Quaternion.Euler(localEulerAngles);
             instance.transform.localScale = Vector3.one * Mathf.Max(0.0001f, visualScale);

@@ -31,6 +31,7 @@
 - **编译门禁已验证**：MSBuild 2022 编译 `DiceRevolver.Prototype`、`DiceRevolver.Editor`、`DiceRevolver.EditMode.Tests` 三个程序集全部 exit 0（期间修复 `DiceFaceLoadout` 缺失 `using System.Collections.Generic` 与 4 处测试编译错误）。
 - **资产迁移已应用**：3 词条 `slotType: 0` + `isPassiveBase: 1`；3 规则 `allowedSlots: 1`；`slotType: 4` 零残留。
 - 静态门禁（代码侧）：`DiceFaceSlotMask.Passive` 零引用；`DiceFaceSlotType.Passive` 仅剩迁移工具的 legacy 读取（文档化豁免）。
+- **构筑页被动词条无法装备的 bug 修复**（用户反馈）：根因 = `EventRuleDefinition.CollectValidationIssues` 对所有基础槽规则强制"必须提供主弹丸定义"，被动监听规则（呼应协同等，不生成弹丸）`CanEquip(Base)` 失败被拒。修复：主弹丸要求仅对"触发器含基础信号（会随抽面发射）"的规则生效；`DiceBuildEntryButtonUI` 对被动词条显示"被动"标签。新增 2 个测试（被动监听规则可装备；含基础信号规则仍需主弹丸）。
 
 ## 当前正在进行
 

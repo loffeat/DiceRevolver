@@ -21,6 +21,7 @@ namespace DiceRevolver.Prototype
         void SetDrawPriority(int priority);
         void RejectDrawCandidate(string reason);
         void MultiplyProjectileDamage(float multiplier);
+        RoundProjectileStatistic RoundProjectileStatistic { get; }
         void RecordRuleDebug(EventRuleDefinition rule, string stage,
             string description, EventResultStatus status);
         void ReportException(Exception exception, ScriptableObject module);

@@ -38,6 +38,7 @@ namespace DiceRevolver.Prototype
                 eventBudget,
                 isBonusActivation,
                 debugScope,
+                null,
                 null)
         {
         }
@@ -58,7 +59,8 @@ namespace DiceRevolver.Prototype
             DiceEventBudget eventBudget,
             bool isBonusActivation,
             CombatDebugScope debugScope,
-            ProjectileTypeDefinition equippedBaseProjectileType)
+            ProjectileTypeDefinition equippedBaseProjectileType,
+            EnemyStatusHost statusTarget = null)
         {
             SignalType = signalType;
             EquippedFace = equippedFace;
@@ -78,6 +80,7 @@ namespace DiceRevolver.Prototype
             IsBonusActivation = isBonusActivation;
             DebugScope = debugScope;
             EquippedBaseProjectileType = equippedBaseProjectileType;
+            StatusTarget = statusTarget;
         }
 
         public EventSignalType SignalType { get; }
@@ -96,5 +99,6 @@ namespace DiceRevolver.Prototype
         public bool IsBonusActivation { get; }
         public CombatDebugScope DebugScope { get; }
         public ProjectileTypeDefinition EquippedBaseProjectileType { get; }
+        public EnemyStatusHost StatusTarget { get; }
     }
 }

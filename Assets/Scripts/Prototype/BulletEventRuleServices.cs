@@ -8,16 +8,21 @@ namespace DiceRevolver.Prototype
     {
         private readonly BulletEventContext context;
         private readonly Action<Exception, UnityEngine.Object> reportException;
+        private readonly RoundProjectileStatistic roundProjectileStatistic;
 
         public BulletEventRuleServices(
             BulletEventContext context,
-            Action<Exception, UnityEngine.Object> reportException)
+            Action<Exception, UnityEngine.Object> reportException,
+            RoundProjectileStatistic roundProjectileStatistic = null)
         {
             this.context = context;
             this.reportException = reportException;
+            this.roundProjectileStatistic = roundProjectileStatistic;
         }
 
         public DiceEventBudget EventBudget => context.Activation?.EventBudget;
+
+        public RoundProjectileStatistic RoundProjectileStatistic => roundProjectileStatistic;
 
         public bool RequestProjectile(
             ProjectileDefinition definition,

@@ -56,7 +56,7 @@ namespace DiceRevolver.Tests
 
             Assert.That(
                 CombatDebugFormatter.Format(record),
-                Is.EqualTo("    #0012 [骰面6] [开火时] 电磁共鸣：连接 3 个雷电球"));
+                Is.EqualTo("    #12 骰面6 · 开火时：电磁共鸣：连接 3 个雷电球"));
         }
 
         [Test]

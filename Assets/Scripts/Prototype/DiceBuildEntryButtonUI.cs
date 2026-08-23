@@ -80,7 +80,9 @@ namespace DiceRevolver.Prototype
 
             if (slotLabel != null)
             {
-                slotLabel.text = entry != null ? entry.SlotType.ToChineseLabel() : string.Empty;
+                slotLabel.text = entry != null
+                    ? entry.IsPassiveBase ? "被动" : entry.SlotType.ToChineseLabel()
+                    : string.Empty;
             }
 
             SetSelected(false);
@@ -90,7 +92,11 @@ namespace DiceRevolver.Prototype
         {
             if (backgroundImage != null)
             {
-                backgroundImage.color = selected ? selectedColor : unselectedColor;
+                backgroundImage.color = selected
+                    ? selectedColor
+                    : entry != null
+                        ? Color.Lerp(unselectedColor, entry.DisplayColor, 0.25f)
+                        : unselectedColor;
             }
         }
 

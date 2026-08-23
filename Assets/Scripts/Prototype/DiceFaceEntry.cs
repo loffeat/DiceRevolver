@@ -21,9 +21,11 @@ namespace DiceRevolver.Prototype
         [SerializeField, HideInInspector] private BulletEventEffect[] onHitEffects = System.Array.Empty<BulletEventEffect>();
         [SerializeField, HideInInspector] private BulletEventEffect[] onFireEndEffects = System.Array.Empty<BulletEventEffect>();
 
-        public string DisplayName => displayName;
-        public string Description => description;
-        public Color DisplayColor => displayColor;
+        // 事件内容（名称/描述/颜色）以绑定的规则为准；无规则（legacy 效果词条）回退到词条自身字段。
+        // 这样事件规则编辑器的修改会直接反映到构筑页。
+        public string DisplayName => rule != null ? rule.DisplayName : displayName;
+        public string Description => rule != null ? rule.Description : description;
+        public Color DisplayColor => rule != null ? rule.DisplayColor : displayColor;
         public bool IsPassiveBase => isPassiveBase;
         public DiceFaceSlotType SlotType =>
             rule != null || effect != null || passiveEffect != null ? slotType : ResolveLegacySlotType();

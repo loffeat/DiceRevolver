@@ -74,12 +74,30 @@ namespace DiceRevolver.Tests
             foreach (string name in names)
             {
                 DiceFaceEntry entry = Load<DiceFaceEntry>($"{Root}/DiceFaces/{name}.asset");
-                Assert.That(entry.SlotType, Is.EqualTo(DiceFaceSlotType.Base), name);
-                Assert.That(entry.IsPassiveBase, Is.True, name);
                 EventRuleDefinition rule = Load<EventRuleDefinition>(
                     $"{Root}/EventRules/Lightning/{name}Rule.asset");
-                Assert.That(rule.AllowedSlots, Is.EqualTo(DiceFaceSlotMask.Base), name);
                 Assert.That(entry.Rule, Is.SameAs(rule), name);
+                if (name == "Tesla")
+                {
+                    // 特斯拉已迁移为开火时普通词条（增伤其装备面基础事件）。
+                    Assert.That(entry.SlotType, Is.EqualTo(DiceFaceSlotType.OnFire), name);
+                    Assert.That(entry.IsPassiveBase, Is.False, name);
+                    Assert.That(rule.AllowedSlots, Is.EqualTo(DiceFaceSlotMask.OnFire), name);
+                }
+                else if (name == "Finisher")
+                {
+                    // 收尾者为普通基础事件（最后抽到 + 穿甲弹），不占被动面。
+                    Assert.That(entry.SlotType, Is.EqualTo(DiceFaceSlotType.Base), name);
+                    Assert.That(entry.IsPassiveBase, Is.False, name);
+                    Assert.That(rule.AllowedSlots, Is.EqualTo(DiceFaceSlotMask.Base), name);
+                }
+                else
+                {
+                    // 呼应协同保持被动基础词条。
+                    Assert.That(entry.SlotType, Is.EqualTo(DiceFaceSlotType.Base), name);
+                    Assert.That(entry.IsPassiveBase, Is.True, name);
+                    Assert.That(rule.AllowedSlots, Is.EqualTo(DiceFaceSlotMask.Base), name);
+                }
             }
         }
 
@@ -305,6 +323,24 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void FinisherRuleSpawnsArmorPiercingBulletOnBaseSignal()
+        {
+            LightningBuildPrototypeBuilder.Build();
+            EventRuleDefinition rule = Rule("Finisher");
+            CapturingServices services = new();
+            EventSignal signal = Signal(EventSignalType.Base, DiceFaceSlotType.Base);
+
+            EventRuleInvocationResult result =
+                new EventRuleRuntime(rule, 5, DiceFaceSlotType.Base).TryHandle(signal, services);
+
+            Assert.That(result.Status, Is.EqualTo(EventResultStatus.Success));
+            Assert.That(services.ProjectileRequests, Has.Count.EqualTo(1));
+            Assert.That(services.ProjectileRequests[0].Definition.name,
+                Is.EqualTo("ArmorPiercingBullet"));
+            Assert.That(services.ProjectileRequests[0].IsPrimary, Is.True);
+        }
+
+        [Test]
         public void LightningMigrationIsIdempotentAndDoesNotUseGlobalAssetSaving()
         {
             string[] migrationPaths =
@@ -475,6 +511,7 @@ namespace DiceRevolver.Tests
             public readonly List<LightningRequest> LightningRequests = new();
             public readonly List<DiceFaceActiveOverlay> Overlays = new();
             public DiceEventBudget EventBudget { get; } = new(32);
+            public RoundProjectileStatistic RoundProjectileStatistic => null;
             public IReadOnlyList<ProjectileHandle> OwnedProjectiles { get; set; } =
                 Array.Empty<ProjectileHandle>();
             public bool LightningAccepted { get; set; }

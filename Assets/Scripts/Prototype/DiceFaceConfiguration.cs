@@ -44,6 +44,11 @@ namespace DiceRevolver.Prototype
             };
         }
 
+        public void ClearSlot(DiceFaceSlotType slotType)
+        {
+            SetEntry(slotType, null);
+        }
+
         public DiceFaceConfigurationSnapshot CreateSnapshot(BulletEventEffect legacyBaseEffect = null)
         {
             return new DiceFaceConfigurationSnapshot(

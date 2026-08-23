@@ -635,6 +635,7 @@ namespace DiceRevolver.Tests
         private sealed class FakeRuleServices : IEventRuleServices
         {
             public DiceEventBudget EventBudget => null;
+            public RoundProjectileStatistic RoundProjectileStatistic => null;
             public bool RequestProjectile(ProjectileDefinition definition, Vector3 origin,
                 Vector3 direction, AttackEffectOverride attackEffectOverride, bool isPrimary) => false;
             public bool Schedule(float delaySeconds, Action callback) => false;

@@ -31,6 +31,7 @@ namespace DiceRevolver.Prototype
         }
 
         public DiceEventBudget EventBudget => signal.EventBudget;
+        public RoundProjectileStatistic RoundProjectileStatistic => null;
         public int HighestDrawPriority { get; private set; }
         public bool DrawRejected { get; private set; }
         public float ProjectileDamageMultiplier { get; private set; } = 1f;

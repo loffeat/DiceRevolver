@@ -13,21 +13,26 @@ namespace DiceRevolver.Prototype
 
         public event Action<int, DiceFaceSlotType, DiceFaceEntry> SlotChanged;
 
-        public void Equip(int face, DiceFaceEntry entry)
+        public bool Equip(int face, DiceFaceEntry entry)
         {
             if (face < 1 || face > DiceRevolverRules.FaceCount)
             {
-                return;
+                return false;
             }
 
             if (entry == null)
             {
-                return;
+                return false;
             }
 
             DiceFaceConfiguration configuration = GetOrCreateConfiguration(face);
-            configuration.Equip(entry);
+            if (!configuration.Equip(entry))
+            {
+                return false;
+            }
+
             SlotChanged?.Invoke(face, entry.SlotType, entry);
+            return true;
         }
 
         public DiceFaceEntry GetEntry(int face, DiceFaceSlotType slotType)
@@ -48,6 +53,24 @@ namespace DiceRevolver.Prototype
             }
 
             return passiveFaces.AsReadOnly();
+        }
+
+        public void ClearFace(int face)
+        {
+            if (face < 1 || face > DiceRevolverRules.FaceCount)
+            {
+                return;
+            }
+
+            DiceFaceConfiguration configuration = GetOrCreateConfiguration(face);
+            configuration.ClearSlot(DiceFaceSlotType.Base);
+            configuration.ClearSlot(DiceFaceSlotType.OnFire);
+            configuration.ClearSlot(DiceFaceSlotType.OnHit);
+            configuration.ClearSlot(DiceFaceSlotType.OnFireEnd);
+            SlotChanged?.Invoke(face, DiceFaceSlotType.Base, null);
+            SlotChanged?.Invoke(face, DiceFaceSlotType.OnFire, null);
+            SlotChanged?.Invoke(face, DiceFaceSlotType.OnHit, null);
+            SlotChanged?.Invoke(face, DiceFaceSlotType.OnFireEnd, null);
         }
 
         public DiceFaceConfigurationSnapshot GetSnapshot(int face)
