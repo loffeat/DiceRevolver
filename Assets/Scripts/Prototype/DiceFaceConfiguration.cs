@@ -165,11 +165,27 @@ namespace DiceRevolver.Prototype
             DiceFaceActiveOverlay overlay)
         {
             return new DiceFaceConfigurationSnapshot(
-                overlay.BaseEntry != null ? overlay.BaseEntry : baseEntry,
-                overlay.OnFireEntry != null ? overlay.OnFireEntry : onFireEntry,
-                overlay.OnHitEntry != null ? overlay.OnHitEntry : onHitEntry,
-                overlay.OnFireEndEntry != null ? overlay.OnFireEndEntry : onFireEndEntry,
+                MergeEntry(baseEntry, overlay.BaseEntry),
+                MergeEntry(onFireEntry, overlay.OnFireEntry),
+                MergeEntry(onHitEntry, overlay.OnHitEntry),
+                MergeEntry(onFireEndEntry, overlay.OnFireEndEntry),
                 legacyBaseEffect);
+        }
+
+        private static DiceFaceEntry MergeEntry(
+            DiceFaceEntry equippedEntry,
+            DiceFaceEntry overlayEntry)
+        {
+            if (overlayEntry == null)
+            {
+                return equippedEntry;
+            }
+
+            return equippedEntry != null &&
+                equippedEntry.Rule != null &&
+                equippedEntry.Rule.PreserveWhenOverlaid
+                    ? equippedEntry
+                    : overlayEntry;
         }
 
         public static DiceFaceConfigurationSnapshot FromEntry(DiceFaceEntry entry)

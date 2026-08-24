@@ -23,6 +23,7 @@
 - 构筑 UI 布局 `FacePositions`：面 3 的 8 向相邻 = {1,2,4,6}。
 - 呼应协同实机不触发的根因不是资产配置：点燃的全局通知丢失来源激活/共享预算，随后被动面信号改写又丢失状态目标；旧测试直接手工构造完整信号，未覆盖这两个边界。
 - 右上角骰面 HUD 与实际射击不一致的根因是 UI 监听了 `FireStarted` 并自行推断弹仓；奖励激活也会广播该事件，导致 UI 置灰但真实弹仓未消耗。运行时实际是每枪从剩余池随机抽取，并不存在预生成顺序。
+- 收尾者在“链式反应”构筑中看似不触发的根因是：链式反应把来源骰面的非空基础槽覆盖到下一发；收尾者恰好被延后为最后一发时，其基础规则被覆盖成上一面的基础弹幕，因此抽到了收尾者所在面却生成了别的弹丸。
 
 ## 已完成
 
@@ -39,16 +40,17 @@
 - **呼应协同真实链路修复**：状态施加通知现在携带造成点燃的 `DiceFaceActivation`，Rule Runtime 改写为装备面信号时保留 `StatusTarget`；新增真实 Gun 边界回归测试，验证面 4 燃烧命中后按顺序追加激活 `{1,2,4,6}`。
 - **出千：4 拾取物紫色修复**：`RelicPickup_Face4.prefab` 两个 `SpriteRenderer` 的错误内置材质引用（`fileID 2100000/type 2`）改为项目 `GraphicsSettings` 声明的默认 Sprite 材质（`fileID 10754/type 0`）；保留用户在场景实例设置的 `A_Item_StartWithFour` Sprite。
 - **骰面 HUD 真实弹仓同步**：`DiceRevolverRuntime` 在抽取、补回与换弹完成时发布只读剩余面快照，`DiceRevolverGun` 暴露当前快照并转发变更；`DiceRevolverAmmoUI` 启用时先读取当前快照，之后只按快照实时刷新，不再监听开火/奖励事件推断弹药。
+- **保护槽位能力与事件配置回档**：`EventRuleDefinition` 保留数据化的“保护槽位免受覆盖”开关，`DiceFaceConfigurationSnapshot.MergeActiveOverlay` 对四个活动槽统一遵守；按用户要求，现有事件均恢复为修改前配置，没有事件默认启用保护。收尾者再次可被链式反应覆盖。
 - **静态门禁**：`DiceFaceSlotType.Passive`/`DiceFaceSlotMask.Passive` 代码零引用；受保护 Prefab git 干净。
 
 ## 当前正在进行
 
-- 用户 PlayMode 反馈的呼应协同与骰面 HUD 问题均已定位并修复；真实 Gun 通知边界和弹仓快照 UI 回归测试完成 RED→GREEN。仍待在后续正常 PlayMode 中观察视觉手感，不要求 Codex 抢占屏幕操控。
+- 用户 PlayMode 反馈的呼应协同与骰面 HUD 已修复；收尾者覆盖行为按用户确认回档：仍保持最后抽取，但若前一发链式反应复制了基础槽，则收尾者基础弹丸会被覆盖。通用保护槽位能力保留，当前没有现有事件启用。
 
 ## 下一步
 
 1. 在后续正常 PlayMode 中观察右上角六面：每次真实抽取只灰掉对应面，奖励激活不改变 HUD，手动/自动换弹完成后恢复全部活动面。
-2. 继续验收呼应协同含面 4 的链式反应、特斯拉增伤手感和点燃表现。
+2. 用截图构筑复验收尾者最后一发：倒数第二发触发链式反应并带有基础事件时，收尾者应发射被复制的基础弹丸；继续验收呼应协同、特斯拉增伤手感和点燃表现。
 3. 根据人工验收结果调整占位参数；若无问题，将本工作流标记为 `completed`。
 
 ## 阻塞
@@ -74,6 +76,7 @@
 - [passed] `2026-08-24`：出千：4 拾取物材质引用与 `GraphicsSettings.m_SpritesDefaultMaterial` 对照通过；场景实例没有 `m_Materials` 覆盖，Unity Editor 日志确认 Prefab 已重新导入且未报告该资源错误。
 - [passed] `2026-08-24`：`DiceRevolverAmmoUITests` 修复前 `0/3`，修复后隔离 Unity EditMode `3/3`、`0 skipped`，覆盖延迟启用读取真实状态、抽取实时置灰、手动换弹实时恢复；Unity 日志 code 0。
 - [blocked] `2026-08-24`：主 Unity 编辑器保持开启时，第二个隔离批处理进程因 Unity 全局 `CurlRequestCache.db` 冲突而无法补跑完整 Runtime 测试；已终止本次后台测试进程，没有关闭或操作主编辑器。
+- [passed] `2026-08-24`：按用户要求回档事件配置。隔离 Unity 先得到 RED `1/3 passed, 2/3 failed`（收尾者仍受保护），移除 `FinisherRule` 与构建器的保护启用后 GREEN `3/3`、`0 failed`：收尾者可被链式反应基础槽覆盖，显式开启保护的自定义规则仍保留槽位。
 
 ## 相关资料
 

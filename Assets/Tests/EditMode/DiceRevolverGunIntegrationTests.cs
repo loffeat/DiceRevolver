@@ -20,6 +20,14 @@ namespace DiceRevolver.Tests
             "Assets/Resources/DiceFacePrototype/DiceFaces/EchoSynergy.asset";
         private const string BurningBulletEntryPath =
             "Assets/Resources/DiceFacePrototype/DiceFaces/BurningBullet.asset";
+        private const string FinisherEntryPath =
+            "Assets/Resources/DiceFacePrototype/DiceFaces/Finisher.asset";
+        private const string TeslaEntryPath =
+            "Assets/Resources/DiceFacePrototype/DiceFaces/Tesla.asset";
+        private const string ChainReactionEntryPath =
+            "Assets/Resources/DiceFacePrototype/DiceFaces/ChainReaction.asset";
+        private const string BasicShotEntryPath =
+            "Assets/Resources/DiceFacePrototype/DiceFaces/BasicShot.asset";
 
         [Test]
         public void GunStartsWithTheFixedRulesFaceCount()
@@ -119,6 +127,64 @@ namespace DiceRevolver.Tests
             {
                 RemoveDevice(mouse);
                 DestroyProjectile(spawned);
+                Object.DestroyImmediate(playerInstance);
+            }
+        }
+
+        [Test]
+        public void ChainReactionBeforeFinisherUsesTheCopiedBaseProjectile()
+        {
+            GameObject playerInstance = InstantiatePlayer();
+            DiceRevolverGun gun = playerInstance.GetComponentInChildren<DiceRevolverGun>();
+            DiceFaceLoadout loadout = playerInstance.GetComponent<DiceFaceLoadout>();
+            DiceFaceEntry finisher = AssetDatabase.LoadAssetAtPath<DiceFaceEntry>(FinisherEntryPath);
+            DiceFaceEntry tesla = AssetDatabase.LoadAssetAtPath<DiceFaceEntry>(TeslaEntryPath);
+            DiceFaceEntry chainReaction =
+                AssetDatabase.LoadAssetAtPath<DiceFaceEntry>(ChainReactionEntryPath);
+            DiceFaceEntry basicShot =
+                AssetDatabase.LoadAssetAtPath<DiceFaceEntry>(BasicShotEntryPath);
+            List<string> primaryProjectileNames = new List<string>();
+            List<int> firedFaces = new List<int>();
+            Mouse mouse = null;
+
+            try
+            {
+                Assert.That(finisher, Is.Not.Null);
+                Assert.That(tesla, Is.Not.Null);
+                Assert.That(chainReaction, Is.Not.Null);
+                Assert.That(basicShot, Is.Not.Null);
+                Assert.That(loadout.Equip(5, basicShot), Is.True);
+                Assert.That(loadout.Equip(5, chainReaction), Is.True);
+                Assert.That(loadout.Equip(6, finisher), Is.True);
+                Assert.That(loadout.Equip(6, tesla), Is.True);
+                InitializePlayerGun(playerInstance, gun);
+                SetPrivateField(
+                    gun,
+                    "runtime",
+                    new DiceRevolverRuntime(float.PositiveInfinity, 2f, true, true, _ => 0));
+                gun.FireEnded += shot =>
+                {
+                    firedFaces.Add(shot.Face);
+                    primaryProjectileNames.Add(
+                        shot.Activation?.PrimaryProjectileDefinition != null
+                            ? shot.Activation.PrimaryProjectileDefinition.name
+                            : null);
+                };
+                mouse = HoldLeftMouse();
+
+                for (int shot = 0; shot < DiceRevolverRules.FaceCount; shot++)
+                {
+                    InvokePrivate(gun, "LateUpdate");
+                }
+
+                Assert.That(firedFaces, Has.Count.EqualTo(DiceRevolverRules.FaceCount));
+                Assert.That(firedFaces[^1], Is.EqualTo(6));
+                Assert.That(primaryProjectileNames[^1], Is.EqualTo("BasicRevolverBullet"));
+            }
+            finally
+            {
+                RemoveDevice(mouse);
+                DestroyAllSceneProjectiles();
                 Object.DestroyImmediate(playerInstance);
             }
         }

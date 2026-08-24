@@ -329,6 +329,41 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
+        public void ChainReactionOverlayReplacesUnprotectedFinisherBaseSlot()
+        {
+            DiceFaceEntry finisher = Load<DiceFaceEntry>($"{Root}/DiceFaces/Finisher.asset");
+            DiceFaceEntry basicShot = Load<DiceFaceEntry>($"{Root}/DiceFaces/BasicShot.asset");
+            DiceFaceConfigurationSnapshot finisherSnapshot = new(
+                finisher, null, null, null);
+            DiceFaceActiveOverlay chainOverlay = new(
+                basicShot, null, null, null);
+
+            DiceFaceConfigurationSnapshot merged =
+                finisherSnapshot.MergeActiveOverlay(chainOverlay);
+
+            Assert.That(finisher.Rule.PreserveWhenOverlaid, Is.False);
+            Assert.That(merged.GetEntry(DiceFaceSlotType.Base), Is.SameAs(basicShot));
+        }
+
+        [Test]
+        public void ChainReactionOverlayKeepsAnExplicitlyProtectedSlot()
+        {
+            EventRuleDefinition protectedRule =
+                Own(ScriptableObject.CreateInstance<EventRuleDefinition>());
+            Set(protectedRule, "preserveWhenOverlaid", true);
+            DiceFaceEntry protectedEntry = Entry(DiceFaceSlotType.Base);
+            Set(protectedEntry, "rule", protectedRule);
+            DiceFaceEntry overlayEntry = Entry(DiceFaceSlotType.Base);
+            DiceFaceConfigurationSnapshot snapshot = new(
+                protectedEntry, null, null, null);
+
+            DiceFaceConfigurationSnapshot merged = snapshot.MergeActiveOverlay(
+                new DiceFaceActiveOverlay(overlayEntry, null, null, null));
+
+            Assert.That(merged.GetEntry(DiceFaceSlotType.Base), Is.SameAs(protectedEntry));
+        }
+
+        [Test]
         public void FinisherRuleKeepsBoundFaceAtPriorityOneUntilItIsEligible()
         {
             EventRuleMigrationUtility.MigratePassiveBaseEvents();
@@ -499,6 +534,12 @@ namespace DiceRevolver.Tests
             {
                 case DiceFaceSlotType slot:
                     property.enumValueIndex = (int)slot;
+                    break;
+                case bool boolean:
+                    property.boolValue = boolean;
+                    break;
+                case UnityEngine.Object reference:
+                    property.objectReferenceValue = reference;
                     break;
                 default:
                     throw new InvalidOperationException($"Unsupported test value: {value}");

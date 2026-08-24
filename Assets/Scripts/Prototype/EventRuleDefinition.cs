@@ -35,6 +35,7 @@ namespace DiceRevolver.Prototype
         [SerializeField, InspectorName("结果列表")] private List<EventResultEntry> results = new();
         [SerializeField, InspectorName("事件预算消耗")] private int eventBudgetCost = 1;
         [SerializeField, InspectorName("递归策略")] private EventRuleRecursionPolicy recursionPolicy = EventRuleRecursionPolicy.DenyReentry;
+        [SerializeField, InspectorName("保护槽位免受覆盖")] private bool preserveWhenOverlaid;
 
         public string DisplayName => displayName;
         public string Description => description;
@@ -47,6 +48,7 @@ namespace DiceRevolver.Prototype
         public IReadOnlyList<EventResultEntry> Results => results;
         public int EventBudgetCost => eventBudgetCost;
         public EventRuleRecursionPolicy RecursionPolicy => recursionPolicy;
+        public bool PreserveWhenOverlaid => preserveWhenOverlaid;
 
         public bool AllowsSlot(DiceFaceSlotType slot)
         {

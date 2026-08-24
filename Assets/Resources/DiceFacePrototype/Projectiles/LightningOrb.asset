@@ -23,7 +23,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: bc75aa6816b385543a6190435e72279a, type: 2}
   damage: 1
   flightDistance: 15
-  flightSpeed: 5
+  flightSpeed: 15
   enemyPierceCount: 4
   extensionPorts: []
   defaultAttackEffect: 0
