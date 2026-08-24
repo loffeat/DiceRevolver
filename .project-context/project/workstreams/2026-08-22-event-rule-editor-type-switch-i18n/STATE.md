@@ -4,7 +4,7 @@
 - Status: `active`
 - Branch: `main`
 - Created: `2026-08-22`
-- Updated: `2026-08-22`
+- Updated: `2026-08-24`
 
 ## 目标
 
@@ -38,12 +38,12 @@
 
 ## 当前正在进行
 
-- 等待 Unity 编译与 EditMode 测试执行（用户编辑器已编译至 build 3394；新分类改动待刷新）。
+- 代码已编译并纳入 Unity EditMode 全量回归；等待可见编辑器窗口人工验收。
 
 ## 下一步
 
-1. 用户刷新 Unity 确认编译；运行 `EventRuleEditorWindowTests` 等事件规则聚焦测试。
-2. 在可见 Unity 中打开 `Window > Dice Revolver > 事件规则编辑器` 验收：所有事件按钮、事件语义分类、中文标签。
+1. 在可见 Unity 中打开 `Window > Dice Revolver > 事件规则编辑器` 验收：所有事件按钮、触发器更换、事件语义分类与中文标签。
+2. 人工验收无问题后将本工作流标记为 `completed`。
 
 ## 阻塞
 
@@ -64,7 +64,7 @@
 - [passed] `2026-08-23`：CS0266 与 CS1503 修复后 Unity 编译 `Tundra build success`（`2.35 seconds`，`888 evaluated`），无错误。
 - [passed] `2026-08-23`：Unity 编译 build 3394 成功（含事件类型改名与被动迁移代码）。
 - [passed] `2026-08-23`：MSBuild 2022 编译 Prototype/Editor/EditMode.Tests 三个程序集 exit 0（含"所有事件"分类改动，期间修复新测试的 `ConfigureMetadata` tag 参数遗漏）。
-- [not-run] `2026-08-23`："所有事件"分类后的 Unity 重编译与聚焦 EditMode 测试执行。
+- [passed] `2026-08-23`：相关代码纳入 Unity EditMode 全量回归 `388/389`、`0 skipped`；唯一失败是已批准的 Ground `Y=-0.01` 豁免项，无新增失败。
 - [not-run] `2026-08-22`：可见编辑器窗口人工验收。
 
 ## 相关资料

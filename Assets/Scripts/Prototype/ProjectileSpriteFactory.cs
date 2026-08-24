@@ -9,7 +9,7 @@ namespace DiceRevolver.Prototype
     {
         private static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
 
-        /// <summary>按弹丸定义名称解析默认形状：基础=灰色长方形、雷电球=蓝色圆形、穿甲弹=黑色细长方形。</summary>
+        /// <summary>按弹丸定义名称解析默认形状：基础=灰色长方形、雷电球=蓝色圆形、收尾者=黑色细长方形。</summary>
         public static Sprite GetShape(string definitionName)
         {
             string key = string.IsNullOrEmpty(definitionName) ? "Default" : definitionName;
@@ -30,7 +30,9 @@ namespace DiceRevolver.Prototype
                 return CreateProceduralSprite(32, 32, true, new Color(0.35f, 0.65f, 1f));
             }
 
-            if (key.IndexOf("ArmorPiercing", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            if (key.IndexOf("ArmorPiercing", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                key.IndexOf("Finisher", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                key.IndexOf("收尾者", System.StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 return CreateProceduralSprite(72, 10, false, new Color(0.08f, 0.08f, 0.08f));
             }

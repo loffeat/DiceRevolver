@@ -22,7 +22,7 @@ namespace DiceRevolver.Prototype
                 return Skipped("命中目标没有状态容器（EnemyStatusHost）。");
             }
 
-            host.ApplyStatus(statusDefinition);
+            host.ApplyStatus(statusDefinition, context.Signal.Activation);
             return Success($"已施加状态：{statusDefinition.DisplayName}。");
         }
 

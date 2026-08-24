@@ -7,6 +7,7 @@ namespace DiceRevolver.Prototype
     public sealed class EnemyHealth : MonoBehaviour, IDamageReceiver
     {
         [SerializeField, InspectorName("最大生命")] private int maxHealth = 20;
+        [SerializeField, InspectorName("最低生命")] private int minimumHealth = 0;
         [SerializeField, InspectorName("死亡后禁用")] private bool disableOnDeath = true;
 
         public int MaxHealth
@@ -15,9 +16,23 @@ namespace DiceRevolver.Prototype
             set
             {
                 maxHealth = Mathf.Max(1, value);
+                minimumHealth = Mathf.Clamp(minimumHealth, 0, maxHealth);
                 if (CurrentHealth > maxHealth)
                 {
                     CurrentHealth = maxHealth;
+                }
+            }
+        }
+
+        public int MinimumHealth
+        {
+            get => minimumHealth;
+            set
+            {
+                minimumHealth = Mathf.Clamp(Mathf.Max(0, value), 0, maxHealth);
+                if (CurrentHealth < minimumHealth)
+                {
+                    CurrentHealth = minimumHealth;
                 }
             }
         }
@@ -40,9 +55,10 @@ namespace DiceRevolver.Prototype
                 return;
             }
 
-            CurrentHealth = Mathf.Max(0, CurrentHealth - Mathf.CeilToInt(damage.Amount));
+            int damageToApply = Mathf.CeilToInt(damage.Amount);
+            CurrentHealth = Mathf.Max(minimumHealth, CurrentHealth - damageToApply);
             DamageReceived?.Invoke(damage);
-            if (CurrentHealth == 0)
+            if (minimumHealth == 0 && CurrentHealth == 0)
             {
                 IsDead = true;
                 Died?.Invoke(this);

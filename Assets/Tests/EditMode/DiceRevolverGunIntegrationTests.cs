@@ -16,6 +16,10 @@ namespace DiceRevolver.Tests
         private const string PlayerPrefabPath = "Assets/Prefab/Player.prefab";
         private const string BasicSpawnEffectPath =
             "Assets/Resources/DiceFacePrototype/BulletEvents/FireBasicRevolverProjectile.asset";
+        private const string EchoSynergyEntryPath =
+            "Assets/Resources/DiceFacePrototype/DiceFaces/EchoSynergy.asset";
+        private const string BurningBulletEntryPath =
+            "Assets/Resources/DiceFacePrototype/DiceFaces/BurningBullet.asset";
 
         [Test]
         public void GunStartsWithTheFixedRulesFaceCount()
@@ -33,6 +37,57 @@ namespace DiceRevolver.Tests
             finally
             {
                 Object.DestroyImmediate(gunOwner);
+            }
+        }
+
+        [Test]
+        public void PlayerPrefabStartsWithNoDefaultRelics()
+        {
+            GameObject playerInstance = InstantiatePlayer();
+            DiceRevolverGun gun = playerInstance.GetComponentInChildren<DiceRevolverGun>();
+            try
+            {
+                InvokePrivate(gun, "Awake");
+
+                Assert.That(gun.Relics, Is.Not.Null);
+                Assert.That(gun.Relics.Count, Is.EqualTo(0));
+            }
+            finally
+            {
+                Object.DestroyImmediate(playerInstance);
+            }
+        }
+
+        [Test]
+        public void GunCanPickupRelicAndRaiseChangedEvent()
+        {
+            GameObject playerInstance = InstantiatePlayer();
+            DiceRevolverGun gun = playerInstance.GetComponentInChildren<DiceRevolverGun>();
+            LoadedFirstFaceRelicDefinition relic = ScriptableObject.CreateInstance<LoadedFirstFaceRelicDefinition>();
+            relic.Face = 4;
+            int changeEvents = 0;
+            System.Action<IReadOnlyList<RelicDefinition>> handler = _ => changeEvents++;
+            try
+            {
+                InitializePlayerGun(playerInstance, gun);
+                gun.RelicsChanged += handler;
+
+                bool added = gun.AddRelic(relic);
+
+                Assert.That(added, Is.True);
+                Assert.That(gun.Relics.Count, Is.EqualTo(1));
+                Assert.That(gun.Relics[0], Is.EqualTo(relic));
+                Assert.That(changeEvents, Is.EqualTo(1));
+            }
+            finally
+            {
+                if (gun != null)
+                {
+                    gun.RelicsChanged -= handler;
+                }
+
+                Object.DestroyImmediate(relic);
+                Object.DestroyImmediate(playerInstance);
             }
         }
 
@@ -201,6 +256,52 @@ namespace DiceRevolver.Tests
                 Object.DestroyImmediate(playerInstance);
                 Object.DestroyImmediate(onHitEntry);
                 Object.DestroyImmediate(onHitEffect);
+            }
+        }
+
+        [Test]
+        public void BurningHitTriggersEchoAdjacentFacesThroughTheGunNotificationBoundary()
+        {
+            GameObject playerInstance = InstantiatePlayer();
+            DiceRevolverGun gun = playerInstance.GetComponentInChildren<DiceRevolverGun>();
+            DiceFaceLoadout loadout = playerInstance.GetComponent<DiceFaceLoadout>();
+            DiceFaceEntry echo = AssetDatabase.LoadAssetAtPath<DiceFaceEntry>(EchoSynergyEntryPath);
+            DiceFaceEntry burning = AssetDatabase.LoadAssetAtPath<DiceFaceEntry>(BurningBulletEntryPath);
+            GameObject target = new GameObject("IgniteTarget");
+            target.AddComponent<EnemyHealth>();
+            target.AddComponent<EnemyStatusHost>();
+            BoxCollider targetCollider = target.AddComponent<BoxCollider>();
+            List<int> firedFaces = new List<int>();
+            Mouse mouse = null;
+
+            try
+            {
+                Assert.That(echo, Is.Not.Null);
+                Assert.That(burning, Is.Not.Null);
+                Assert.That(loadout.Equip(3, echo), Is.True);
+                Assert.That(loadout.Equip(4, burning), Is.True);
+                gun.FireStarted += shot => firedFaces.Add(shot.Face);
+                InitializePlayerGun(playerInstance, gun);
+                DiceRevolverRuntime runtime = GetPrivateField<DiceRevolverRuntime>(gun, "runtime");
+                Assert.That(runtime.SetFirstDrawForce(4), Is.True);
+                mouse = HoldLeftMouse();
+
+                InvokePrivate(gun, "LateUpdate");
+                Projectile initialProjectile = FindSceneProjectile();
+                Assert.That(initialProjectile, Is.Not.Null);
+                Assert.That(firedFaces, Is.EqualTo(new[] { 4 }));
+
+                ExpectEditModeDestroy();
+                InvokePrivate(initialProjectile, "OnTriggerEnter", targetCollider);
+
+                Assert.That(firedFaces, Is.EqualTo(new[] { 4, 1, 2, 4, 6 }));
+            }
+            finally
+            {
+                RemoveDevice(mouse);
+                DestroyAllSceneProjectiles();
+                Object.DestroyImmediate(target);
+                Object.DestroyImmediate(playerInstance);
             }
         }
 
@@ -561,6 +662,15 @@ namespace DiceRevolver.Tests
                 BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.That(field, Is.Not.Null, $"Missing field {owner.GetType().Name}.{fieldName}");
             field.SetValue(owner, value);
+        }
+
+        private static T GetPrivateField<T>(object owner, string fieldName)
+        {
+            FieldInfo field = owner.GetType().GetField(
+                fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null, $"Missing field {owner.GetType().Name}.{fieldName}");
+            return (T)field.GetValue(owner);
         }
 
         private static void InvokePrivate(object owner, string methodName, params object[] arguments)

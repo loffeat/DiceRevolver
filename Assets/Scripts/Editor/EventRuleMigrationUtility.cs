@@ -39,7 +39,7 @@ namespace DiceRevolver.Editor
 
         public static void MigratePassiveBaseEntries()
         {
-            // 终态：EchoSynergy 为被动基础（基础槽 + 被动标志）；Tesla 为开火时普通词条；Finisher 为普通基础事件（最后抽到 + 穿甲弹，不占被动面）。
+            // 终态：EchoSynergy 为被动基础（基础槽 + 被动标志）；Tesla 为开火时普通词条；Finisher 为普通基础事件（最后抽到时生成收尾者弹，不占被动面）。
             SetEntryState("Tesla", DiceFaceSlotType.OnFire, false);
             SetEntryState("EchoSynergy", DiceFaceSlotType.Base, true);
             SetEntryState("Finisher", DiceFaceSlotType.Base, false);

@@ -5,6 +5,8 @@ namespace DiceRevolver.Prototype
 {
     public sealed class RelicRuntime
     {
+        public IReadOnlyList<RelicDefinition> Relics => relics;
+
         private readonly List<RelicDefinition> relics = new();
 
         public void SetRelics(IReadOnlyList<RelicDefinition> definitions)
@@ -20,6 +22,17 @@ namespace DiceRevolver.Prototype
                     }
                 }
             }
+        }
+
+        public bool AddRelic(RelicDefinition relic)
+        {
+            if (relic == null || relics.Contains(relic))
+            {
+                return false;
+            }
+
+            relics.Add(relic);
+            return true;
         }
 
         public void ApplyRoundStart(RelicContext context)

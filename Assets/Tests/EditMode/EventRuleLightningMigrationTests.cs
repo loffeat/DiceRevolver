@@ -86,7 +86,7 @@ namespace DiceRevolver.Tests
                 }
                 else if (name == "Finisher")
                 {
-                    // 收尾者为普通基础事件（最后抽到 + 穿甲弹），不占被动面。
+                    // 收尾者为普通基础事件（最后抽到 + 收尾者弹），不占被动面。
                     Assert.That(entry.SlotType, Is.EqualTo(DiceFaceSlotType.Base), name);
                     Assert.That(entry.IsPassiveBase, Is.False, name);
                     Assert.That(rule.AllowedSlots, Is.EqualTo(DiceFaceSlotMask.Base), name);
@@ -349,7 +349,7 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
-        public void FinisherRuleSpawnsArmorPiercingBulletOnBaseSignal()
+        public void FinisherRuleSpawnsFinisherBulletOnBaseSignal()
         {
             LightningBuildPrototypeBuilder.Build();
             EventRuleDefinition rule = Rule("Finisher");
@@ -362,7 +362,7 @@ namespace DiceRevolver.Tests
             Assert.That(result.Status, Is.EqualTo(EventResultStatus.Success));
             Assert.That(services.ProjectileRequests, Has.Count.EqualTo(1));
             Assert.That(services.ProjectileRequests[0].Definition.name,
-                Is.EqualTo("ArmorPiercingBullet"));
+                Is.EqualTo("FinisherBullet"));
             Assert.That(services.ProjectileRequests[0].IsPrimary, Is.True);
         }
 

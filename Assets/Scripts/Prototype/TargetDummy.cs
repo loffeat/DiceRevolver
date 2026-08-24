@@ -20,6 +20,13 @@ namespace DiceRevolver.Prototype
             {
                 health = gameObject.AddComponent<EnemyHealth>();
             }
+            health.MinimumHealth = 1;
+
+            EnemyStatusHost statusHost = GetComponent<EnemyStatusHost>();
+            if (statusHost == null)
+            {
+                gameObject.AddComponent<EnemyStatusHost>();
+            }
 
             health.Died -= HandleDied;
             health.Died += HandleDied;

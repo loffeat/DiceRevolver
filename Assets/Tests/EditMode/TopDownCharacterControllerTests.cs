@@ -47,7 +47,7 @@ namespace DiceRevolver.Tests
             TestRobotController robot = robotOwner.AddComponent<TestRobotController>();
             robot.Target = target;
             SerializedObject serialized = new SerializedObject(robot);
-            serialized.FindProperty("autoMove").boolValue = true;
+            serialized.FindProperty("enable").boolValue = true;
             serialized.ApplyModifiedPropertiesWithoutUndo();
 
             try
@@ -59,6 +59,37 @@ namespace DiceRevolver.Tests
                 Assert.That(shared.AimWorldPoint, Is.EqualTo(targetOwner.transform.position));
                 Assert.That(shared.AimDirection, Is.EqualTo(Vector3.forward));
                 Assert.That(shared.FireHeld, Is.True);
+                Assert.That(shared.ReloadPressedThisFrame, Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(robotOwner);
+                Object.DestroyImmediate(targetOwner);
+            }
+        }
+
+        [Test]
+        public void RobotRefreshIgnoresCombatDecisionWhenDisabled()
+        {
+            GameObject targetOwner = new GameObject("Target");
+            targetOwner.AddComponent<CharacterController>();
+            TopDownPlayerController target = targetOwner.AddComponent<TopDownPlayerController>();
+            targetOwner.transform.position = new Vector3(0f, 0f, 10f);
+
+            GameObject robotOwner = new GameObject("Robot");
+            robotOwner.AddComponent<CharacterController>();
+            TestRobotController robot = robotOwner.AddComponent<TestRobotController>();
+            robot.Target = target;
+
+            try
+            {
+                robot.RefreshControlIntent(0f);
+
+                TopDownCharacterController shared = robot;
+                Assert.That(shared.MoveInput, Is.EqualTo(Vector2.zero));
+                Assert.That(shared.AimWorldPoint, Is.EqualTo(Vector3.zero));
+                Assert.That(shared.AimDirection, Is.EqualTo(Vector3.forward));
+                Assert.That(shared.FireHeld, Is.False);
                 Assert.That(shared.ReloadPressedThisFrame, Is.False);
             }
             finally

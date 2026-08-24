@@ -85,6 +85,7 @@ ProjectileSpawnEffect -> ProjectileDefinition -> ProjectileRuntimeStats + 弹丸
 DiceFaceActivation -> 延迟生成、命中事件关系、临时活动槽覆盖与共享连锁预算
 弹丸生成 -> OwnedProjectileRegistry -> 电磁共鸣选点 -> LightningChainExecutor 直接链路伤害
 同类弹丸命中 -> 呼应协同 -> 同帧带自然散布的奖励骰面激活
+燃烧命中 -> 点燃通知携带来源激活/共享预算 -> 呼应协同状态条件 -> 相邻骰面完整激活
 DiceBuildPageUI -> DiceFaceLoadout.Equip -> 只替换词条所属槽位 -> 后续射击读取新快照
 Projectile 命中广播 -> DiceShotPipeline OnHit -> Projectile 直接伤害
 Projectile 直接伤害 -> IDamageReceiver -> TargetDummy.DamageReceived -> WorldDamageNumberSpawner

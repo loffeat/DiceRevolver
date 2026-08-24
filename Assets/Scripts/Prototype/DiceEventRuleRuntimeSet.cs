@@ -250,14 +250,21 @@ namespace DiceRevolver.Prototype
             ExecutePassive(CreateSignal(EventSignalType.FaceConsumed, face));
         }
 
-        public void NotifyEnemyStatusApplied(EnemyStatusHost host, EnemyStatusDefinition definition)
+        public void NotifyEnemyStatusApplied(
+            EnemyStatusHost host,
+            EnemyStatusDefinition definition,
+            DiceFaceActivation sourceActivation)
         {
             if (host == null || definition == null)
             {
                 return;
             }
 
-            ExecutePassive(CreateSignal(EventSignalType.EnemyStatusApplied, statusTarget: host));
+            ExecutePassive(CreateSignal(
+                EventSignalType.EnemyStatusApplied,
+                sourceFace: sourceActivation != null ? sourceActivation.Face : 0,
+                activation: sourceActivation,
+                statusTarget: host));
         }
 
         public bool ExecuteActive(
@@ -434,7 +441,8 @@ namespace DiceRevolver.Prototype
                 source.EventBudget,
                 source.IsBonusActivation,
                 source.DebugScope,
-                baseProjectileTypes[faceIndex]);
+                baseProjectileTypes[faceIndex],
+                source.StatusTarget);
         }
 
         private static ProjectileTypeDefinition ResolveBaseProjectileType(

@@ -52,6 +52,8 @@ Unity Editor 路径由每台设备自行发现并放入 `$UnityEditor`，然后�
 
 Unity Test Runner 完成后会自行退出，不要添加可能在测试开始前退出的 `-quit`。只有命令实际返回成功且结果文件无失败时，才记录为 `passed`。
 
+用户偏好：后续需要 Unity 验证时，优先使用后台 batchmode 或 Test Runner 可复现路径，尽量不占用当前屏幕操控；只有明确需要可见 Play Mode 或人工观察时才打开/控制可见窗口。
+
 ## Git LFS
 
 - 安装：`git lfs install`

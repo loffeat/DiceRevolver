@@ -5,7 +5,7 @@ namespace DiceRevolver.Prototype
     public sealed class TestRobotController : TopDownCharacterController
     {
         [SerializeField, InspectorName("目标玩家")] private TopDownPlayerController target;
-        [SerializeField, InspectorName("自动移动")] private bool autoMove;
+        [SerializeField, InspectorName("启用")] private bool enable;
         [SerializeField, InspectorName("最小战斗距离")] private float minimumCombatDistance = 4f;
         [SerializeField, InspectorName("最大战斗距离")] private float maximumCombatDistance = 8f;
         [SerializeField, InspectorName("横移换向间隔（秒）")] private float strafeDirectionInterval = 1f;
@@ -52,9 +52,18 @@ namespace DiceRevolver.Prototype
                 BuildBrain();
             }
 
+            if (!enable)
+            {
+                MoveInput = Vector2.zero;
+                FireHeld = false;
+                ReloadPressedThisFrame = false;
+                AimWorldPoint = transform.position;
+                AimDirection = Vector3.forward;
+                return;
+            }
+
             TestRobotDecision decision = brain.Tick(transform.position, target.transform.position, time);
-            // 仅勾选"自动移动"后机器人才移动；瞄准与射击始终生效。
-            MoveInput = autoMove ? decision.MoveInput : Vector2.zero;
+            MoveInput = decision.MoveInput;
             AimWorldPoint = decision.AimWorldPoint;
             FireHeld = decision.FireHeld;
             ReloadPressedThisFrame = false;

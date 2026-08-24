@@ -10,7 +10,7 @@ namespace DiceRevolver.Prototype
     {
         [SerializeField, InspectorName("覆盖粒子视觉")] private bool hideParticleVisual = true;
         [SerializeField, InspectorName("立绘缩放")] private float spriteScale = 0.6f;
-        [SerializeField, InspectorName("立绘朝向（俯视）")] private Vector3 spriteLocalEulerAngles = new Vector3(90f, 0f, 0f);
+        [SerializeField, InspectorName("立绘朝向（俯视）")] private Vector3 spriteLocalEulerAngles = new Vector3(90f, 0f, 90f);
 
         private ProjectileDefinition definition;
 

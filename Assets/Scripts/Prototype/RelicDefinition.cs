@@ -24,9 +24,11 @@ namespace DiceRevolver.Prototype
     {
         [SerializeField, InspectorName("显示名称")] private string displayName;
         [SerializeField, InspectorName("描述")] private string description;
+        [SerializeField, InspectorName("遗物立绘")] private Sprite icon;
 
         public string DisplayName => displayName;
         public string Description => description;
+        public Sprite Icon => icon;
 
         public abstract void ApplyAtRoundStart(RelicContext context);
     }

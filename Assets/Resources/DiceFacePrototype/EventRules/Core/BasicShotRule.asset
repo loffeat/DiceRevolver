@@ -44,7 +44,7 @@ MonoBehaviour:
   m_Name: BasicShotRule
   m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.EventRuleDefinition
   displayName: "\u57FA\u7840\u5C04\u51FB"
-  description: "\u53D1\u5C04\u4E00\u53D1\u57FA\u7840\u5DE6\u8F6E\u5B50\u5F39\u3002"
+  description: "\u53D1\u5C04\u4E00\u53D1\u5DE6\u8F6E\u5B50\u5F39"
   displayColor: {r: 0.82, g: 0.86, b: 0.9, a: 1}
   tags: []
   rarity: 

@@ -45,7 +45,7 @@ namespace DiceRevolver.Editor
                 Root + "/Statuses/Ignite.asset"));
             MigrateChainReaction();
             MigrateFinisher(LoadRequired<ProjectileDefinition>(
-                Root + "/Projectiles/ArmorPiercingBullet.asset"));
+                Root + "/Projectiles/FinisherBullet.asset"));
             EventRuleMigrationUtility.MigratePassiveBaseEntries();
             EventRuleMigrationUtility.MigratePassiveRuleSlots();
             Debug.Log("Lightning Event Rules are ready.");
@@ -176,20 +176,20 @@ namespace DiceRevolver.Editor
                     TrySingleResult(rule, out QueueActiveOverlayResultModule _));
         }
 
-        private static void MigrateFinisher(ProjectileDefinition armorPiercingBullet)
+        private static void MigrateFinisher(ProjectileDefinition finisherBullet)
         {
             EventRuleMigrationUtility.MigrateRule(
                 EntryPath("Finisher"), RulePath("Finisher"),
                 DiceFaceSlotType.Base,
                 EventSignalMask.DrawCandidate | EventSignalMask.Base,
                 null,
-                rule => EnsureFinisherResults(rule, armorPiercingBullet),
+                rule => EnsureFinisherResults(rule, finisherBullet),
                 rule => HasFinisherStructure(rule));
         }
 
         private static void EnsureFinisherResults(
             EventRuleDefinition rule,
-            ProjectileDefinition armorPiercingBullet)
+            ProjectileDefinition finisherBullet)
         {
             SerializedObject serialized = new SerializedObject(rule);
             if (rule.Trigger is SignalTypeTriggerModule trigger)
@@ -217,7 +217,7 @@ namespace DiceRevolver.Editor
             AppendResult(results,
                 CreateResult<SpawnProjectileResultModule>(rule, result =>
                 {
-                    Set(result, "projectileDefinition", armorPiercingBullet);
+                    Set(result, "projectileDefinition", finisherBullet);
                     Set(result, "primaryProjectile", true);
                 }),
                 CreateSignalCondition(rule, EventSignalMask.Base));

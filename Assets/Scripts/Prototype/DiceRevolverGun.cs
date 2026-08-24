@@ -52,11 +52,17 @@ namespace DiceRevolver.Prototype
         public event Action<DiceRevolverShotContext> FireEnded;
         public event Action ReloadStarted;
         public event Action ReloadCompleted;
+        public event Action<IReadOnlyList<RelicDefinition>> RelicsChanged;
+        public event Action<IReadOnlyList<int>> ChamberChanged;
 
         public int RemainingRounds => runtime?.RemainingRounds ?? 0;
+        public IReadOnlyList<int> RemainingFaces => runtime != null
+            ? runtime.CreateRemainingFacesSnapshot()
+            : Array.AsReadOnly(Array.Empty<int>());
         public bool IsReloading => runtime?.IsReloading ?? false;
         public OwnedProjectileRegistry OwnedProjectiles => ownedProjectiles;
         public CombatDebugTrace DebugTrace => debugTrace;
+        public IReadOnlyList<RelicDefinition> Relics => relicRuntime.Relics;
         public float ReloadDuration
         {
             get => runtime?.ReloadDuration ?? reloadDuration;
@@ -77,6 +83,7 @@ namespace DiceRevolver.Prototype
                 reloadDuration,
                 automaticReloadWhenEmpty,
                 allowManualReload);
+            runtime.RemainingFacesChanged += HandleRemainingFacesChanged;
             shotPipeline = new DiceShotPipeline(
                 () => Time.time,
                 SpawnActivationProjectile,
@@ -201,14 +208,25 @@ namespace DiceRevolver.Prototype
             }
 
             EnemyStatusHost.StatusAppliedGlobal -= HandleEnemyStatusApplied;
+            if (runtime != null)
+            {
+                runtime.RemainingFacesChanged -= HandleRemainingFacesChanged;
+            }
+
             shotPipeline?.Clear();
+        }
+
+        private void HandleRemainingFacesChanged(IReadOnlyList<int> remainingFaces)
+        {
+            ChamberChanged?.Invoke(remainingFaces);
         }
 
         private void HandleEnemyStatusApplied(
             EnemyStatusHost host,
-            EnemyStatusDefinition definition)
+            EnemyStatusDefinition definition,
+            DiceFaceActivation sourceActivation)
         {
-            eventRuleRuntimes.NotifyEnemyStatusApplied(host, definition);
+            eventRuleRuntimes.NotifyEnemyStatusApplied(host, definition, sourceActivation);
         }
 
         private void UpdatePose()
@@ -227,8 +245,8 @@ namespace DiceRevolver.Prototype
 
         private void TryFire()
         {
-            if (player == null || muzzle == null || runtime == null || shotPipeline == null ||
-                !player.FireHeld)
+            if (player == null || !player.isActiveAndEnabled ||
+                muzzle == null || runtime == null || shotPipeline == null || !player.FireHeld)
             {
                 return;
             }
@@ -346,6 +364,7 @@ namespace DiceRevolver.Prototype
         private bool ExecuteBonusActivation(BonusDiceActivationRequest request)
         {
             if (shotPipeline == null ||
+                player == null || !player.isActiveAndEnabled ||
                 loadout == null ||
                 muzzle == null ||
                 request.EventBudget == null ||
@@ -559,6 +578,18 @@ namespace DiceRevolver.Prototype
                 runtime,
                 loadout != null ? loadout.GetPassiveFaceSet() : Array.Empty<int>(),
                 DiceRevolverRules.FaceCount));
+        }
+
+        public bool AddRelic(RelicDefinition relic)
+        {
+            bool added = relicRuntime.AddRelic(relic);
+            if (added)
+            {
+                ApplyRelicsAtRoundStart();
+                RelicsChanged?.Invoke(relicRuntime.Relics);
+            }
+
+            return added;
         }
 
         private static ProjectileTypeDefinition GetBaseProjectileType(

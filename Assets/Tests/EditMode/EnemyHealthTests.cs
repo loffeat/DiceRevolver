@@ -58,7 +58,7 @@ namespace DiceRevolver.Tests
         }
 
         [Test]
-        public void TargetDummyDelegatesDamageToFiniteHealthAndResetsOnDeath()
+        public void TargetDummyDelegatesDamageToFiniteHealthAndKeepsMinimumHealth()
         {
             GameObject go = new GameObject("Dummy");
             TargetDummy dummy = go.AddComponent<TargetDummy>();
@@ -74,7 +74,7 @@ namespace DiceRevolver.Tests
 
                 dummy.ReceiveDamage(new DamageInfo(999f, Vector3.zero, null));
                 Assert.That(health.IsDead, Is.False);
-                Assert.That(health.CurrentHealth, Is.EqualTo(health.MaxHealth));
+                Assert.That(health.CurrentHealth, Is.EqualTo(1));
             }
             finally
             {

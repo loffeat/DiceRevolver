@@ -11,9 +11,12 @@ namespace DiceRevolver.Prototype
         private EnemyHealth health;
 
         public event Action<EnemyStatusHost, EnemyStatusDefinition> StatusApplied;
-        public static event Action<EnemyStatusHost, EnemyStatusDefinition> StatusAppliedGlobal;
+        public static event Action<EnemyStatusHost, EnemyStatusDefinition, DiceFaceActivation>
+            StatusAppliedGlobal;
 
-        public void ApplyStatus(EnemyStatusDefinition definition)
+        public void ApplyStatus(
+            EnemyStatusDefinition definition,
+            DiceFaceActivation sourceActivation = null)
         {
             if (definition == null || string.IsNullOrEmpty(definition.StatusId))
             {
@@ -36,7 +39,7 @@ namespace DiceRevolver.Prototype
             }
 
             StatusApplied?.Invoke(this, definition);
-            StatusAppliedGlobal?.Invoke(this, definition);
+            StatusAppliedGlobal?.Invoke(this, definition, sourceActivation);
         }
 
         public bool HasStatus(string statusId)

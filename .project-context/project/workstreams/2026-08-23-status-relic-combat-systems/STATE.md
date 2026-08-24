@@ -4,7 +4,7 @@
 - Status: `active`
 - Branch: `main`
 - Created: `2026-08-23`
-- Updated: `2026-08-23`
+- Updated: `2026-08-24`
 
 ## 目标
 
@@ -21,6 +21,8 @@
 - 收尾者/特斯拉/呼应协同在旧被动物面语义下因 SourceFace/SameProjectileType 条件失效（本次随重做解决）。
 - `TryRefillAndForceNextFace` 原不检查被动面（可把被动面拉回抽池，已修复）。
 - 构筑 UI 布局 `FacePositions`：面 3 的 8 向相邻 = {1,2,4,6}。
+- 呼应协同实机不触发的根因不是资产配置：点燃的全局通知丢失来源激活/共享预算，随后被动面信号改写又丢失状态目标；旧测试直接手工构造完整信号，未覆盖这两个边界。
+- 右上角骰面 HUD 与实际射击不一致的根因是 UI 监听了 `FireStarted` 并自行推断弹仓；奖励激活也会广播该事件，导致 UI 置灰但真实弹仓未消耗。运行时实际是每枪从剩余池随机抽取，并不存在预生成顺序。
 
 ## 已完成
 
@@ -34,16 +36,20 @@
 - **TestRobot 自动移动开关**：`TestRobotController.autoMove`（默认关，勾选后开始自动移动；瞄准/射击始终生效）。
 - **Debug 显示简化**：`CombatDebugFormatter` 紧凑单行格式（`#12 骰面6 · 开火时：电磁共鸣：…`），测试断言同步。
 - **收尾者词条状态修正**：`Finisher.asset` `isPassiveBase` 1→0（普通基础事件，不再占被动面；面 5 可正常抽取并发射穿甲弹）；迁移工具与测试同步。
+- **呼应协同真实链路修复**：状态施加通知现在携带造成点燃的 `DiceFaceActivation`，Rule Runtime 改写为装备面信号时保留 `StatusTarget`；新增真实 Gun 边界回归测试，验证面 4 燃烧命中后按顺序追加激活 `{1,2,4,6}`。
+- **出千：4 拾取物紫色修复**：`RelicPickup_Face4.prefab` 两个 `SpriteRenderer` 的错误内置材质引用（`fileID 2100000/type 2`）改为项目 `GraphicsSettings` 声明的默认 Sprite 材质（`fileID 10754/type 0`）；保留用户在场景实例设置的 `A_Item_StartWithFour` Sprite。
+- **骰面 HUD 真实弹仓同步**：`DiceRevolverRuntime` 在抽取、补回与换弹完成时发布只读剩余面快照，`DiceRevolverGun` 暴露当前快照并转发变更；`DiceRevolverAmmoUI` 启用时先读取当前快照，之后只按快照实时刷新，不再监听开火/奖励事件推断弹药。
 - **静态门禁**：`DiceFaceSlotType.Passive`/`DiceFaceSlotMask.Passive` 代码零引用；受保护 Prefab git 干净。
 
 ## 当前正在进行
 
-- EditMode 测试已全部执行完毕：聚焦 18/18（EnemyHealth/EnemyStatusHost/EventRuleLightningMigration）+ 全量 388/389（唯一失败=已批准 Ground 豁免）。首次真实运行修复了 13 个失败（见验证记录），代码与测试已同步。
+- 用户 PlayMode 反馈的呼应协同与骰面 HUD 问题均已定位并修复；真实 Gun 通知边界和弹仓快照 UI 回归测试完成 RED→GREEN。仍待在后续正常 PlayMode 中观察视觉手感，不要求 Codex 抢占屏幕操控。
 
 ## 下一步
 
-1. 提交收尾（代码+测试+上下文，注意与事件规则编辑器工作流的文件提交拆分）。
-2. 呼应协同 PlayMode 链式反应、特斯拉增伤手感、点燃表现的人工验收。
+1. 在后续正常 PlayMode 中观察右上角六面：每次真实抽取只灰掉对应面，奖励激活不改变 HUD，手动/自动换弹完成后恢复全部活动面。
+2. 继续验收呼应协同含面 4 的链式反应、特斯拉增伤手感和点燃表现。
+3. 根据人工验收结果调整占位参数；若无问题，将本工作流标记为 `completed`。
 
 ## 阻塞
 
@@ -64,6 +70,10 @@
 - [passed] `2026-08-23`：Unity EditMode 全量回归 `388/389`、`0 skipped`；唯一失败为已批准 Ground `Y=-0.01` 豁免项，无新增失败。首次真实运行（此前被 UPM 单实例锁阻塞仅编译）修复 13 个失败：EditMode 测试中 `AddComponent` 不触发 Awake（EnemyHealth/EnemyStatusHost/TargetDummy 测试改用显式 `InvokePrivate("Awake")` 并在 Awake 前设好 MaxHealth）；`SignalTypeTriggerModule`/`SignalTypeConditionModule` 补 `EnemyStatusApplied` 信号映射（呼应协同触发器此前永不匹配）；迁移后资产语义与旧测试不同步（Tesla=OnFire+统计服务+`activation.DamageMultiplier`、Echo=EnemyStatusApplied+点燃条件+相邻面触发 spread 0/0）；`ForceFaceRejectsPassiveFaces` refill 池满拒绝语义（先抽空池验证）；`BaseRuleWithoutResolvablePrimaryProjectileReportsValidationError` 触发器补设 `signals=Base`；迁移工具 `SaveAssets()` 改 `SaveAssetIfDirty` 遵守定向保存契约；词条库 10→11 词条期望更新；删除与同类型保留语义矛盾的 `WindowReplacesTriggerModuleAndDestroysTheOldSubAsset` 调试测试；TestRobot 测试补设 `autoMove`。
 - [passed] `2026-08-23`：测试后受保护 SHA256 复核——Player/TestRobot/TargetDummy 与基线一致，场景与其余六文件 git 干净。
 - [not-run] `2026-08-23`：呼应协同含面 4 触发的 PlayMode 链式反应人工验收；特斯拉增伤公式与点燃参数占位待调。
+- [passed] `2026-08-24`：新增 `BurningHitTriggersEchoAdjacentFacesThroughTheGunNotificationBoundary`；修复前 Unity 全量运行中明确红灯（只观察到初始面 4），修复后聚焦重跑绿灯并观察到 `{4,1,2,4,6}`。Unity Test Runner 汇总由 `389/393`、4 failed 更新为 `390/393`、3 failed；剩余失败属于当前工作区既有的资产迁移/场景契约等问题，未作为本修复通过依据。
+- [passed] `2026-08-24`：出千：4 拾取物材质引用与 `GraphicsSettings.m_SpritesDefaultMaterial` 对照通过；场景实例没有 `m_Materials` 覆盖，Unity Editor 日志确认 Prefab 已重新导入且未报告该资源错误。
+- [passed] `2026-08-24`：`DiceRevolverAmmoUITests` 修复前 `0/3`，修复后隔离 Unity EditMode `3/3`、`0 skipped`，覆盖延迟启用读取真实状态、抽取实时置灰、手动换弹实时恢复；Unity 日志 code 0。
+- [blocked] `2026-08-24`：主 Unity 编辑器保持开启时，第二个隔离批处理进程因 Unity 全局 `CurlRequestCache.db` 冲突而无法补跑完整 Runtime 测试；已终止本次后台测试进程，没有关闭或操作主编辑器。
 
 ## 相关资料
 

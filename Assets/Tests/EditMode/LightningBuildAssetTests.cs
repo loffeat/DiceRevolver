@@ -66,6 +66,7 @@ namespace DiceRevolver.Tests
             Assert.That(tagLibrary.Tags.Select(item => item.DisplayName),
                 Is.EquivalentTo(new[] { "Lightning", "Elemental" }));
             Assert.That(projectileLibrary.Definitions.Any(item => item.name == "LightningOrb"), Is.True);
+            Assert.That(projectileLibrary.Definitions.Any(item => item.name == "FinisherBullet"), Is.True);
             string[] newEntries =
             {
                 "LightningOrb",

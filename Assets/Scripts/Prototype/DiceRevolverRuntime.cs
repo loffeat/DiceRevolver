@@ -50,6 +50,8 @@ namespace DiceRevolver.Prototype
         private int? forcedNextFace;
         private float reloadDuration;
 
+        public event Action<IReadOnlyList<int>> RemainingFacesChanged;
+
         public DiceRevolverRuntime(float shotsPerSecond, float reloadDuration,
             bool automaticReloadWhenEmpty, bool allowManualReload,
             Func<int, int> drawIndexSelector = null)
@@ -141,6 +143,7 @@ namespace DiceRevolver.Prototype
             remainingFaces.Add(face);
             remainingFaces.Sort();
             forcedNextFace = face;
+            NotifyRemainingFacesChanged();
             return true;
         }
 
@@ -217,6 +220,7 @@ namespace DiceRevolver.Prototype
                 int face = forcedNextFace.Value;
                 forcedNextFace = null;
                 remainingFaces.Remove(face);
+                NotifyRemainingFacesChanged();
                 return face;
             }
 
@@ -230,6 +234,7 @@ namespace DiceRevolver.Prototype
                 : UnityEngine.Random.Range(0, candidates.Count);
             int drawnFace = candidates[index];
             remainingFaces.Remove(drawnFace);
+            NotifyRemainingFacesChanged();
             return drawnFace;
         }
 
@@ -274,6 +279,13 @@ namespace DiceRevolver.Prototype
                     remainingFaces.Add(face);
                 }
             }
+
+            NotifyRemainingFacesChanged();
+        }
+
+        private void NotifyRemainingFacesChanged()
+        {
+            RemainingFacesChanged?.Invoke(CreateRemainingFacesSnapshot());
         }
     }
 }

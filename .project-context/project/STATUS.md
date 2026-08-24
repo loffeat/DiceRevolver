@@ -13,13 +13,16 @@
 - 构筑页会显示每面的五行槽位摘要；选择词条后点击骰面只替换该词条对应槽位。新词条只进入资源库，没有自动装备到 Player 或 TestRobot。
 - 弹丸支持 ScriptableObject 类型和多标签身份、按不同受伤对象计算的通用穿透，以及按 Gun 隔离的存活弹丸 Registry。
 - 雷电构筑已实现雷电球、收尾者、电磁共鸣、特斯拉、呼应协同和链式反应；所有参数通过对应 ScriptableObject 或 Prefab 暴露。
+- 敌人状态通知会保留造成状态的骰面激活、共享事件预算与状态目标；呼应协同可从燃烧命中的真实 Gun 链路触发相邻面 `{1,2,4,6}`。
 - 闪电链不视为攻击特效且不广播命中事件；呼应协同奖励弹允许同帧生成并带自然散布；链式反应不复制被动槽和空活动槽。
 - 玩家 HUD 左上角会自动显示结构化战斗事件 Debug 文本，按真实执行顺序编号并用缩进表达普通射击、延迟结果和奖励射击的因果关系。
 - Debug 显示通过 `CombatDebugSettings.asset` 调整启用状态、最大行数、停留时间、字号和面板尺寸，不修改 Player Prefab。
+- `RelicPickup_Face4.prefab` 的两个 `SpriteRenderer` 使用 Unity 内置默认 Sprite 材质（`fileID 10754`）；替换物品 Sprite 时不会再因失效材质引用显示为紫色。
 - 构筑页可在场景加载后自动创建，按 `E` 打开或关闭；瞄准系统使用镜像虚拟枪口、近距离稳定解算和开火前同帧姿态刷新。
 - 子弹事件可通过 `BulletEventContext.Schedule` 使用轻量游戏时间调度；双重射击默认在第一发后 `0.25` 秒生成第二发。
 - 弹丸运行时属性已迁移到 `ProjectileDefinition`；每次骰面触发使用独立 `DiceFaceActivation`，并以默认 `32` 次事件预算限制连锁。
 - 左轮机械状态与骰面事件流程已分别收敛到 `DiceRevolverRuntime` 和 `DiceShotPipeline`；`DiceRevolverGun` 只保留 Unity 输入、姿态、实例化与事件适配，旧 `DiceChamber` 已删除。
+- 右上角骰面 HUD 只呈现 `DiceRevolverRuntime` 的真实剩余骰面快照：实际抽取后立即置灰，手动/自动换弹完成后立即恢复；奖励激活不消耗弹仓，也不会错误置灰 HUD。
 - 六个骰面均绑定基础左轮子弹生成事件；基础子弹视觉通过独立包装引用 `fire_1.prefab`，附加弹默认不回触命中事件。
 - `fire_1.prefab` 原材质引用的 Shader 资源实际缺失；`ProjectileVisualWrapper` 现在只对错误 Shader 使用项目内透明粒子 Shader 兼容包装，不修改原始特效资源。
 - 玩家、测试靶和弹丸使用世界 `Y=0` 玩法平面，Ground 当前视觉高度为 `Y=-0.01`；玩家移动不再依赖重力或地面 Collider。
@@ -39,7 +42,7 @@
 
 ## 活跃工作流
 
-- [2026-08-23 状态·遗物·收尾者·特斯拉·呼应协同战斗系统](workstreams/2026-08-23-status-relic-combat-systems/STATE.md)（`active`；五系统 + 用户后续需求全部实现、编译门禁通过，等待 Unity EditMode 测试与提交）
+- [2026-08-23 状态·遗物·收尾者·特斯拉·呼应协同战斗系统](workstreams/2026-08-23-status-relic-combat-systems/STATE.md)（`active`；五系统 + 用户后续需求、呼应协同真实链路与右上角骰面 HUD 已实现并有聚焦回归，等待正常 Play Mode 观察与提交）
 - [2026-08-23 被动事件迁移为被动型基础事件](workstreams/2026-08-23-passive-base-events/STATE.md)（`active`；T1–T8 实现完成、编译门禁通过、词条终态修正完毕，测试执行受编辑器 UPM 单实例限制待用户配合）
 - [2026-08-22 事件规则编辑器类型更换与中文可编辑字段](workstreams/2026-08-22-event-rule-editor-type-switch-i18n/STATE.md)（`active`；含"所有事件"分类，代码已实现，等待测试与人工验收）
 
@@ -78,6 +81,9 @@
 
 ## 最近项目级验证
 
+- [passed] `2026-08-24`：隔离 Unity EditMode 聚焦 `DiceRevolverAmmoUITests` 为 `3/3`、`0 skipped`；覆盖 UI 延迟启用后读取已消耗弹仓、实际抽取实时置灰、手动换弹完成实时恢复。日志以 `Test run completed. Exiting with code 0 (Ok)` 结束。
+- [blocked] `2026-08-24`：在主 Unity 编辑器保持开启时补跑独立 `DiceRevolverRuntimeTests`，第二个隔离批处理进程被 Unity 全局 `CurlRequestCache.db` 冲突中止；未作为通过依据，也未操作或关闭用户的主编辑器。
+- [passed] `2026-08-24`：`RelicPickup_Face4.prefab` 两处错误内置材质引用已改为 `GraphicsSettings.m_SpritesDefaultMaterial` 所声明的 `fileID 10754/type 0`；场景无材质覆盖，Unity Editor 日志确认 Prefab 已重新导入且该次导入无报错。
 - [passed] `2026-08-23`：MSBuild 2022 编译 Prototype/Editor/EditMode.Tests 三程序集多次全量 exit 0（状态/遗物五系统 + 燃烧子弹 + 构筑页同步/清除 + 弹丸立绘 + TestRobot 自动移动 + Debug 格式简化全部代码与测试）。
 - [passed] `2026-08-23`：静态门禁——`DiceFaceSlotType.Passive`/`DiceFaceSlotMask.Passive` 代码零引用；受保护 Prefab git 干净；词条槽位/规则掩码终态核验（燃烧子弹=命中时、特斯拉=开火时、收尾者=基础非被动、呼应协同=基础被动）。
 - [passed] `2026-08-23`：GUID 链核验（新脚本/资产 meta 与引用一致）；Unity 程序集确认含全部新类型；`BurningBulletRule`/`BurningBullet`/`Ignite`/`DiceFaceLibrary` 已导入。
