@@ -25,11 +25,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e176f45915a8377408017d87df4b9d20, type: 3}
   m_Name: LightningOrbRule
   m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.EventRuleDefinition
-  displayName: "\u96F7\u7535\u7403"
-  description: "\u53D1\u5C04\u4E00\u9897\u7F13\u6162\u98DE\u884C\u3001\u53EF\u7A7F\u900F\u654C\u4EBA\u7684\u96F7\u7535\u7403\u3002"
+  displayName: "\u7403\u5F62\u95EA\u7535"
+  description: "\u53D1\u5C04\u4E00\u9897\u7F13\u6162\u98DE\u884C\u3001\u53EF\u7A7F\u900F\u654C\u4EBA\u7684\u7403\u5F62\u95EA\u7535"
   displayColor: {r: 0.28, g: 0.78, b: 1, a: 1}
   tags: []
-  rarity:
+  rarity: 
   allowedSlots: 1
   trigger: {fileID: -2575116633359489166}
   conditions: []
@@ -38,6 +38,7 @@ MonoBehaviour:
     result: {fileID: 2815668923862148227}
   eventBudgetCost: 1
   recursionPolicy: 0
+  preserveWhenOverlaid: 0
 --- !u!114 &2815668923862148227
 MonoBehaviour:
   m_ObjectHideFlags: 0

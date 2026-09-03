@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 36ea7ae389ce4c408318651511eb02e8, type: 3}
-  m_Name: ProjectileTagLibrary
+  m_Name: BuffLibrary
   m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.ProjectileTagLibrary
   tags:
   - {fileID: 11400000, guid: f5cb132e37d53494685b2b54b6131a35, type: 2}

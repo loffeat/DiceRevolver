@@ -1,18 +1,5 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-1000000000000000001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 60000000000000000000000000000024, type: 3}
-  m_Name: SignalTypeConditionModule
-  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.SignalTypeConditionModule
-  signals: 2
 --- !u!114 &-1000000000000000002
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -27,6 +14,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.ScaleActivationDamageFromStatisticResultModule
   statisticDefinition: {fileID: 11400000, guid: 825b6006f0411864790f15abc96972a3, type: 2}
   damagePerCount: 0.05
+--- !u!114 &-1000000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60000000000000000000000000000024, type: 3}
+  m_Name: SignalTypeConditionModule
+  m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.SignalTypeConditionModule
+  signals: 2
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -39,7 +39,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e176f45915a8377408017d87df4b9d20, type: 3}
   m_Name: TeslaRule
   m_EditorClassIdentifier: DiceRevolver.Prototype::DiceRevolver.Prototype.EventRuleDefinition
-  displayName: "\u7279\u65AF\u62C9"
+  displayName: "\u84C4\u7535\u5668"
   description: "\u5F00\u706B\u65F6\u6309\u672C\u8F6E\u5DF2\u751F\u6210\u7684\u96F7\u7535\u5F39\u5E55\u6570\u91CF\u4E3A\u672C\u6B21\u6FC0\u6D3B\u7684\u57FA\u7840\u4F24\u5BB3\u63D0\u4F9B\u589E\u4F24\u3002"
   displayColor: {r: 1, g: 0.83, b: 0.22, a: 1}
   tags: []
@@ -53,6 +53,7 @@ MonoBehaviour:
     result: {fileID: -1000000000000000002}
   eventBudgetCost: 1
   recursionPolicy: 0
+  preserveWhenOverlaid: 0
 --- !u!114 &3386625906712383117
 MonoBehaviour:
   m_ObjectHideFlags: 0
